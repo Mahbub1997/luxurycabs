@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          distance_km: number
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_name: string | null
+          driver_phone: string | null
+          driver_photo: string | null
+          driver_rating: number | null
+          driver_trips: number | null
+          drop_address: string
+          drop_lat: number
+          drop_lng: number
+          duration_min: number
+          fare: number
+          id: string
+          otp: string
+          package_label: string | null
+          payment_method: string
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          route_polyline: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          trip_mode: string | null
+          trip_type: Database["public"]["Enums"]["trip_type"]
+          updated_at: string
+          vehicle_model: string | null
+          vehicle_number: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          distance_km?: number
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_photo?: string | null
+          driver_rating?: number | null
+          driver_trips?: number | null
+          drop_address: string
+          drop_lat: number
+          drop_lng: number
+          duration_min?: number
+          fare?: number
+          id?: string
+          otp?: string
+          package_label?: string | null
+          payment_method?: string
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          route_polyline?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          trip_mode?: string | null
+          trip_type: Database["public"]["Enums"]["trip_type"]
+          updated_at?: string
+          vehicle_model?: string | null
+          vehicle_number?: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          distance_km?: number
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          driver_photo?: string | null
+          driver_rating?: number | null
+          driver_trips?: number | null
+          drop_address?: string
+          drop_lat?: number
+          drop_lng?: number
+          duration_min?: number
+          fare?: number
+          id?: string
+          otp?: string
+          package_label?: string | null
+          payment_method?: string
+          pickup_address?: string
+          pickup_lat?: number
+          pickup_lng?: number
+          route_polyline?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          trip_mode?: string | null
+          trip_type?: Database["public"]["Enums"]["trip_type"]
+          updated_at?: string
+          vehicle_model?: string | null
+          vehicle_number?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +124,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      booking_status:
+        | "pending"
+        | "driver_assigned"
+        | "driver_arrived"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      trip_type: "local" | "outstation" | "rental"
+      vehicle_type: "sedan" | "suv"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +259,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: [
+        "pending",
+        "driver_assigned",
+        "driver_arrived",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      trip_type: ["local", "outstation", "rental"],
+      vehicle_type: ["sedan", "suv"],
+    },
   },
 } as const
