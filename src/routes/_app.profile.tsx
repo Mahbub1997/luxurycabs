@@ -1,0 +1,52 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { BrandHeader } from "@/components/Brand";
+import { Bell, User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
+
+export const Route = createFileRoute("/_app/profile")({
+  head: () => ({ meta: [{ title: "Profile — Luxury Cabs" }] }),
+  component: Profile,
+});
+
+function Profile() {
+  const items = [
+    { I: MapPin, label: "Saved Addresses" },
+    { I: Wallet, label: "Payment Methods" },
+    { I: Phone, label: "Help & Support" },
+    { I: Shield, label: "Safety Center" },
+  ];
+  return (
+    <div className="flex flex-col gap-4 pb-6">
+      <BrandHeader right={<Bell className="h-5 w-5" />} />
+      <div className="mx-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-foreground/15">
+          <User className="h-7 w-7" />
+        </div>
+        <div>
+          <div className="font-display text-lg font-bold">Guest Rider</div>
+          <div className="text-xs opacity-80">Sign in coming soon</div>
+        </div>
+      </div>
+
+      <div className="mx-4 divide-y divide-border rounded-2xl border border-border bg-card">
+        {items.map(({ I, label }) => (
+          <button key={label} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+            <I className="h-5 w-5 text-primary" />
+            <span className="flex-1 text-sm font-medium">{label}</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        ))}
+      </div>
+
+      <Link
+        to="/booking"
+        className="mx-4 rounded-2xl border border-border bg-card p-4 text-center text-sm font-semibold text-primary"
+      >
+        Book your next ride →
+      </Link>
+
+      <button className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-destructive">
+        <LogOut className="h-4 w-4" /> Log out
+      </button>
+    </div>
+  );
+}
