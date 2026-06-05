@@ -159,7 +159,7 @@ function Track() {
         <RouteMap
           pickup={mapPickup}
           drop={mapDrop}
-          polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : sessionStorage.getItem(`toPickup:${b.id}`) ?? b.route_polyline}
+          polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : (toPickupPoly ?? b.route_polyline)}
           driver={driver}
           height={280}
         />
