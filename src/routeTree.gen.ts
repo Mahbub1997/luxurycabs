@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TrackIdRouteImport } from './routes/track.$id'
+import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
+import { Route as CompleteIdRouteImport } from './routes/complete.$id'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
@@ -23,6 +26,21 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackIdRoute = TrackIdRouteImport.update({
+  id: '/track/$id',
+  path: '/track/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmIdRoute = ConfirmIdRouteImport.update({
+  id: '/confirm/$id',
+  path: '/confirm/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompleteIdRoute = CompleteIdRouteImport.update({
+  id: '/complete/$id',
+  path: '/complete/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -52,6 +70,9 @@ export interface FileRoutesByFullPath {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
+  '/confirm/$id': typeof ConfirmIdRoute
+  '/track/$id': typeof TrackIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +80,9 @@ export interface FileRoutesByTo {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
+  '/confirm/$id': typeof ConfirmIdRoute
+  '/track/$id': typeof TrackIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +92,31 @@ export interface FileRoutesById {
   '/_app/home': typeof AppHomeRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
+  '/confirm/$id': typeof ConfirmIdRoute
+  '/track/$id': typeof TrackIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/booking' | '/home' | '/notifications' | '/profile'
+  fullPaths:
+    | '/'
+    | '/booking'
+    | '/home'
+    | '/notifications'
+    | '/profile'
+    | '/complete/$id'
+    | '/confirm/$id'
+    | '/track/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/booking' | '/home' | '/notifications' | '/profile'
+  to:
+    | '/'
+    | '/booking'
+    | '/home'
+    | '/notifications'
+    | '/profile'
+    | '/complete/$id'
+    | '/confirm/$id'
+    | '/track/$id'
   id:
     | '__root__'
     | '/'
@@ -82,11 +125,17 @@ export interface FileRouteTypes {
     | '/_app/home'
     | '/_app/notifications'
     | '/_app/profile'
+    | '/complete/$id'
+    | '/confirm/$id'
+    | '/track/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  CompleteIdRoute: typeof CompleteIdRoute
+  ConfirmIdRoute: typeof ConfirmIdRoute
+  TrackIdRoute: typeof TrackIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -103,6 +152,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/track/$id': {
+      id: '/track/$id'
+      path: '/track/$id'
+      fullPath: '/track/$id'
+      preLoaderRoute: typeof TrackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm/$id': {
+      id: '/confirm/$id'
+      path: '/confirm/$id'
+      fullPath: '/confirm/$id'
+      preLoaderRoute: typeof ConfirmIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/complete/$id': {
+      id: '/complete/$id'
+      path: '/complete/$id'
+      fullPath: '/complete/$id'
+      preLoaderRoute: typeof CompleteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/profile': {
@@ -155,6 +225,9 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  CompleteIdRoute: CompleteIdRoute,
+  ConfirmIdRoute: ConfirmIdRoute,
+  TrackIdRoute: TrackIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
