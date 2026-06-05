@@ -45,7 +45,8 @@ function Track() {
   // Driver -> pickup animation
   useEffect(() => {
     if (!b || phase !== "to_pickup") return;
-    const poly = sessionStorage.getItem(`toPickup:${b.id}`);
+    const poly = typeof window !== "undefined" ? sessionStorage.getItem(`toPickup:${b.id}`) : null;
+    setToPickupPoly(poly);
     if (!poly) return;
     const totalMs = 12000 + Math.random() * 8000; // 12-20s simulated
     setEta(Math.ceil(totalMs / 1000 / 60) || 1);
