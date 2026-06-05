@@ -24,6 +24,7 @@ function Track() {
   const [phase, setPhase] = useState<Phase>("to_pickup");
   const [eta, setEta] = useState<number>(0);
   const [tripPoly, setTripPoly] = useState<string | null>(null);
+  const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const cancelRef = useRef<(() => void) | null>(null);
@@ -44,7 +45,8 @@ function Track() {
   // Driver -> pickup animation
   useEffect(() => {
     if (!b || phase !== "to_pickup") return;
-    const poly = sessionStorage.getItem(`toPickup:${b.id}`);
+    const poly = typeof window !== "undefined" ? sessionStorage.getItem(`toPickup:${b.id}`) : null;
+    setToPickupPoly(poly);
     if (!poly) return;
     const totalMs = 12000 + Math.random() * 8000; // 12-20s simulated
     setEta(Math.ceil(totalMs / 1000 / 60) || 1);
@@ -157,7 +159,7 @@ function Track() {
         <RouteMap
           pickup={mapPickup}
           drop={mapDrop}
-          polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : sessionStorage.getItem(`toPickup:${b.id}`) ?? b.route_polyline}
+          polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : (toPickupPoly ?? b.route_polyline)}
           driver={driver}
           height={280}
         />
