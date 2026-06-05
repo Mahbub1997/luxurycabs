@@ -24,6 +24,7 @@ function Track() {
   const [phase, setPhase] = useState<Phase>("to_pickup");
   const [eta, setEta] = useState<number>(0);
   const [tripPoly, setTripPoly] = useState<string | null>(null);
+  const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const cancelRef = useRef<(() => void) | null>(null);
