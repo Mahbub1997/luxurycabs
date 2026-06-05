@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrackIdRouteImport } from './routes/track.$id'
 import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
+import { Route as CompleteIdRouteImport } from './routes/complete.$id'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
@@ -35,6 +36,11 @@ const TrackIdRoute = TrackIdRouteImport.update({
 const ConfirmIdRoute = ConfirmIdRouteImport.update({
   id: '/confirm/$id',
   path: '/confirm/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompleteIdRoute = CompleteIdRouteImport.update({
+  id: '/complete/$id',
+  path: '/complete/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_app/home': typeof AppHomeRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
+  '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
 }
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/notifications'
     | '/profile'
+    | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/notifications'
     | '/profile'
+    | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
   id:
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/_app/home'
     | '/_app/notifications'
     | '/_app/profile'
+    | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
   fileRoutesById: FileRoutesById
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  CompleteIdRoute: typeof CompleteIdRoute
   ConfirmIdRoute: typeof ConfirmIdRoute
   TrackIdRoute: typeof TrackIdRoute
 }
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/confirm/$id'
       fullPath: '/confirm/$id'
       preLoaderRoute: typeof ConfirmIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/complete/$id': {
+      id: '/complete/$id'
+      path: '/complete/$id'
+      fullPath: '/complete/$id'
+      preLoaderRoute: typeof CompleteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/profile': {
@@ -205,6 +225,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  CompleteIdRoute: CompleteIdRoute,
   ConfirmIdRoute: ConfirmIdRoute,
   TrackIdRoute: TrackIdRoute,
 }
