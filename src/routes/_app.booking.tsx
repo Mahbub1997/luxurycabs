@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Calendar, ChevronDown, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -199,7 +199,6 @@ function Booking() {
           onChange={(e) => setScheduledAt(e.target.value)}
           className="ml-auto bg-transparent text-sm text-foreground outline-none"
         />
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
       </div>
 
       {/* Rental packages */}

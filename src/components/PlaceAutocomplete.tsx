@@ -63,27 +63,42 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
   }
 
   async function useCurrent() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported on this device.");
+      return;
+    }
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
           const g = await loadGoogleMaps();
           const geocoder = new g.maps.Geocoder();
-          const { results } = await geocoder.geocode({
-            location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          });
-          const r = results[0];
+          let address = "Current location";
+          try {
+            const { results } = await geocoder.geocode({
+              location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            });
+            address = results[0]?.formatted_address ?? address;
+          } catch (e) { console.warn("Reverse geocode failed", e); }
           onChange({
-            address: r?.formatted_address ?? "Current location",
+            address,
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           });
           setOpen(false);
         } finally { setLoading(false); }
       },
-      () => setLoading(false),
-      { enableHighAccuracy: true, timeout: 8000 }
+      (err) => {
+        setLoading(false);
+        const msg =
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied. Please enable location access in your browser settings."
+            : err.code === err.POSITION_UNAVAILABLE
+            ? "Unable to determine your location. Try again outdoors or enter address manually."
+            : "Location request timed out. Please try again.";
+        alert(msg);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   }
 

@@ -1,6 +1,8 @@
-import { Car, Users, Briefcase } from "lucide-react";
+import { Users, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatINR, tariffFor, type VehicleType } from "@/lib/fare";
+import sedanImg from "@/assets/sedan.png";
+import suvImg from "@/assets/suv.png";
 
 interface Props {
   type: VehicleType;
@@ -12,14 +14,15 @@ interface Props {
   subline?: string;
 }
 
-export function VehicleCard({ type, fare, eta, selected, onSelect, badge, subline }: Props) {
+export function VehicleCard({ type, fare, selected, onSelect, badge, subline, eta }: Props) {
   const t = tariffFor(type);
+  const img = type === "sedan" ? sedanImg : suvImg;
   return (
     <button
       onClick={onSelect}
       className={cn(
         "relative flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition",
-        selected ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40"
+        selected ? "border-foreground bg-background" : "border-border hover:border-foreground/40"
       )}
     >
       {badge && (
@@ -27,8 +30,15 @@ export function VehicleCard({ type, fare, eta, selected, onSelect, badge, sublin
           {badge}
         </span>
       )}
-      <div className="grid h-16 w-20 shrink-0 place-items-center rounded-xl bg-secondary">
-        <Car className={cn("h-10 w-10", type === "suv" ? "scale-110" : "scale-100", "text-foreground")} strokeWidth={1.5} />
+      <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-background">
+        <img
+          src={img}
+          alt={t.label}
+          width={96}
+          height={64}
+          loading="lazy"
+          className="h-full w-full object-contain"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -44,10 +54,10 @@ export function VehicleCard({ type, fare, eta, selected, onSelect, badge, sublin
       <span
         className={cn(
           "ml-2 grid h-5 w-5 place-items-center rounded-full border-2",
-          selected ? "border-primary bg-primary" : "border-muted-foreground/40"
+          selected ? "border-foreground bg-foreground" : "border-muted-foreground/40"
         )}
       >
-        {selected && <span className="block h-2 w-2 rounded-full bg-primary-foreground" />}
+        {selected && <span className="block h-2 w-2 rounded-full bg-background" />}
       </span>
     </button>
   );
