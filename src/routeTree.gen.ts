@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
@@ -23,6 +24,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmIdRoute = ConfirmIdRouteImport.update({
+  id: '/confirm/$id',
+  path: '/confirm/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/confirm/$id': typeof ConfirmIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/home': typeof AppHomeRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/confirm/$id': typeof ConfirmIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,25 @@ export interface FileRoutesById {
   '/_app/home': typeof AppHomeRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
+  '/confirm/$id': typeof ConfirmIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/booking' | '/home' | '/notifications' | '/profile'
+  fullPaths:
+    | '/'
+    | '/booking'
+    | '/home'
+    | '/notifications'
+    | '/profile'
+    | '/confirm/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/booking' | '/home' | '/notifications' | '/profile'
+  to:
+    | '/'
+    | '/booking'
+    | '/home'
+    | '/notifications'
+    | '/profile'
+    | '/confirm/$id'
   id:
     | '__root__'
     | '/'
@@ -82,11 +103,13 @@ export interface FileRouteTypes {
     | '/_app/home'
     | '/_app/notifications'
     | '/_app/profile'
+    | '/confirm/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  ConfirmIdRoute: typeof ConfirmIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -103,6 +126,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm/$id': {
+      id: '/confirm/$id'
+      path: '/confirm/$id'
+      fullPath: '/confirm/$id'
+      preLoaderRoute: typeof ConfirmIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/profile': {
@@ -155,7 +185,18 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  ConfirmIdRoute: ConfirmIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
