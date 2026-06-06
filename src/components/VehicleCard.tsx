@@ -1,4 +1,4 @@
-import { Users, Briefcase } from "lucide-react";
+import { Users, Snowflake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatINR, tariffFor, type VehicleType } from "@/lib/fare";
 import sedanImg from "@/assets/sedan.png";
@@ -6,58 +6,60 @@ import suvImg from "@/assets/suv.png";
 
 interface Props {
   type: VehicleType;
-  fare: number;
-  eta?: string;
+  fare?: number;
   selected: boolean;
   onSelect: () => void;
-  badge?: string;
-  subline?: string;
 }
 
-export function VehicleCard({ type, fare, selected, onSelect, badge, subline, eta }: Props) {
+export function VehicleCard({ type, fare, selected, onSelect }: Props) {
   const t = tariffFor(type);
   const img = type === "sedan" ? sedanImg : suvImg;
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={cn(
-        "relative flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition",
-        selected ? "border-foreground bg-background" : "border-border hover:border-foreground/40"
+        "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left transition",
+        selected ? "border-foreground" : "border-border hover:border-foreground/30"
       )}
     >
-      {badge && (
-        <span className="absolute -top-2 left-3 rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
-          {badge}
-        </span>
-      )}
-      <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-background">
+      <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
         <img
           src={img}
           alt={t.label}
-          width={96}
-          height={64}
+          width={112}
+          height={80}
           loading="lazy"
           className="h-full w-full object-contain"
         />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="font-semibold">{t.label}</span>
-          <span className="font-bold text-primary">{formatINR(fare)}</span>
+          <span className="text-base font-bold text-foreground">{t.label}</span>
+          {fare && fare > 0 ? (
+            <span className="text-sm font-bold text-foreground">{formatINR(fare)}</span>
+          ) : null}
         </div>
-        <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{t.seats} Seats</span>
-          <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" />{t.bags} Bags</span>
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" />
+            {t.seats} Seats
+          </span>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="inline-flex items-center gap-1">
+            <Snowflake className="h-3.5 w-3.5" />
+            AC
+          </span>
         </div>
-        <div className="mt-1 text-xs text-muted-foreground">{subline ?? (eta ? `${eta} away` : "")}</div>
+        <div className="mt-1 text-xs text-muted-foreground">Best for {t.seats} People</div>
       </div>
       <span
         className={cn(
-          "ml-2 grid h-5 w-5 place-items-center rounded-full border-2",
-          selected ? "border-foreground bg-foreground" : "border-muted-foreground/40"
+          "ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2",
+          selected ? "border-foreground bg-foreground" : "border-muted-foreground/40 bg-white"
         )}
       >
-        {selected && <span className="block h-2 w-2 rounded-full bg-background" />}
+        {selected && <span className="block h-1.5 w-1.5 rounded-full bg-white" />}
       </span>
     </button>
   );
