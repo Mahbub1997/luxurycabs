@@ -540,3 +540,12 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
     </div>
   );
 }
+
+function Chip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-background/95 px-2.5 py-1.5 text-right shadow ring-1 ring-border backdrop-blur">
+      <div className="text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-xs font-bold text-foreground">{value}</div>
+    </div>
+  );
+}
