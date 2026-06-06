@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { CrownCarLogo } from "@/components/Brand";
-import { Shield, UserCog, Clock } from "lucide-react";
+import splashImg from "@/assets/splash.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,59 +16,37 @@ export const Route = createFileRoute("/")({
 function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
-    const t = setTimeout(() => navigate({ to: "/booking" }), 5000);
+    const t = setTimeout(() => navigate({ to: "/booking" }), 4000);
     return () => clearTimeout(t);
   }, [navigate]);
 
   return (
-    <div className="app-shell flex flex-col items-center justify-between bg-gradient-to-b from-primary-soft/40 via-background to-background py-12">
-      <div className="h-8" />
+    <div className="app-shell relative flex flex-col items-center justify-end overflow-hidden bg-white">
+      <img
+        src={splashImg}
+        alt="Luxury Cabs"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
       <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.7 }}
-        className="flex flex-col items-center px-6 text-center"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="relative z-10 mb-10 flex flex-col items-center gap-3"
       >
-        <CrownCarLogo className="h-20 w-20" />
-        <h1 className="mt-4 font-display text-5xl font-bold leading-none tracking-tight text-primary">
-          LUXURY
-        </h1>
-        <div className="mt-1 flex items-center gap-3 text-foreground/80">
-          <span className="h-px w-8 bg-foreground/40" />
-          <span className="font-display text-2xl tracking-[0.4em]">CABS</span>
-          <span className="h-px w-8 bg-foreground/40" />
+        <div className="flex items-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="h-2.5 w-2.5 rounded-full bg-primary"
+              animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+            />
+          ))}
         </div>
-        <p className="mt-3 text-xs font-medium tracking-[0.3em] text-muted-foreground">
-          COMFORT · CLASS · EVERY RIDE
+        <p className="text-xs font-semibold tracking-[0.25em] text-primary">
+          PLEASE WAIT...
         </p>
       </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="grid w-full max-w-xs grid-cols-3 gap-3 px-6 text-center text-[11px] font-semibold tracking-wide text-foreground/70"
-      >
-        {[
-          { I: Shield, l: "SAFE" },
-          { I: UserCog, l: "VERIFIED DRIVER" },
-          { I: Clock, l: "ON TIME" },
-        ].map(({ I, l }, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <I className="h-6 w-6 text-primary" strokeWidth={1.6} />
-            <span>{l}</span>
-          </div>
-        ))}
-      </motion.div>
-
-      <div className="h-3 w-32 overflow-hidden rounded-full bg-primary-soft">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: "100%" }}
-          transition={{ duration: 5, ease: "linear" }}
-          className="h-full bg-primary"
-        />
-      </div>
     </div>
   );
 }

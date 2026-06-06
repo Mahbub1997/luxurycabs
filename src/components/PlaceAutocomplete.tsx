@@ -114,8 +114,8 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
           <MapPin className={`mt-1 h-4 w-4 shrink-0 ${dotColor}`} />
           <div className="min-w-0 flex-1">
             <div className={`text-xs font-medium ${dotColor}`}>{label}</div>
-            <div className="truncate text-sm font-semibold text-foreground">
-              {value?.address ?? <span className="text-muted-foreground font-normal">{placeholder ?? "Search location"}</span>}
+            <div className={`truncate text-sm font-semibold ${dotColor}`}>
+              {value?.address ?? <span className={`${dotColor} opacity-70 font-normal`}>{placeholder ?? "Search location"}</span>}
             </div>
           </div>
         </button>

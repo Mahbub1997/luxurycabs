@@ -205,7 +205,7 @@ function Confirm() {
           disabled={busy}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground shadow-lg disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Confirm & Find Driver</>}
+          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Confirm Booking</>}
         </button>
         <Link to="/booking" className="mt-2 block text-center text-xs text-muted-foreground">Cancel</Link>
       </div>
