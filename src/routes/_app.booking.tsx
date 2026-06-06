@@ -137,9 +137,8 @@ function Booking() {
         <button className="grid h-9 w-9 place-items-center rounded-md hover:bg-muted" aria-label="Menu">
           <Menu className="h-5 w-5" />
         </button>
-        <button className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background" aria-label="Current location">
-          <LocateFixed className="h-4 w-4 text-primary" />
-        </button>
+        <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
+        <div className="h-9 w-9" />
       </div>
 
       {/* Tabs */}
