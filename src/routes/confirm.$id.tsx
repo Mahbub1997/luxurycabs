@@ -1,19 +1,25 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CreditCard, Banknote, Wallet, ShieldCheck, Loader2, MapPin, Clock, Car } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  ArrowLeft, CreditCard, Banknote, Wallet, Loader2, MapPin, Clock, Car, X,
+} from "lucide-react";
 import { getBooking, updateBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
-import { formatINR, tariffFor } from "@/lib/fare";
-import { pickDemoDriver } from "@/lib/drivers";
-import { computeRoute } from "@/lib/maps/routes.functions";
-import { offsetLatLng } from "@/lib/maps/sim";
+import { VehicleCard } from "@/components/VehicleCard";
+import {
+  calcLocalFare, calcOutstationFare, formatINR, tariffFor, type VehicleType,
+} from "@/lib/fare";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/confirm/$id")({
-  head: () => ({ meta: [{ title: "Confirm Ride — Luxury Cabs" }] }),
+  head: () => ({ meta: [{ title: "Confirm Booking — Luxury Cabs" }] }),
   component: Confirm,
 });
+
+function recalcFare(b: Booking, v: VehicleType): number {
+  if (b.trip_type === "outstation") return calcOutstationFare(v, Number(b.distance_km));
+  return calcLocalFare(v, Number(b.distance_km), b.duration_min);
+}
 
 function Confirm() {
   const { id } = Route.useParams();
@@ -21,64 +27,31 @@ function Confirm() {
   const [b, setB] = useState<Booking | null>(null);
   const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState<"idle" | "finding">("idle");
+  const [vehSheet, setVehSheet] = useState(false);
 
   useEffect(() => { getBooking(id).then(setB); }, [id]);
+
+  async function pickVehicle(v: VehicleType) {
+    if (!b) return;
+    const fare = recalcFare(b, v);
+    const updated = await updateBooking(b.id, {
+      vehicle_type: v,
+      vehicle_model: v === "sedan" ? "Sedan" : "SUV",
+      fare,
+    });
+    setB(updated);
+    setVehSheet(false);
+  }
 
   async function confirmRide() {
     if (!b || busy) return;
     setBusy(true);
     try {
-      await updateBooking(b.id, { payment_method: pay });
-      setStage("finding");
-
-      // Simulate driver search (3-6s) — admin assignment will replace this later
-      const wait = 3000 + Math.random() * 3000;
-      await new Promise((r) => setTimeout(r, wait));
-
-      const driver = pickDemoDriver(b.vehicle_type as "sedan" | "suv");
-      // Place driver 1.5-3 km from pickup at random bearing
-      const startKm = 1.5 + Math.random() * 1.5;
-      const startBearing = Math.random() * 360;
-      const driverPos = offsetLatLng(
-        { lat: b.pickup_lat, lng: b.pickup_lng },
-        startKm, startBearing
-      );
-
-      // Compute driver -> pickup route
-      let toPickupPoly: string | null = null;
-      try {
-        const r = await computeRoute({
-          data: {
-            origin: driverPos,
-            destination: { lat: b.pickup_lat, lng: b.pickup_lng },
-          },
-        });
-        toPickupPoly = r.polyline;
-      } catch (e) { console.error(e); }
-
-      await updateBooking(b.id, {
-        status: "driver_assigned",
-        driver_name: driver.name,
-        driver_phone: driver.phone,
-        driver_photo: driver.photo,
-        driver_rating: driver.rating,
-        driver_trips: driver.trips,
-        vehicle_number: driver.vehicle_number,
-        vehicle_model: driver.vehicle_model,
-        driver_lat: driverPos.lat,
-        driver_lng: driverPos.lng,
-        // Stash driver->pickup polyline in route_polyline only if main route missing (rental)
-        route_polyline: b.route_polyline ?? toPickupPoly,
-      });
-
-      // Pass to-pickup polyline via session storage for tracker
-      if (toPickupPoly) sessionStorage.setItem(`toPickup:${b.id}`, toPickupPoly);
+      await updateBooking(b.id, { payment_method: pay, status: "pending" });
       navigate({ to: "/track/$id", params: { id: b.id } });
     } catch (e) {
       console.error(e);
       alert("Failed to confirm. Try again.");
-      setStage("idle");
     } finally { setBusy(false); }
   }
 
@@ -90,36 +63,7 @@ function Confirm() {
     );
   }
 
-  const tariff = tariffFor(b.vehicle_type as "sedan" | "suv");
-
-  if (stage === "finding") {
-    return (
-      <div className="app-shell flex flex-col items-center justify-center gap-6 bg-gradient-to-b from-primary-soft/40 to-background p-6 text-center">
-        <div className="relative h-40 w-40">
-          <motion.div
-            className="absolute inset-0 rounded-full bg-primary/20"
-            animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute inset-4 rounded-full bg-primary/30"
-            animate={{ scale: [1, 1.4, 1], opacity: [0.7, 0.1, 0.7] }}
-            transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
-          />
-          <div className="absolute inset-10 grid place-items-center rounded-full bg-primary text-primary-foreground shadow-xl">
-            <Car className="h-10 w-10" />
-          </div>
-        </div>
-        <div>
-          <h2 className="font-display text-2xl font-bold text-primary">Finding your driver</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Connecting you with a nearby verified driver…</p>
-        </div>
-        <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-xs text-muted-foreground shadow">
-          <ShieldCheck className="h-4 w-4 text-primary" /> 100% Safe & Verified
-        </div>
-      </div>
-    );
-  }
+  const tariff = tariffFor(b.vehicle_type as VehicleType);
 
   return (
     <div className="app-shell flex flex-col bg-background pb-40">
@@ -161,6 +105,25 @@ function Confirm() {
         </div>
       </div>
 
+      {/* Vehicle card with Change Vehicle */}
+      <div className="mx-4 mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-semibold">Selected Vehicle</div>
+          <button
+            onClick={() => setVehSheet(true)}
+            className="rounded-md border border-border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted"
+          >
+            Change Vehicle
+          </button>
+        </div>
+        <VehicleCard
+          type={b.vehicle_type as VehicleType}
+          fare={Number(b.fare)}
+          selected
+          onSelect={() => setVehSheet(true)}
+        />
+      </div>
+
       <div className="mx-4 mt-4">
         <div className="text-sm font-semibold">Payment Method</div>
         <div className="mt-2 grid grid-cols-3 gap-2">
@@ -174,7 +137,7 @@ function Confirm() {
               onClick={() => setPay(id)}
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl border-2 bg-card p-3 text-xs font-semibold",
-                pay === id ? "border-primary bg-primary-soft text-primary" : "border-border"
+                pay === id ? "border-foreground text-foreground" : "border-border text-muted-foreground"
               )}
             >
               <I className="h-5 w-5" />{l}
@@ -209,6 +172,35 @@ function Confirm() {
         </button>
         <Link to="/booking" className="mt-2 block text-center text-xs text-muted-foreground">Cancel</Link>
       </div>
+
+      {/* Change Vehicle sheet */}
+      {vehSheet && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setVehSheet(false)}
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="font-display text-lg font-bold">Change Vehicle</div>
+              <button onClick={() => setVehSheet(false)} className="rounded-md p-1 hover:bg-muted">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {(["sedan", "suv"] as const).map((v) => (
+                <VehicleCard
+                  key={v}
+                  type={v}
+                  fare={recalcFare(b, v)}
+                  selected={b.vehicle_type === v}
+                  onSelect={() => pickVehicle(v)}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

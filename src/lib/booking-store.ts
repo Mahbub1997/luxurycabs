@@ -22,6 +22,12 @@ export async function updateBooking(id: string, patch: Partial<Booking>) {
   return data;
 }
 
+/** Short, shareable booking code derived from the uuid. */
+export function bookingCode(id: string): string {
+  const hex = id.replace(/-/g, "").slice(0, 8).toUpperCase();
+  return `LC${hex}`;
+}
+
 const RECENT_KEY = "luxury_recent_booking_ids";
 export function pushRecentBooking(id: string) {
   if (typeof window === "undefined") return;

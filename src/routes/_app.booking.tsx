@@ -1,19 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles, Users, Briefcase, Check } from "lucide-react";
+import {
+  Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck,
+  Loader2, Shield, Sparkles, LocateFixed, Menu, AlertTriangle,
+} from "lucide-react";
 import { z } from "zod";
-import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
-import sedanImg from "@/assets/sedan.png";
-import suvImg from "@/assets/suv.png";
+import { VehicleCard } from "@/components/VehicleCard";
 
 import {
-  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR, modelFare,
-  VEHICLE_MODELS, type TripType, type VehicleModel,
+  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
+  type TripType, type VehicleType,
 } from "@/lib/fare";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
 import { cn } from "@/lib/utils";
+
+const LOCAL_LIMIT_KM = 15;
 
 const searchSchema = z.object({ tab: z.enum(["local", "outstation", "rental"]).optional() });
 
@@ -31,18 +34,17 @@ function Booking() {
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [tripMode, setTripMode] = useState<"oneway" | "round">("oneway");
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
-  const [modelId, setModelId] = useState<string>(VEHICLE_MODELS[0].id);
-  const [customModel, setCustomModel] = useState("");
+  const [vehicle, setVehicle] = useState<VehicleType>("sedan");
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
     d.setSeconds(0, 0);
-    return d.toISOString().slice(0, 16);
+    // datetime-local needs local time string
+    const off = d.getTimezoneOffset();
+    return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
   });
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  const selectedModel = VEHICLE_MODELS.find((m) => m.id === modelId) ?? VEHICLE_MODELS[0];
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
@@ -57,34 +59,34 @@ function Booking() {
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
 
-  const tierFare = useMemo(() => {
+  // Auto-switch Local → Outstation when distance exceeds the city limit.
+  const exceedsLocal = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
+  const effectiveTab: TripType = exceedsLocal ? "outstation" : tab;
+
+  const fares = useMemo(() => {
     if (tab === "rental") {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId)!;
       return { sedan: pkg.sedan, suv: pkg.suv };
     }
     if (!routeInfo) return { sedan: 0, suv: 0 };
-    const km = tripMode === "round" && tab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm;
-    if (tab === "outstation") {
+    const km = tripMode === "round" && effectiveTab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm;
+    if (effectiveTab === "outstation") {
       return { sedan: calcOutstationFare("sedan", km), suv: calcOutstationFare("suv", km) };
     }
     return {
       sedan: calcLocalFare("sedan", km, routeInfo.durationMin),
       suv: calcLocalFare("suv", km, routeInfo.durationMin),
     };
-  }, [tab, tripMode, routeInfo, pkgId]);
+  }, [tab, effectiveTab, tripMode, routeInfo, pkgId]);
 
-  const estimatedFare = modelFare(selectedModel, tierFare);
+  const estimatedFare = vehicle === "sedan" ? fares.sedan : fares.suv;
 
-  function swap() {
-    setPickup(drop);
-    setDrop(pickup);
-  }
+  function swap() { setPickup(drop); setDrop(pickup); }
 
   const canBook = (() => {
     if (!pickup || !drop) return false;
-    if (selectedModel.custom && !customModel.trim()) return false;
     if (tab === "rental") return true;
-    return !!routeInfo && !routeLoading;
+    return !!routeInfo && !routeLoading && estimatedFare > 0;
   })();
 
   async function handleBook() {
@@ -94,16 +96,16 @@ function Booking() {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId);
       const distance =
         tab === "rental" ? pkg!.km :
-        tab === "outstation" && tripMode === "round" ? (routeInfo!.distanceKm * 2) :
+        effectiveTab === "outstation" && tripMode === "round" ? (routeInfo!.distanceKm * 2) :
         routeInfo!.distanceKm;
       const duration =
         tab === "rental" ? pkg!.hours * 60 :
-        tab === "outstation" && tripMode === "round" ? routeInfo!.durationMin * 2 :
+        effectiveTab === "outstation" && tripMode === "round" ? routeInfo!.durationMin * 2 :
         routeInfo!.durationMin;
 
       const booking = await createBooking({
-        trip_type: tab,
-        trip_mode: tab === "outstation" ? tripMode : null,
+        trip_type: effectiveTab,
+        trip_mode: effectiveTab === "outstation" ? tripMode : null,
         package_label: tab === "rental" ? pkg!.label : null,
         pickup_address: pickup.address,
         pickup_lat: pickup.lat,
@@ -112,8 +114,8 @@ function Booking() {
         drop_lat: drop.lat,
         drop_lng: drop.lng,
         scheduled_at: new Date(scheduledAt).toISOString(),
-        vehicle_type: selectedModel.tier,
-        vehicle_model: selectedModel.custom ? customModel.trim() : selectedModel.label,
+        vehicle_type: vehicle,
+        vehicle_model: vehicle === "sedan" ? "Sedan" : "SUV",
         distance_km: Number(distance.toFixed(2)),
         duration_min: Math.round(duration),
         fare: estimatedFare,
@@ -129,25 +131,33 @@ function Booking() {
 
   return (
     <div className="flex flex-col gap-4 pb-40">
-      <BrandHeader right={<Bell className="h-5 w-5 text-foreground" />} />
+      {/* Minimal header — no logo wordmark */}
+      <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur">
+        <button className="grid h-9 w-9 place-items-center rounded-md hover:bg-muted" aria-label="Menu">
+          <Menu className="h-5 w-5" />
+        </button>
+        <button className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background" aria-label="Current location">
+          <LocateFixed className="h-4 w-4 text-primary" />
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="mx-4 grid grid-cols-3 gap-2">
         {([
-          { id: "local", label: "Local Trip", I: Car },
-          { id: "outstation", label: "Outstation", I: MapIcon },
+          { id: "local", label: "Local", I: Car },
           { id: "rental", label: "Rental", I: Clock },
+          { id: "outstation", label: "Outstation", I: MapIcon },
         ] as const).map(({ id, label, I }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
             className={cn(
-              "flex items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2.5 text-xs font-semibold transition",
-              tab === id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"
+              "flex flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-3 text-xs font-semibold transition",
+              tab === id ? "border-foreground bg-card text-foreground" : "border-border bg-card text-muted-foreground"
             )}
           >
-            <I className="h-4 w-4" />
-            <span className="truncate">{label}</span>
+            <I className="h-5 w-5" />
+            <span>{label}</span>
           </button>
         ))}
       </div>
@@ -168,18 +178,28 @@ function Booking() {
           value={drop}
           onChange={setDrop}
           placeholder="Search drop"
+          accent="red"
         />
         <button
           onClick={swap}
           className="absolute right-3 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full border border-border bg-background shadow"
           aria-label="Swap"
         >
-          <ArrowUpDown className="h-4 w-4 text-primary" />
+          <ArrowUpDown className="h-4 w-4 text-foreground" />
         </button>
       </div>
 
+      {/* 15km auto-switch notice */}
+      {exceedsLocal && (
+        <div className="mx-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          Trip distance is {routeInfo!.distanceKm.toFixed(1)} km — city local limit is {LOCAL_LIMIT_KM} km.
+          Switching to <b>Outstation</b> pricing automatically.
+        </div>
+      )}
+
       {/* Outstation: one way / round trip */}
-      {tab === "outstation" && (
+      {effectiveTab === "outstation" && (
         <div className="mx-4 grid grid-cols-2 gap-3">
           {(["oneway", "round"] as const).map((m) => (
             <button
@@ -187,10 +207,10 @@ function Booking() {
               onClick={() => setTripMode(m)}
               className={cn(
                 "rounded-xl border-2 py-3 text-sm font-semibold",
-                tripMode === m ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
+                tripMode === m ? "border-foreground bg-card text-foreground" : "border-border bg-card text-muted-foreground"
               )}
             >
-              {m === "oneway" ? <><ArrowRight className="mx-auto mb-1 h-4 w-4" />One Way</> : <>↺ Round Trip</>}
+              {m === "oneway" ? "One Way" : "Round Trip"}
             </button>
           ))}
         </div>
@@ -199,7 +219,7 @@ function Booking() {
       {/* Schedule */}
       <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
         <Calendar className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">Schedule Time</span>
+        <span className="text-sm font-medium">Pickup Time</span>
         <input
           type="datetime-local"
           value={scheduledAt}
@@ -219,19 +239,19 @@ function Booking() {
                 onClick={() => setPkgId(p.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left",
-                  pkgId === p.id ? "border-primary bg-primary-soft" : "border-border"
+                  pkgId === p.id ? "border-foreground" : "border-border"
                 )}
               >
                 <span className={cn("grid h-5 w-5 place-items-center rounded-full border-2",
-                  pkgId === p.id ? "border-primary bg-primary" : "border-muted-foreground/40")}>
-                  {pkgId === p.id && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                  pkgId === p.id ? "border-foreground bg-foreground" : "border-muted-foreground/40")}>
+                  {pkgId === p.id && <span className="h-1.5 w-1.5 rounded-full bg-background" />}
                 </span>
                 <div className="flex-1">
                   <div className="text-sm font-semibold">{p.label}</div>
                   <div className="text-xs text-muted-foreground">{p.sub}</div>
                 </div>
-                <div className="font-bold text-primary">
-                  {formatINR(selectedModel.tier === "sedan" ? p.sedan : p.suv)}
+                <div className="font-bold text-foreground">
+                  {formatINR(vehicle === "sedan" ? p.sedan : p.suv)}
                 </div>
               </button>
             ))}
@@ -239,73 +259,34 @@ function Booking() {
         </div>
       )}
 
-      {/* Vehicle selection */}
+      {/* Vehicle selection — only Sedan + SUV */}
       <div className="mx-4">
-        <div className="flex items-baseline justify-between">
-          <div className="text-sm font-semibold">Select Specific Vehicle</div>
-          <div className="text-[11px] text-muted-foreground">Tap to change</div>
-        </div>
-        <div className="text-xs text-muted-foreground">Fare updates automatically per vehicle</div>
-
+        <div className="text-base font-bold">Select Vehicle</div>
         {routeLoading && tab !== "rental" && (
-          <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
+          <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Calculating route & fare…
           </div>
         )}
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {VEHICLE_MODELS.map((m) => {
-            const selected = m.id === modelId;
-            const fare = modelFare(m, tierFare);
-            return (
-              <button
-                key={m.id}
-                onClick={() => setModelId(m.id)}
-                className={cn(
-                  "relative flex flex-col items-start gap-1 rounded-2xl border-2 bg-card p-3 text-left transition",
-                  selected ? "border-foreground" : "border-border hover:border-foreground/40"
-                )}
-              >
-                {selected && (
-                  <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-foreground text-background">
-                    <Check className="h-3 w-3" />
-                  </span>
-                )}
-                <div className="grid h-14 w-full place-items-center rounded-lg bg-background">
-                  <img
-                    src={m.tier === "sedan" ? sedanImg : suvImg}
-                    alt={m.label}
-                    className="h-14 w-full object-contain"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="mt-1 text-sm font-bold leading-tight">{m.label}</div>
-                <div className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3 w-3" />{m.seats}
-                    <Briefcase className="ml-1 h-3 w-3" />{m.bags}
-                  </span>
-                  <span className="font-bold text-primary">{fare > 0 ? formatINR(fare) : "—"}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {selectedModel.custom && (
-          <input
-            value={customModel}
-            onChange={(e) => setCustomModel(e.target.value)}
-            placeholder="Enter vehicle model (e.g. BMW 5 Series)"
-            className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-3 text-sm outline-none focus:border-primary"
+        <div className="mt-3 space-y-3">
+          <VehicleCard
+            type="sedan"
+            fare={fares.sedan}
+            selected={vehicle === "sedan"}
+            onSelect={() => setVehicle("sedan")}
           />
-        )}
+          <VehicleCard
+            type="suv"
+            fare={fares.suv}
+            selected={vehicle === "suv"}
+            onSelect={() => setVehicle("suv")}
+          />
+        </div>
       </div>
 
-      {tab === "outstation" && (
+      {effectiveTab === "outstation" && (
         <div className="mx-4 flex items-start gap-2 rounded-xl bg-primary-soft p-3 text-xs text-foreground/80">
           <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
-          Toll, State Tax, Driver Allowance included in the fare
+          All outstation trips include Driver, Fuel, Toll, Parking & State Permit.
         </div>
       )}
 
@@ -337,7 +318,7 @@ function Booking() {
                 <div className="text-xl font-bold text-foreground">{formatINR(estimatedFare)}</div>
               </div>
               <div className="text-right text-[11px] text-muted-foreground">
-                <div className="font-semibold text-foreground">{selectedModel.custom ? (customModel || "Other") : selectedModel.label}</div>
+                <div className="font-semibold text-foreground">{vehicle === "sedan" ? "Sedan" : "SUV"}</div>
                 <div>Inclusive of all taxes</div>
               </div>
             </div>
