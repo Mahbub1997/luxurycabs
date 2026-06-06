@@ -59,9 +59,10 @@ function Booking() {
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
 
-  // Auto-switch Local → Outstation when distance exceeds the city limit.
-  const exceedsLocal = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
-  const effectiveTab: TripType = exceedsLocal ? "outstation" : tab;
+  // 15km guard — prompt user to switch instead of auto-switching.
+  const overLimit = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
+  const effectiveTab: TripType = tab;
+
 
   const fares = useMemo(() => {
     if (tab === "rental") {
