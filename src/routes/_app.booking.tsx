@@ -189,12 +189,24 @@ function Booking() {
         </button>
       </div>
 
-      {/* 15km auto-switch notice */}
-      {exceedsLocal && (
-        <div className="mx-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          Trip distance is {routeInfo!.distanceKm.toFixed(1)} km — city local limit is {LOCAL_LIMIT_KM} km.
-          Switching to <b>Outstation</b> pricing automatically.
+      {/* 15km limit — force user to switch to Outstation */}
+      {overLimit && (
+        <div className="mx-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <div className="font-semibold">Trip exceeds {LOCAL_LIMIT_KM} km city limit</div>
+              <div className="opacity-80">
+                Distance is {routeInfo!.distanceKm.toFixed(1)} km. Switch to Outstation pricing to continue.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setTab("outstation")}
+            className="mt-2 w-full rounded-lg bg-amber-600 py-2 text-xs font-bold text-white"
+          >
+            Switch to Outstation
+          </button>
         </div>
       )}
 
