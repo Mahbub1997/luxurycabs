@@ -123,13 +123,23 @@ function Confirm() {
             Change Vehicle
           </button>
         </div>
-        <VehicleCard
-          type={b.vehicle_type as VehicleType}
-          fare={Number(b.fare)}
-          selected
-          onSelect={() => setVehSheet(true)}
-        />
-      </div>
+        <button
+          onClick={() => setVehSheet(true)}
+          className="flex w-full items-center gap-3 rounded-2xl border-2 border-foreground bg-white p-3 text-left"
+        >
+          <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-white">
+            <img
+              src={b.vehicle_type === "suv" ? suvImg : sedanImg}
+              alt={b.vehicle_model ?? tariff.label}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-bold">{b.vehicle_model ?? tariff.label}</div>
+            <div className="text-xs text-muted-foreground">{tariff.seats} Seats · AC</div>
+          </div>
+          <div className="text-base font-bold">{formatINR(Number(b.fare))}</div>
+        </button>
 
       <div className="mx-4 mt-4">
         <div className="text-sm font-semibold">Payment Method</div>
