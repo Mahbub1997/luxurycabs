@@ -1,14 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles } from "lucide-react";
+import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles, Users, Briefcase, Check } from "lucide-react";
 import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
-import { VehicleCard } from "@/components/VehicleCard";
+import sedanImg from "@/assets/sedan.png";
+import suvImg from "@/assets/suv.png";
 
 import {
-  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
-  type TripType, type VehicleType,
+  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR, modelFare,
+  VEHICLE_MODELS, type TripType, type VehicleModel,
 } from "@/lib/fare";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
@@ -30,7 +31,8 @@ function Booking() {
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [tripMode, setTripMode] = useState<"oneway" | "round">("oneway");
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
-  const [vehicle, setVehicle] = useState<VehicleType>("sedan");
+  const [modelId, setModelId] = useState<string>(VEHICLE_MODELS[0].id);
+  const [customModel, setCustomModel] = useState("");
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
     d.setSeconds(0, 0);
@@ -39,6 +41,8 @@ function Booking() {
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedModel = VEHICLE_MODELS.find((m) => m.id === modelId) ?? VEHICLE_MODELS[0];
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
@@ -53,7 +57,7 @@ function Booking() {
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
 
-  const fares = useMemo(() => {
+  const tierFare = useMemo(() => {
     if (tab === "rental") {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId)!;
       return { sedan: pkg.sedan, suv: pkg.suv };
@@ -69,7 +73,7 @@ function Booking() {
     };
   }, [tab, tripMode, routeInfo, pkgId]);
 
-  const estimatedFare = vehicle === "sedan" ? fares.sedan : fares.suv;
+  const estimatedFare = modelFare(selectedModel, tierFare);
 
   function swap() {
     setPickup(drop);
@@ -78,6 +82,7 @@ function Booking() {
 
   const canBook = (() => {
     if (!pickup || !drop) return false;
+    if (selectedModel.custom && !customModel.trim()) return false;
     if (tab === "rental") return true;
     return !!routeInfo && !routeLoading;
   })();
@@ -107,7 +112,8 @@ function Booking() {
         drop_lat: drop.lat,
         drop_lng: drop.lng,
         scheduled_at: new Date(scheduledAt).toISOString(),
-        vehicle_type: vehicle,
+        vehicle_type: selectedModel.tier,
+        vehicle_model: selectedModel.custom ? customModel.trim() : selectedModel.label,
         distance_km: Number(distance.toFixed(2)),
         duration_min: Math.round(duration),
         fare: estimatedFare,
@@ -122,7 +128,7 @@ function Booking() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-32">
+    <div className="flex flex-col gap-4 pb-40">
       <BrandHeader right={<Bell className="h-5 w-5 text-foreground" />} />
 
       {/* Tabs */}
@@ -154,6 +160,7 @@ function Booking() {
           value={pickup}
           onChange={setPickup}
           placeholder="Search pickup"
+          autoDetect
         />
         <div className="my-4 h-px bg-border" />
         <PlaceAutocomplete
@@ -161,7 +168,6 @@ function Booking() {
           value={drop}
           onChange={setDrop}
           placeholder="Search drop"
-          accent="red"
         />
         <button
           onClick={swap}
@@ -224,7 +230,9 @@ function Booking() {
                   <div className="text-sm font-semibold">{p.label}</div>
                   <div className="text-xs text-muted-foreground">{p.sub}</div>
                 </div>
-                <div className="font-bold text-primary">{formatINR(vehicle === "sedan" ? p.sedan : p.suv)}</div>
+                <div className="font-bold text-primary">
+                  {formatINR(selectedModel.tier === "sedan" ? p.sedan : p.suv)}
+                </div>
               </button>
             ))}
           </div>
@@ -233,31 +241,65 @@ function Booking() {
 
       {/* Vehicle selection */}
       <div className="mx-4">
-        <div className="text-sm font-semibold">Select Vehicle</div>
-        <div className="text-xs text-muted-foreground">Choose the best ride for your {tab} trip</div>
+        <div className="flex items-baseline justify-between">
+          <div className="text-sm font-semibold">Select Specific Vehicle</div>
+          <div className="text-[11px] text-muted-foreground">Tap to change</div>
+        </div>
+        <div className="text-xs text-muted-foreground">Fare updates automatically per vehicle</div>
+
         {routeLoading && tab !== "rental" && (
           <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Calculating route & fare…
           </div>
         )}
-        <div className="mt-3 space-y-3">
-          <VehicleCard
-            type="sedan" fare={fares.sedan}
-            selected={vehicle === "sedan"} onSelect={() => setVehicle("sedan")}
-            badge="Best Value"
-            subline={tab === "rental"
-              ? `${RENTAL_PACKAGES.find(p => p.id === pkgId)!.hours} Hrs / ${RENTAL_PACKAGES.find(p => p.id === pkgId)!.km} KM`
-              : routeInfo ? `~${routeInfo.durationMin} min · ${routeInfo.distanceKm.toFixed(1)} km` : "Enter pickup & drop"}
-          />
-          <VehicleCard
-            type="suv" fare={fares.suv}
-            selected={vehicle === "suv"} onSelect={() => setVehicle("suv")}
-            badge="Most Popular"
-            subline={tab === "rental"
-              ? `${RENTAL_PACKAGES.find(p => p.id === pkgId)!.hours} Hrs / ${RENTAL_PACKAGES.find(p => p.id === pkgId)!.km} KM`
-              : routeInfo ? `~${routeInfo.durationMin} min · ${routeInfo.distanceKm.toFixed(1)} km` : "Enter pickup & drop"}
-          />
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {VEHICLE_MODELS.map((m) => {
+            const selected = m.id === modelId;
+            const fare = modelFare(m, tierFare);
+            return (
+              <button
+                key={m.id}
+                onClick={() => setModelId(m.id)}
+                className={cn(
+                  "relative flex flex-col items-start gap-1 rounded-2xl border-2 bg-card p-3 text-left transition",
+                  selected ? "border-foreground" : "border-border hover:border-foreground/40"
+                )}
+              >
+                {selected && (
+                  <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-foreground text-background">
+                    <Check className="h-3 w-3" />
+                  </span>
+                )}
+                <div className="grid h-14 w-full place-items-center rounded-lg bg-background">
+                  <img
+                    src={m.tier === "sedan" ? sedanImg : suvImg}
+                    alt={m.label}
+                    className="h-14 w-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="mt-1 text-sm font-bold leading-tight">{m.label}</div>
+                <div className="flex w-full items-center justify-between text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-3 w-3" />{m.seats}
+                    <Briefcase className="ml-1 h-3 w-3" />{m.bags}
+                  </span>
+                  <span className="font-bold text-primary">{fare > 0 ? formatINR(fare) : "—"}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
+
+        {selectedModel.custom && (
+          <input
+            value={customModel}
+            onChange={(e) => setCustomModel(e.target.value)}
+            placeholder="Enter vehicle model (e.g. BMW 5 Series)"
+            className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-3 text-sm outline-none focus:border-primary"
+          />
+        )}
       </div>
 
       {tab === "outstation" && (
@@ -266,8 +308,6 @@ function Booking() {
           Toll, State Tax, Driver Allowance included in the fare
         </div>
       )}
-
-      {/* Live route map removed from home — shown on Confirm Booking page */}
 
       {/* Why Luxury Cabs */}
       <section className="mx-4 mt-2">
@@ -287,25 +327,27 @@ function Booking() {
         </div>
       </section>
 
-      {/* Bottom CTA popup — only after fare is ready */}
+      {/* Bottom CTA — only after fare ready */}
       {canBook && (
         <div className="fixed inset-x-0 bottom-[64px] z-20 mx-auto max-w-[480px] animate-in slide-in-from-bottom px-3 pb-2 pt-2">
           <div className="rounded-2xl bg-card p-3 shadow-2xl ring-1 ring-border">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div>
                 <div className="text-[11px] text-muted-foreground">{tab === "rental" ? "Package Fare" : "Estimated Fare"}</div>
                 <div className="text-xl font-bold text-foreground">{formatINR(estimatedFare)}</div>
-                <div className="text-[10px] text-muted-foreground">Inclusive of all taxes</div>
               </div>
-              <button
-                disabled={submitting}
-                onClick={handleBook}
-                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Now"}
-                {!submitting && <ArrowRight className="h-4 w-4" />}
-              </button>
+              <div className="text-right text-[11px] text-muted-foreground">
+                <div className="font-semibold text-foreground">{selectedModel.custom ? (customModel || "Other") : selectedModel.label}</div>
+                <div>Inclusive of all taxes</div>
+              </div>
             </div>
+            <button
+              disabled={submitting}
+              onClick={handleBook}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-base font-bold text-primary-foreground shadow-lg disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Book Now <ArrowRight className="h-5 w-5" /></>}
+            </button>
           </div>
         </div>
       )}
