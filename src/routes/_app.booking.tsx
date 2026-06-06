@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck,
-  Loader2, Shield, Sparkles, Menu, AlertTriangle,
+  Loader2, Shield, Sparkles, AlertTriangle,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -133,13 +133,9 @@ function Booking() {
 
   return (
     <div className="flex flex-col gap-4 pb-40">
-      {/* Minimal header — no logo wordmark */}
-      <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur">
-        <button className="grid h-9 w-9 place-items-center rounded-md hover:bg-muted" aria-label="Menu">
-          <Menu className="h-5 w-5" />
-        </button>
+      {/* Minimal header — wordmark only */}
+      <div className="sticky top-0 z-30 flex h-14 items-center justify-center border-b border-border bg-background/95 px-4 backdrop-blur">
         <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
-        <div className="h-9 w-9" />
       </div>
 
       {/* Tabs */}
