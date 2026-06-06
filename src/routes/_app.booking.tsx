@@ -87,6 +87,7 @@ function Booking() {
   const canBook = (() => {
     if (!pickup || !drop) return false;
     if (tab === "rental") return true;
+    if (overLimit) return false;
     return !!routeInfo && !routeLoading && estimatedFare > 0;
   })();
 
