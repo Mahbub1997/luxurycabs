@@ -9,6 +9,7 @@ interface Props {
   driver?: { lat: number; lng: number } | null;
   height?: number | string;
   interactive?: boolean;
+  fitKey?: number;
 }
 
 export function RouteMap({ pickup, drop, polyline, driver, height = 260, interactive = false }: Props) {
