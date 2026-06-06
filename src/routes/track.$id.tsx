@@ -1,16 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound } from "lucide-react";
+import {
+  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
+  CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
+  Sparkles,
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { getBooking, updateBooking, type Booking } from "@/lib/booking-store";
+import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
-import { simulateDrive, type LatLng } from "@/lib/maps/sim";
+import { simulateDrive, offsetLatLng, type LatLng } from "@/lib/maps/sim";
 import { computeRoute } from "@/lib/maps/routes.functions";
+import { pickDemoDriver } from "@/lib/drivers";
 import { supabase } from "@/integrations/supabase/client";
+import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
+import sedanImg from "@/assets/sedan.png";
+import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/track/$id")({
-  head: () => ({ meta: [{ title: "Live Tracking — Luxury Cabs" }] }),
+  head: () => ({ meta: [{ title: "My Booking — Luxury Cabs" }] }),
   component: Track,
 });
 
@@ -20,16 +28,8 @@ function Track() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [b, setB] = useState<Booking | null>(null);
-  const [driver, setDriver] = useState<LatLng | null>(null);
-  const [phase, setPhase] = useState<Phase>("to_pickup");
-  const [eta, setEta] = useState<number>(0);
-  const [tripPoly, setTripPoly] = useState<string | null>(null);
-  const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
-  const cancelRef = useRef<(() => void) | null>(null);
 
-  // Load booking
+  // Load + subscribe to realtime updates so admin assignment flips the UI.
   useEffect(() => {
     let mounted = true;
     getBooking(id).then((row) => { if (mounted) setB(row); });
@@ -42,13 +42,273 @@ function Track() {
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [id]);
 
-  // Driver -> pickup animation
+  if (!b) {
+    return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  // Branch: until admin assigns a driver, show "Booking Confirmed" status page.
+  if (!b.driver_name) {
+    return <AwaitingDriver b={b} onBack={() => navigate({ to: "/booking" })} />;
+  }
+  return <LiveTracking b={b} onBack={() => navigate({ to: "/booking" })} />;
+}
+
+// ---------- Awaiting driver assignment ----------
+
+function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
+  const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const code = bookingCode(b.id);
+  const tariff = tariffFor(b.vehicle_type as VehicleType);
+  const carImg = b.vehicle_type === "suv" ? suvImg : sedanImg;
+  const scheduled = new Date(b.scheduled_at);
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  }
+
+  async function cancelBooking() {
+    if (!confirm("Cancel this booking?")) return;
+    await updateBooking(b.id, { status: "cancelled" });
+    navigate({ to: "/booking" });
+  }
+
+  function shareTrip() {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
+    const text = encodeURIComponent(
+      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  }
+
+  // Simulate admin assigning a driver (dev/testing aid).
+  async function simulateAssignment() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const drv = pickDemoDriver(b.vehicle_type as "sedan" | "suv");
+      const startKm = 1.5 + Math.random() * 1.5;
+      const startBearing = Math.random() * 360;
+      const driverPos = offsetLatLng({ lat: b.pickup_lat, lng: b.pickup_lng }, startKm, startBearing);
+      let toPickupPoly: string | null = null;
+      try {
+        const r = await computeRoute({
+          data: { origin: driverPos, destination: { lat: b.pickup_lat, lng: b.pickup_lng } },
+        });
+        toPickupPoly = r.polyline;
+      } catch (e) { console.error(e); }
+
+      await updateBooking(b.id, {
+        status: "driver_assigned",
+        driver_name: drv.name,
+        driver_phone: drv.phone,
+        driver_photo: drv.photo,
+        driver_rating: drv.rating,
+        driver_trips: drv.trips,
+        vehicle_number: drv.vehicle_number,
+        vehicle_model: drv.vehicle_model,
+        driver_lat: driverPos.lat,
+        driver_lng: driverPos.lng,
+        route_polyline: b.route_polyline ?? toPickupPoly,
+      });
+      if (toPickupPoly) sessionStorage.setItem(`toPickup:${b.id}`, toPickupPoly);
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="app-shell flex flex-col bg-background pb-10">
+      <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
+        <button onClick={onBack} className="rounded-full p-2 hover:bg-muted">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex-1">
+          <div className="font-display text-lg font-bold leading-none">My Booking</div>
+          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Booking ID: <span className="font-semibold text-foreground">{code}</span></span>
+            <button onClick={copyCode} className="inline-flex items-center gap-1 text-primary">
+              <Copy className="h-3 w-3" />
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+        <a href="tel:+918000000000" className="grid h-9 w-9 place-items-center rounded-full border border-border" aria-label="Support">
+          <Headphones className="h-4 w-4" />
+        </a>
+      </div>
+
+      {/* Confirmed banner */}
+      <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft p-4">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
+          <CheckCircle2 className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <div className="font-bold text-primary">Booking Confirmed</div>
+          <div className="text-xs text-foreground/70">Driver details will be shared shortly.</div>
+        </div>
+      </div>
+
+      {/* Trip details */}
+      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+          <MapPin className="h-4 w-4 text-primary" /> Trip Details
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="relative pl-5">
+            <span className="absolute left-0 top-1 h-2.5 w-2.5 rounded-full bg-primary" />
+            <div className="text-[11px] font-semibold text-muted-foreground">Pickup</div>
+            <div className="text-sm font-semibold">{b.pickup_address}</div>
+            <div className="my-2 ml-1 h-4 w-px border-l-2 border-dashed border-muted-foreground/40" />
+            <span className="absolute left-0 top-[5.4rem] h-2.5 w-2.5 rounded-full bg-destructive" />
+            <div className="text-[11px] font-semibold text-muted-foreground">Drop</div>
+            <div className="text-sm font-semibold">{b.drop_address}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <Stat label="Date" value={scheduled.toLocaleDateString()} />
+            <Stat label="Time" value={scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} />
+            <Stat label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
+            <Stat label="ETA" value={`${b.duration_min} min`} />
+          </div>
+        </div>
+      </div>
+
+      {/* Ride details */}
+      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+          <Sparkles className="h-4 w-4 text-primary" /> Ride Details
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-background">
+            <img src={carImg} alt={tariff.label} className="h-full w-full object-contain" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold">{tariff.label}</div>
+            <div className="text-xs text-muted-foreground">{tariff.seats} Seats · AC</div>
+            <div className="text-[11px] text-muted-foreground">Best for {tariff.seats} People</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] text-muted-foreground">Fare (Est.)</div>
+            <div className="text-lg font-bold">{formatINR(Number(b.fare))}</div>
+            <div className="text-[11px] capitalize text-muted-foreground">{b.payment_method}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Driver not assigned panel */}
+      <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-700">
+          <UserRound className="h-6 w-6" />
+        </div>
+        <div className="flex-1">
+          <div className="font-bold text-amber-900">Driver Not Assigned Yet</div>
+          <div className="text-xs text-amber-800/80">
+            We're finding the nearest driver — this usually takes 10–20 minutes.
+          </div>
+        </div>
+        <motion.span
+          className="h-2.5 w-2.5 rounded-full bg-amber-500"
+          animate={{ opacity: [1, 0.2, 1] }}
+          transition={{ duration: 1.4, repeat: Infinity }}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="mx-4 mt-4 grid grid-cols-3 gap-2">
+        <ActionBtn icon={<MapPin className="h-4 w-4 text-primary" />} label="Track" onClick={() => {}} disabled />
+        <a
+          href="tel:+918000000000"
+          className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold"
+        >
+          <Headphones className="h-4 w-4 text-foreground" />
+          Support
+        </a>
+        <button
+          onClick={cancelBooking}
+          className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold text-destructive"
+        >
+          <XCircle className="h-4 w-4" />
+          Cancel
+        </button>
+      </div>
+
+      {/* Share trip */}
+      <button
+        onClick={shareTrip}
+        className="mx-4 mt-3 flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
+      >
+        <div className="grid h-8 w-8 place-items-center rounded-full bg-primary-soft text-primary">
+          <Shield className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">Share Trip</div>
+          <div className="text-xs text-muted-foreground">Send trip details to family/friends on WhatsApp.</div>
+        </div>
+        <Share2 className="h-4 w-4 text-primary" />
+      </button>
+
+      {/* Dev: simulate admin assignment so the flow is testable now */}
+      <button
+        onClick={simulateAssignment}
+        disabled={busy}
+        className="mx-4 mt-6 rounded-xl border-2 border-dashed border-primary/40 bg-primary-soft/40 py-3 text-xs font-semibold text-primary disabled:opacity-50"
+      >
+        {busy ? "Assigning…" : "🛠 Simulate Driver Assignment (dev)"}
+      </button>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-muted/40 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function ActionBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold disabled:opacity-50"
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+// ---------- Live tracking (driver assigned) ----------
+
+function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
+  const navigate = useNavigate();
+  const [driver, setDriver] = useState<LatLng | null>(
+    b.driver_lat && b.driver_lng ? { lat: b.driver_lat, lng: b.driver_lng } : null
+  );
+  const [phase, setPhase] = useState<Phase>(
+    b.status === "in_progress" ? "in_trip" :
+    b.status === "driver_arrived" ? "arrived" :
+    "to_pickup"
+  );
+  const [eta, setEta] = useState<number>(b.duration_min);
+  const [tripPoly, setTripPoly] = useState<string | null>(null);
+  const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const cancelRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    if (!b || phase !== "to_pickup") return;
+    if (phase !== "to_pickup") return;
     const poly = typeof window !== "undefined" ? sessionStorage.getItem(`toPickup:${b.id}`) : null;
     setToPickupPoly(poly);
     if (!poly) return;
-    const totalMs = 12000 + Math.random() * 8000; // 12-20s simulated
+    const totalMs = 12000 + Math.random() * 8000;
     setEta(Math.ceil(totalMs / 1000 / 60) || 1);
     cancelRef.current?.();
     cancelRef.current = simulateDrive({
@@ -68,12 +328,10 @@ function Track() {
     });
     return () => cancelRef.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [b?.id, phase]);
+  }, [b.id, phase]);
 
-  // Trip animation (pickup -> drop) after OTP verified
   useEffect(() => {
-    if (!b || phase !== "in_trip") return;
-    // Use existing route polyline (for local/outstation). For rental compute on the fly.
+    if (phase !== "in_trip") return;
     (async () => {
       let poly = b.route_polyline;
       if (!poly || b.trip_type === "rental") {
@@ -89,7 +347,7 @@ function Track() {
       }
       if (!poly) return;
       setTripPoly(poly);
-      const totalMs = Math.max(15000, Math.min(60000, b.duration_min * 1000)); // simulated 15-60s
+      const totalMs = Math.max(15000, Math.min(60000, b.duration_min * 1000));
       cancelRef.current?.();
       cancelRef.current = simulateDrive({
         polyline: poly,
@@ -101,7 +359,6 @@ function Track() {
           updateBooking(b.id, { driver_lat: p.lat, driver_lng: p.lng }).catch(() => {});
         },
         onDone: async () => {
-          setPhase("completing");
           await updateBooking(b.id, {
             status: "completed",
             driver_lat: b.drop_lat, driver_lng: b.drop_lng,
@@ -113,10 +370,9 @@ function Track() {
     })();
     return () => cancelRef.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [b?.id, phase]);
+  }, [b.id, phase]);
 
   function verifyOtp() {
-    if (!b) return;
     if (otp.trim() === b.otp) {
       setOtpError("");
       updateBooking(b.id, { status: "in_progress" }).catch(() => {});
@@ -126,17 +382,13 @@ function Track() {
     }
   }
 
-  if (!b) {
-    return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
   const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
   const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
 
   return (
     <div className="app-shell flex flex-col bg-background">
       <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
-        <button onClick={() => navigate({ to: "/home" })} className="rounded-full p-2 hover:bg-muted">
+        <button onClick={onBack} className="rounded-full p-2 hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
@@ -148,9 +400,7 @@ function Track() {
             {phase === "completing" && "Completing trip…"}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">
-            {phase === "to_pickup" && `Arriving in ~${eta} min`}
-            {phase === "arrived" && "Meet the driver at pickup"}
-            {phase === "in_trip" && `~${eta} min to drop`}
+            Live Tracking · ETA {eta} min
           </div>
         </div>
       </div>
@@ -161,7 +411,7 @@ function Track() {
           drop={mapDrop}
           polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : (toPickupPoly ?? b.route_polyline)}
           driver={driver}
-          height={280}
+          height={320}
         />
       </div>
 
@@ -209,7 +459,6 @@ function Track() {
         )}
       </div>
 
-      {/* OTP sheet */}
       {phase === "otp" && (
         <motion.div
           initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
@@ -220,7 +469,6 @@ function Track() {
           <p className="mt-1 text-center text-xs text-muted-foreground">
             Your trip OTP is <span className="font-bold text-primary">{b.otp}</span>. Driver will enter it from their app.
           </p>
-          <p className="mt-3 text-center text-xs text-muted-foreground">For demo, enter the OTP shown above to start the trip.</p>
           <input
             inputMode="numeric"
             maxLength={4}
