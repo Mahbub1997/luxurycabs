@@ -16,7 +16,7 @@ import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
 import { Route as CompleteIdRouteImport } from './routes/complete.$id'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
-import { Route as AppHomeRouteImport } from './routes/_app.home'
+import { Route as AppBookingsRouteImport } from './routes/_app.bookings'
 import { Route as AppBookingRouteImport } from './routes/_app.booking'
 
 const AppRoute = AppRouteImport.update({
@@ -53,9 +53,9 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
-const AppHomeRoute = AppHomeRouteImport.update({
-  id: '/home',
-  path: '/home',
+const AppBookingsRoute = AppBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBookingRoute = AppBookingRouteImport.update({
@@ -67,7 +67,7 @@ const AppBookingRoute = AppBookingRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/booking': typeof AppBookingRoute
-  '/home': typeof AppHomeRoute
+  '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/complete/$id': typeof CompleteIdRoute
@@ -77,7 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/booking': typeof AppBookingRoute
-  '/home': typeof AppHomeRoute
+  '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
   '/complete/$id': typeof CompleteIdRoute
@@ -89,7 +89,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/booking': typeof AppBookingRoute
-  '/_app/home': typeof AppHomeRoute
+  '/_app/bookings': typeof AppBookingsRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
   '/complete/$id': typeof CompleteIdRoute
@@ -101,7 +101,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/booking'
-    | '/home'
+    | '/bookings'
     | '/notifications'
     | '/profile'
     | '/complete/$id'
@@ -111,7 +111,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/booking'
-    | '/home'
+    | '/bookings'
     | '/notifications'
     | '/profile'
     | '/complete/$id'
@@ -122,7 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/_app/booking'
-    | '/_app/home'
+    | '/_app/bookings'
     | '/_app/notifications'
     | '/_app/profile'
     | '/complete/$id'
@@ -189,11 +189,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/home': {
-      id: '/_app/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof AppHomeRouteImport
+    '/_app/bookings': {
+      id: '/_app/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AppBookingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/booking': {
@@ -208,14 +208,14 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppBookingRoute: typeof AppBookingRoute
-  AppHomeRoute: typeof AppHomeRoute
+  AppBookingsRoute: typeof AppBookingsRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppProfileRoute: typeof AppProfileRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppBookingRoute: AppBookingRoute,
-  AppHomeRoute: AppHomeRoute,
+  AppBookingsRoute: AppBookingsRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppProfileRoute: AppProfileRoute,
 }

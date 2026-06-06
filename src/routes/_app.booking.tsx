@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
 import { VehicleCard } from "@/components/VehicleCard";
+import { RouteMap } from "@/components/RouteMap";
 import {
   RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
   type TripType, type VehicleType,
@@ -266,24 +267,59 @@ function Booking() {
         </div>
       )}
 
-      {/* Bottom CTA */}
-      <div className="fixed inset-x-0 bottom-[64px] z-20 mx-auto max-w-[480px] px-3 pb-2 pt-2">
-        <div className="flex items-center gap-3 rounded-2xl bg-primary p-3 text-primary-foreground shadow-2xl">
-          <div className="flex-1">
-            <div className="text-[11px] opacity-80">{tab === "rental" ? "Package Fare" : "Estimated Fare"}</div>
-            <div className="text-xl font-bold">{formatINR(estimatedFare)}</div>
-            <div className="text-[10px] opacity-70">Inclusive of all taxes</div>
-          </div>
-          <button
-            disabled={!canBook || submitting}
-            onClick={handleBook}
-            className="flex items-center gap-2 rounded-xl bg-primary-foreground px-5 py-3 text-sm font-bold text-primary disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Now"}
-            {!submitting && <ArrowRight className="h-4 w-4" />}
-          </button>
+      {/* Live route map */}
+      {tab !== "rental" && pickup && drop && routeInfo && (
+        <div className="mx-4">
+          <RouteMap
+            pickup={{ lat: pickup.lat, lng: pickup.lng }}
+            drop={{ lat: drop.lat, lng: drop.lng }}
+            polyline={routeInfo.polyline}
+            height={220}
+            interactive
+          />
         </div>
-      </div>
+      )}
+
+      {/* Why Luxury Cabs */}
+      <section className="mx-4 mt-2">
+        <div className="text-sm font-semibold">Why Luxury Cabs</div>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {[
+            { I: Shield, t: "100% Safe", s: "Verified drivers" },
+            { I: Clock, t: "On Time", s: "Always punctual" },
+            { I: Sparkles, t: "Premium", s: "Top vehicles" },
+          ].map(({ I, t, s }) => (
+            <div key={t} className="rounded-xl border border-border bg-card p-3 text-center">
+              <I className="mx-auto h-5 w-5 text-primary" />
+              <div className="mt-1 text-[13px] font-semibold">{t}</div>
+              <div className="text-[10px] text-muted-foreground">{s}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Bottom CTA popup — only after fare is ready */}
+      {canBook && (
+        <div className="fixed inset-x-0 bottom-[64px] z-20 mx-auto max-w-[480px] animate-in slide-in-from-bottom px-3 pb-2 pt-2">
+          <div className="rounded-2xl bg-card p-3 shadow-2xl ring-1 ring-border">
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <div className="text-[11px] text-muted-foreground">{tab === "rental" ? "Package Fare" : "Estimated Fare"}</div>
+                <div className="text-xl font-bold text-foreground">{formatINR(estimatedFare)}</div>
+                <div className="text-[10px] text-muted-foreground">Inclusive of all taxes</div>
+              </div>
+              <button
+                disabled={submitting}
+                onClick={handleBook}
+                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Book Now"}
+                {!submitting && <ArrowRight className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

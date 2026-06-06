@@ -3,18 +3,18 @@ import { Home, CalendarCheck, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/home", label: "Home", Icon: Home },
-  { to: "/booking", label: "Booking", Icon: CalendarCheck },
-  { to: "/notifications", label: "Alerts", Icon: Bell },
-  { to: "/profile", label: "Profile", Icon: User },
+  { to: "/booking", label: "Home", Icon: Home, match: (p: string) => p === "/booking" || p === "/" },
+  { to: "/bookings", label: "Bookings", Icon: CalendarCheck, match: (p: string) => p.startsWith("/bookings") },
+  { to: "/notifications", label: "Alerts", Icon: Bell, match: (p: string) => p.startsWith("/notifications") },
+  { to: "/profile", label: "Profile", Icon: User, match: (p: string) => p.startsWith("/profile") },
 ] as const;
 
 export function BottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="sticky bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
-      {items.map(({ to, label, Icon }) => {
-        const active = path === to || (to === "/home" && path === "/");
+      {items.map(({ to, label, Icon, match }) => {
+        const active = match(path);
         return (
           <Link
             key={to}
