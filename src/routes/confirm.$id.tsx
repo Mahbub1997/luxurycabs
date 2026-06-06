@@ -180,31 +180,55 @@ function Confirm() {
         <Link to="/booking" className="mt-2 block text-center text-xs text-muted-foreground">Cancel</Link>
       </div>
 
-      {/* Change Vehicle sheet */}
+      {/* Change Vehicle sheet — specific models */}
       {vehSheet && (
         <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setVehSheet(false)}
-          />
-          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl">
+          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setVehSheet(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[85vh] max-w-[480px] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div className="font-display text-lg font-bold">Change Vehicle</div>
               <button onClick={() => setVehSheet(false)} className="rounded-md p-1 hover:bg-muted">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-3">
-              {(["sedan", "suv"] as const).map((v) => (
-                <VehicleCard
-                  key={v}
-                  type={v}
-                  fare={recalcFare(b, v)}
-                  selected={b.vehicle_type === v}
-                  onSelect={() => pickVehicle(v)}
-                />
-              ))}
-            </div>
+            {(["sedan", "suv"] as const).map((tier) => {
+              const tierFares = { sedan: recalcFare(b, "sedan"), suv: recalcFare(b, "suv") };
+              const img = tier === "sedan" ? sedanImg : suvImg;
+              return (
+                <div key={tier} className="mb-4">
+                  <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {tier === "sedan" ? "Sedan" : "SUV"}
+                  </div>
+                  <div className="space-y-2">
+                    {VEHICLE_MODELS.filter((m) => m.tier === tier).map((m) => {
+                      const fare = modelFare(m, tierFares);
+                      const selected = b.vehicle_model === m.label;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => pickModel(m)}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left transition",
+                            selected ? "border-foreground" : "border-border hover:border-foreground/30"
+                          )}
+                        >
+                          <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-white">
+                            <img src={img} alt={m.label} className="h-full w-full object-contain" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-foreground">{m.label}</div>
+                            <div className="text-xs text-muted-foreground">{m.seats} Seats · AC</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-base font-bold">{formatINR(fare)}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </>
       )}
