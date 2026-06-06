@@ -413,14 +413,50 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         </div>
       </div>
 
-      <div className="px-3 pt-3">
+      <div className="relative px-3 pt-3">
         <RouteMap
           pickup={mapPickup}
           drop={mapDrop}
           polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : (toPickupPoly ?? b.route_polyline)}
           driver={driver}
-          height={320}
+          height={340}
+          fitKey={fitKey}
         />
+        {/* Live pill */}
+        <div className="pointer-events-none absolute left-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground shadow-lg">
+          <motion.span
+            className="h-1.5 w-1.5 rounded-full bg-white"
+            animate={{ opacity: [1, 0.2, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          />
+          LIVE · ETA {eta} min
+        </div>
+        {/* Stat chips */}
+        <div className="absolute right-5 top-5 flex flex-col gap-2">
+          <Chip label="Time" value={`${eta}m`} />
+          <Chip label="Distance" value={`${Number(b.distance_km).toFixed(1)}km`} />
+          <Chip label="Fare" value={formatINR(Number(b.fare))} />
+          <Chip label="Toll" value="₹0" />
+        </div>
+        {/* Recenter */}
+        <button
+          onClick={() => setFitKey((k) => k + 1)}
+          aria-label="Recenter"
+          className="absolute bottom-5 right-5 grid h-10 w-10 place-items-center rounded-full bg-background shadow-lg ring-1 ring-border"
+        >
+          <Crosshair className="h-5 w-5 text-primary" />
+        </button>
+      </div>
+
+      {/* Bottom 'ride on the way' bar */}
+      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary">
+          <Car className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-bold">Your Ride is on the way</div>
+          <div className="text-[11px] text-muted-foreground">Driver is following the best route</div>
+        </div>
       </div>
 
       {/* Driver card */}
