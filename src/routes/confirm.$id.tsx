@@ -34,12 +34,16 @@ function Confirm() {
 
   useEffect(() => { getBooking(id).then(setB); }, [id]);
 
-  async function pickVehicle(v: VehicleType) {
+  async function pickModel(m: VehicleModel) {
     if (!b) return;
-    const fare = recalcFare(b, v);
+    const tierFares = {
+      sedan: recalcFare(b, "sedan"),
+      suv: recalcFare(b, "suv"),
+    };
+    const fare = modelFare(m, tierFares);
     const updated = await updateBooking(b.id, {
-      vehicle_type: v,
-      vehicle_model: v === "sedan" ? "Sedan" : "SUV",
+      vehicle_type: m.tier,
+      vehicle_model: m.label,
       fare,
     });
     setB(updated);
