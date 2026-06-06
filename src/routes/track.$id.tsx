@@ -158,16 +158,24 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
           <MapPin className="h-4 w-4 text-primary" /> Trip Details
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="relative pl-5">
-            <span className="absolute left-0 top-1 h-2.5 w-2.5 rounded-full bg-primary" />
-            <div className="text-[11px] font-semibold text-muted-foreground">Pickup</div>
-            <div className="text-sm font-semibold">{b.pickup_address}</div>
+          <div>
+            <div className="flex items-start gap-2">
+              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
+              <div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Pickup</div>
+                <div className="text-sm font-semibold">{b.pickup_address}</div>
+              </div>
+            </div>
             <div className="my-2 ml-1 h-4 w-px border-l-2 border-dashed border-muted-foreground/40" />
-            <span className="absolute left-0 top-[5.4rem] h-2.5 w-2.5 rounded-full bg-destructive" />
-            <div className="text-[11px] font-semibold text-muted-foreground">Drop</div>
-            <div className="text-sm font-semibold">{b.drop_address}</div>
+            <div className="flex items-start gap-2">
+              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
+              <div>
+                <div className="text-[11px] font-semibold text-muted-foreground">Drop</div>
+                <div className="text-sm font-semibold">{b.drop_address}</div>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-2 gap-2 text-xs">
             <Stat label="Date" value={scheduled.toLocaleDateString()} />
             <Stat label="Time" value={scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} />
             <Stat label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
