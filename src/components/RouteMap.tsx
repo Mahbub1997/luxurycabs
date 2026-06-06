@@ -25,7 +25,8 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
         center: pickup,
         zoom: 13,
         disableDefaultUI: true,
-        gestureHandling: interactive ? "greedy" : "none",
+        zoomControl: true,
+        gestureHandling: "greedy",
         clickableIcons: false,
         styles: [
           { featureType: "poi", stylers: [{ visibility: "off" }] },

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Crosshair, Map as MapIcon, X } from "lucide-react";
+import { MapPicker } from "@/components/MapPicker";
 
 export interface PlacePick {
   address: string;
@@ -18,6 +19,7 @@ interface Props {
 
 export function PlaceAutocomplete({ label, value, onChange, placeholder, accent = "green" }: Props) {
   const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -62,7 +64,7 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
     } catch (e) { console.error(e); }
   }
 
-  async function useCurrent() {
+  function useCurrent() {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported on this device.");
       return;
@@ -80,11 +82,7 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
             });
             address = results[0]?.formatted_address ?? address;
           } catch (e) { console.warn("Reverse geocode failed", e); }
-          onChange({
-            address,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
+          onChange({ address, lat: pos.coords.latitude, lng: pos.coords.longitude });
           setOpen(false);
         } finally { setLoading(false); }
       },
@@ -103,27 +101,40 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
   }
 
   const dotColor = accent === "red" ? "text-destructive" : "text-primary";
+  const dotBg = accent === "red" ? "bg-destructive/10" : "bg-primary/10";
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-start gap-3 text-left"
-      >
-        <MapPin className={`mt-1 h-4 w-4 shrink-0 ${dotColor}`} />
-        <div className="min-w-0 flex-1">
-          <div className={`text-xs font-medium ${dotColor}`}>{label}</div>
-          <div className="truncate text-sm font-semibold text-foreground">
-            {value?.address ?? <span className="text-muted-foreground font-normal">{placeholder ?? "Search location"}</span>}
+      <div className="flex w-full items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+        >
+          <MapPin className={`mt-1 h-4 w-4 shrink-0 ${dotColor}`} />
+          <div className="min-w-0 flex-1">
+            <div className={`text-xs font-medium ${dotColor}`}>{label}</div>
+            <div className="truncate text-sm font-semibold text-foreground">
+              {value?.address ?? <span className="text-muted-foreground font-normal">{placeholder ?? "Search location"}</span>}
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+        <button
+          type="button"
+          onClick={useCurrent}
+          aria-label="Use current location"
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${dotBg} ${dotColor}`}
+        >
+          <Crosshair className="h-4 w-4" />
+        </button>
+      </div>
 
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
           <div className="flex items-center gap-2 border-b border-border p-3">
-            <button onClick={() => setOpen(false)} className="rounded-md p-2 text-muted-foreground hover:bg-muted">✕</button>
+            <button onClick={() => setOpen(false)} className="rounded-md p-2 text-muted-foreground hover:bg-muted">
+              <X className="h-5 w-5" />
+            </button>
             <input
               autoFocus
               value={query}
@@ -132,18 +143,36 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
-          <button
-            onClick={useCurrent}
-            className="flex items-center gap-3 border-b border-border px-4 py-3 text-left hover:bg-muted"
-          >
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary-soft text-primary">
-              <MapPin className="h-4 w-4" />
+
+          {!query && (
+            <div className="border-b border-border">
+              <button
+                onClick={useCurrent}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
+              >
+                <div className={`grid h-9 w-9 place-items-center rounded-full ${dotBg} ${dotColor}`}>
+                  <Crosshair className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">Use current location</div>
+                  <div className="text-xs text-muted-foreground">Detect via GPS</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setPickerOpen(true)}
+                className="flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left hover:bg-muted"
+              >
+                <div className={`grid h-9 w-9 place-items-center rounded-full ${dotBg} ${dotColor}`}>
+                  <MapIcon className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">Choose on map</div>
+                  <div className="text-xs text-muted-foreground">Drop a pin anywhere</div>
+                </div>
+              </button>
             </div>
-            <div>
-              <div className="text-sm font-semibold">Use current location</div>
-              <div className="text-xs text-muted-foreground">Detect via GPS</div>
-            </div>
-          </button>
+          )}
+
           <div className="flex-1 overflow-y-auto">
             {loading && (
               <div className="flex items-center justify-center p-6 text-muted-foreground">
@@ -173,6 +202,17 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
           </div>
         </div>
       )}
+
+      <MapPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        initial={value ? { lat: value.lat, lng: value.lng } : null}
+        onPick={(p) => {
+          onChange(p);
+          setPickerOpen(false);
+          setOpen(false);
+        }}
+      />
     </>
   );
 }
