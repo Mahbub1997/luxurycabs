@@ -5,7 +5,7 @@ import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
 import { VehicleCard } from "@/components/VehicleCard";
-import { RouteMap } from "@/components/RouteMap";
+
 import {
   RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
   type TripType, type VehicleType,
@@ -267,18 +267,7 @@ function Booking() {
         </div>
       )}
 
-      {/* Live route map */}
-      {tab !== "rental" && pickup && drop && routeInfo && (
-        <div className="mx-4">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo.polyline}
-            height={220}
-            interactive
-          />
-        </div>
-      )}
+      {/* Live route map removed from home — shown on Confirm Booking page */}
 
       {/* Why Luxury Cabs */}
       <section className="mx-4 mt-2">
