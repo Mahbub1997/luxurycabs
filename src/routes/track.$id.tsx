@@ -309,6 +309,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [fitKey, setFitKey] = useState(0);
   const cancelRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
