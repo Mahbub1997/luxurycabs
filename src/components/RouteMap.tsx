@@ -12,7 +12,7 @@ interface Props {
   fitKey?: number;
 }
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, interactive = false }: Props) {
+export function RouteMap({ pickup, drop, polyline, driver, height = 260, interactive = false, fitKey = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
