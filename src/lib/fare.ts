@@ -53,13 +53,12 @@ export interface VehicleModel {
 }
 
 export const VEHICLE_MODELS: VehicleModel[] = [
+  { id: "dzire",  label: "Swift Dzire",   tier: "sedan", mult: 1.00, seats: 4, bags: 2 },
+  { id: "ciaz",   label: "Ciaz",          tier: "sedan", mult: 1.00, seats: 4, bags: 2 },
   { id: "etios",  label: "Etios",         tier: "sedan", mult: 1.00, seats: 4, bags: 2 },
-  { id: "dzire",  label: "Swift Dzire",   tier: "sedan", mult: 1.05, seats: 4, bags: 2 },
-  { id: "ciaz",   label: "Ciaz",          tier: "sedan", mult: 1.15, seats: 4, bags: 2 },
   { id: "ertiga", label: "Ertiga",        tier: "suv",   mult: 1.00, seats: 6, bags: 3 },
   { id: "innova", label: "Innova",        tier: "suv",   mult: 1.10, seats: 7, bags: 4 },
   { id: "crysta", label: "Innova Crysta", tier: "suv",   mult: 1.25, seats: 7, bags: 4 },
-  { id: "other",  label: "Other",         tier: "sedan", mult: 1.00, seats: 4, bags: 2, custom: true },
 ];
 
 export function modelFare(model: VehicleModel, tierFare: { sedan: number; suv: number }) {
