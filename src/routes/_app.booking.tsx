@@ -5,7 +5,7 @@ import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
 import { VehicleCard } from "@/components/VehicleCard";
-import { RouteMap } from "@/components/RouteMap";
+
 import {
   RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
   type TripType, type VehicleType,
