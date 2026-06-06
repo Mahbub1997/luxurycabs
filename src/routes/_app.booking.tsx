@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck,
-  Loader2, Shield, Sparkles, LocateFixed, Menu, AlertTriangle,
+  Loader2, Shield, Sparkles, Menu, AlertTriangle,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
