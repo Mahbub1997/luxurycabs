@@ -140,6 +140,9 @@ function Confirm() {
           </div>
           <div className="text-base font-bold">{formatINR(Number(b.fare))}</div>
         </button>
+      </div>
+
+
 
       <div className="mx-4 mt-4">
         <div className="text-sm font-semibold">Payment Method</div>
