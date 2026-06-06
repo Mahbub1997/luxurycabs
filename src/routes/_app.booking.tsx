@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck,
-  Loader2, Shield, Sparkles, LocateFixed, Menu, AlertTriangle,
+  Loader2, Shield, Sparkles, Menu, AlertTriangle,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -59,9 +59,10 @@ function Booking() {
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
 
-  // Auto-switch Local → Outstation when distance exceeds the city limit.
-  const exceedsLocal = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
-  const effectiveTab: TripType = exceedsLocal ? "outstation" : tab;
+  // 15km guard — prompt user to switch instead of auto-switching.
+  const overLimit = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
+  const effectiveTab: TripType = tab;
+
 
   const fares = useMemo(() => {
     if (tab === "rental") {
@@ -86,6 +87,7 @@ function Booking() {
   const canBook = (() => {
     if (!pickup || !drop) return false;
     if (tab === "rental") return true;
+    if (overLimit) return false;
     return !!routeInfo && !routeLoading && estimatedFare > 0;
   })();
 
@@ -136,9 +138,8 @@ function Booking() {
         <button className="grid h-9 w-9 place-items-center rounded-md hover:bg-muted" aria-label="Menu">
           <Menu className="h-5 w-5" />
         </button>
-        <button className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background" aria-label="Current location">
-          <LocateFixed className="h-4 w-4 text-primary" />
-        </button>
+        <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
+        <div className="h-9 w-9" />
       </div>
 
       {/* Tabs */}
@@ -189,12 +190,24 @@ function Booking() {
         </button>
       </div>
 
-      {/* 15km auto-switch notice */}
-      {exceedsLocal && (
-        <div className="mx-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          Trip distance is {routeInfo!.distanceKm.toFixed(1)} km — city local limit is {LOCAL_LIMIT_KM} km.
-          Switching to <b>Outstation</b> pricing automatically.
+      {/* 15km limit — force user to switch to Outstation */}
+      {overLimit && (
+        <div className="mx-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <div className="font-semibold">Trip exceeds {LOCAL_LIMIT_KM} km city limit</div>
+              <div className="opacity-80">
+                Distance is {routeInfo!.distanceKm.toFixed(1)} km. Switch to Outstation pricing to continue.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setTab("outstation")}
+            className="mt-2 w-full rounded-lg bg-amber-600 py-2 text-xs font-bold text-white"
+          >
+            Switch to Outstation
+          </button>
         </div>
       )}
 
