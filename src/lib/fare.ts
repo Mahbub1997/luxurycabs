@@ -22,8 +22,7 @@ export function calcLocalFare(v: VehicleType, distanceKm: number, durationMin: n
 
 export function calcOutstationFare(v: VehicleType, distanceKm: number) {
   const t = TARIFF[v];
-  // round-trip estimate handled by caller (multiply km by 2). Includes driver allowance.
-  const raw = t.base * 4 + t.outstationPerKm * distanceKm + 350; // tolls/allowance
+  const raw = t.base * 4 + t.outstationPerKm * distanceKm + 350;
   return Math.max(Math.round(raw / 10) * 10, 1500);
 }
 
@@ -39,3 +38,32 @@ export function fareBreakdown(v: VehicleType, distanceKm: number, durationMin: n
 
 export const formatINR = (n: number) =>
   "₹" + Math.round(n).toLocaleString("en-IN");
+
+// ---------- Specific vehicle models ----------
+
+export interface VehicleModel {
+  id: string;
+  label: string;
+  tier: VehicleType;
+  /** Fare multiplier applied on top of the tier base fare. */
+  mult: number;
+  seats: number;
+  bags: number;
+  custom?: boolean;
+}
+
+export const VEHICLE_MODELS: VehicleModel[] = [
+  { id: "etios",  label: "Etios",         tier: "sedan", mult: 1.00, seats: 4, bags: 2 },
+  { id: "dzire",  label: "Swift Dzire",   tier: "sedan", mult: 1.05, seats: 4, bags: 2 },
+  { id: "ciaz",   label: "Ciaz",          tier: "sedan", mult: 1.15, seats: 4, bags: 2 },
+  { id: "ertiga", label: "Ertiga",        tier: "suv",   mult: 1.00, seats: 6, bags: 3 },
+  { id: "innova", label: "Innova",        tier: "suv",   mult: 1.10, seats: 7, bags: 4 },
+  { id: "crysta", label: "Innova Crysta", tier: "suv",   mult: 1.25, seats: 7, bags: 4 },
+  { id: "other",  label: "Other",         tier: "sedan", mult: 1.00, seats: 4, bags: 2, custom: true },
+];
+
+export function modelFare(model: VehicleModel, tierFare: { sedan: number; suv: number }) {
+  const base = tierFare[model.tier];
+  if (!base) return 0;
+  return Math.max(Math.round((base * model.mult) / 10) * 10, base);
+}

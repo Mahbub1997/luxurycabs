@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import splashImg from "@/assets/splash.jpg";
+import { getProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,7 +17,10 @@ export const Route = createFileRoute("/")({
 function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
-    const t = setTimeout(() => navigate({ to: "/booking" }), 4000);
+    const t = setTimeout(() => {
+      const p = getProfile();
+      navigate({ to: p ? "/booking" : "/auth", replace: true });
+    }, 4000);
     return () => clearTimeout(t);
   }, [navigate]);
 

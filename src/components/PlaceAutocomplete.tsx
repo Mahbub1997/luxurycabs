@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import { MapPin, Loader2, Crosshair, Map as MapIcon, X } from "lucide-react";
+import { MapPin, Loader2, Map as MapIcon, X } from "lucide-react";
 import { MapPicker } from "@/components/MapPicker";
 
 export interface PlacePick {
@@ -15,15 +15,47 @@ interface Props {
   onChange: (p: PlacePick) => void;
   placeholder?: string;
   accent?: "green" | "red";
+  /** Auto-detect device location on mount if no value is set. */
+  autoDetect?: boolean;
 }
 
-export function PlaceAutocomplete({ label, value, onChange, placeholder, accent = "green" }: Props) {
+export function PlaceAutocomplete({
+  label, value, onChange, placeholder, accent = "green", autoDetect = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [detecting, setDetecting] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const tokenRef = useRef<any>(null);
+  const triedAutoRef = useRef(false);
+
+  // Auto-detect once on mount (pickup only).
+  useEffect(() => {
+    if (!autoDetect || value || triedAutoRef.current) return;
+    triedAutoRef.current = true;
+    if (!navigator.geolocation) return;
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const g = await loadGoogleMaps();
+          const geocoder = new g.maps.Geocoder();
+          let address = "Current location";
+          try {
+            const { results } = await geocoder.geocode({
+              location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            });
+            address = results[0]?.formatted_address ?? address;
+          } catch (e) { console.warn("Reverse geocode failed", e); }
+          onChange({ address, lat: pos.coords.latitude, lng: pos.coords.longitude });
+        } finally { setDetecting(false); }
+      },
+      () => setDetecting(false),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  }, [autoDetect, value, onChange]);
 
   useEffect(() => {
     if (!open) return;
@@ -64,70 +96,32 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
     } catch (e) { console.error(e); }
   }
 
-  function useCurrent() {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported on this device.");
-      return;
-    }
-    setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const g = await loadGoogleMaps();
-          const geocoder = new g.maps.Geocoder();
-          let address = "Current location";
-          try {
-            const { results } = await geocoder.geocode({
-              location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-            });
-            address = results[0]?.formatted_address ?? address;
-          } catch (e) { console.warn("Reverse geocode failed", e); }
-          onChange({ address, lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setOpen(false);
-        } finally { setLoading(false); }
-      },
-      (err) => {
-        setLoading(false);
-        const msg =
-          err.code === err.PERMISSION_DENIED
-            ? "Location permission denied. Please enable location access in your browser settings."
-            : err.code === err.POSITION_UNAVAILABLE
-            ? "Unable to determine your location. Try again outdoors or enter address manually."
-            : "Location request timed out. Please try again.";
-        alert(msg);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-    );
-  }
-
   const dotColor = accent === "red" ? "text-destructive" : "text-primary";
   const dotBg = accent === "red" ? "bg-destructive/10" : "bg-primary/10";
 
   return (
     <>
-      <div className="flex w-full items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex min-w-0 flex-1 items-start gap-3 text-left"
-        >
-          <MapPin className={`mt-1 h-4 w-4 shrink-0 ${dotColor}`} />
-          <div className="min-w-0 flex-1">
-            <div className={`text-xs font-medium ${dotColor}`}>{label}</div>
-            <div className={`truncate text-sm font-semibold ${dotColor}`}>
-              {value?.address ?? <span className={`${dotColor} opacity-70 font-normal`}>{placeholder ?? "Search location"}</span>}
-            </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full min-w-0 items-start gap-3 text-left"
+      >
+        <MapPin className={`mt-1 h-4 w-4 shrink-0 ${dotColor}`} />
+        <div className="min-w-0 flex-1">
+          <div className={`text-xs font-medium ${dotColor}`}>{label}</div>
+          <div className={`truncate text-sm font-semibold ${dotColor}`}>
+            {detecting ? (
+              <span className="inline-flex items-center gap-1.5 opacity-80 font-normal">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Detecting current location…
+              </span>
+            ) : value?.address ? (
+              value.address
+            ) : (
+              <span className={`${dotColor} opacity-70 font-normal`}>{placeholder ?? "Search location"}</span>
+            )}
           </div>
-        </button>
-        <button
-          type="button"
-          onClick={useCurrent}
-          aria-label="Use current location"
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${dotBg} ${dotColor}`}
-        >
-          <Crosshair className="h-4 w-4" />
-        </button>
-      </div>
+        </div>
+      </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
@@ -147,20 +141,8 @@ export function PlaceAutocomplete({ label, value, onChange, placeholder, accent 
           {!query && (
             <div className="border-b border-border">
               <button
-                onClick={useCurrent}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
-              >
-                <div className={`grid h-9 w-9 place-items-center rounded-full ${dotBg} ${dotColor}`}>
-                  <Crosshair className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">Use current location</div>
-                  <div className="text-xs text-muted-foreground">Detect via GPS</div>
-                </div>
-              </button>
-              <button
                 onClick={() => setPickerOpen(true)}
-                className="flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left hover:bg-muted"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
               >
                 <div className={`grid h-9 w-9 place-items-center rounded-full ${dotBg} ${dotColor}`}>
                   <MapIcon className="h-4 w-4" />

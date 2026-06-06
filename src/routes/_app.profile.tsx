@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
 import { Bell, User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
+import { clearProfile, getProfile, type UserProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — Luxury Cabs" }] }),
@@ -8,12 +10,23 @@ export const Route = createFileRoute("/_app/profile")({
 });
 
 function Profile() {
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  useEffect(() => { setProfile(getProfile()); }, []);
+
   const items = [
     { I: MapPin, label: "Saved Addresses" },
     { I: Wallet, label: "Payment Methods" },
     { I: Phone, label: "Help & Support" },
     { I: Shield, label: "Safety Center" },
   ];
+
+  function logout() {
+    if (!confirm("Log out of Luxury Cabs?")) return;
+    clearProfile();
+    navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <div className="flex flex-col gap-4 pb-6">
       <BrandHeader right={<Bell className="h-5 w-5" />} />
@@ -22,8 +35,8 @@ function Profile() {
           <User className="h-7 w-7" />
         </div>
         <div>
-          <div className="font-display text-lg font-bold">Guest Rider</div>
-          <div className="text-xs opacity-80">Sign in coming soon</div>
+          <div className="font-display text-lg font-bold">{profile?.name ?? "Guest Rider"}</div>
+          <div className="text-xs opacity-80">{profile?.phone ? `+91 ${profile.phone}` : "Not signed in"}</div>
         </div>
       </div>
 
@@ -44,7 +57,10 @@ function Profile() {
         Book your next ride →
       </Link>
 
-      <button className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-destructive">
+      <button
+        onClick={logout}
+        className="mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-destructive"
+      >
         <LogOut className="h-4 w-4" /> Log out
       </button>
     </div>
