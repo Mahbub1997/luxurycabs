@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { getBooking, updateBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
-import { VehicleCard } from "@/components/VehicleCard";
+
 import {
   calcLocalFare, calcOutstationFare, formatINR, tariffFor,
   VEHICLE_MODELS, modelFare, type VehicleType, type VehicleModel,
