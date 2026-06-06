@@ -57,7 +57,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup.lat, pickup.lng, drop.lat, drop.lng, polyline]);
+  }, [pickup.lat, pickup.lng, drop.lat, drop.lng, polyline, fitKey]);
 
   // Driver marker
   useEffect(() => {
