@@ -15,10 +15,10 @@ function Profile() {
   useEffect(() => { setProfile(getProfile()); }, []);
 
   const items = [
-    { I: MapPin, label: "Saved Addresses" },
-    { I: Wallet, label: "Payment Methods" },
-    { I: Phone, label: "Help & Support" },
-    { I: Shield, label: "Safety Center" },
+    { I: MapPin, label: "Saved Addresses", onClick: () => navigate({ to: "/booking" }) },
+    { I: Wallet, label: "Payment Methods", onClick: () => alert("Cash on ride is currently the only supported payment method. More options coming soon.") },
+    { I: Phone, label: "Help & Support", onClick: () => { window.location.href = "tel:+919999999999"; } },
+    { I: Shield, label: "Safety Center", onClick: () => alert("Your safety is our priority.\n\n• Verified drivers\n• Live trip sharing\n• 24/7 support helpline\n• SOS button on every ride") },
   ];
 
   function logout() {
@@ -41,8 +41,12 @@ function Profile() {
       </div>
 
       <div className="mx-4 divide-y divide-border rounded-2xl border border-border bg-card">
-        {items.map(({ I, label }) => (
-          <button key={label} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+        {items.map(({ I, label, onClick }) => (
+          <button
+            key={label}
+            onClick={onClick}
+            className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-muted/40"
+          >
             <I className="h-5 w-5 text-primary" />
             <span className="flex-1 text-sm font-medium">{label}</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
