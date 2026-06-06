@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles, X } from "lucide-react";
+import { Bell, Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck, Loader2, Shield, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { BrandHeader } from "@/components/Brand";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
