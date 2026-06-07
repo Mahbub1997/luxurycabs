@@ -226,6 +226,13 @@ function Booking() {
         </div>
       )}
 
+      {effectiveTab === "outstation" && tripMode === "round" && (
+        <div className="mx-4 rounded-xl border border-border bg-primary-soft p-3 text-[11px] text-foreground/80">
+          <span className="font-semibold">Round Trip:</span> fare covers both onward and return distance (up & down).
+        </div>
+      )}
+
+
       {/* Schedule */}
       <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
         <Calendar className="h-4 w-4 text-primary" />
