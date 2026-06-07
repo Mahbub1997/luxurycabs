@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
+import { reverseGeocode } from "@/lib/maps/geocode.functions";
 import { MapPin, Loader2, Map as MapIcon, X } from "lucide-react";
 import { MapPicker } from "@/components/MapPicker";
 
@@ -40,20 +41,10 @@ export function PlaceAutocomplete({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const g = await loadGoogleMaps();
-          const geocoder = new g.maps.Geocoder();
           let address = "";
           try {
-            const { results } = await geocoder.geocode({
-              location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-            });
-            // Prefer a concise place-name (locality/sublocality/route) over the raw plus-code formatted_address.
-            const pick =
-              results.find((r) => r.types?.some((t) => ["street_address", "premise", "route"].includes(t))) ??
-              results.find((r) => r.types?.some((t) => ["sublocality", "neighborhood"].includes(t))) ??
-              results.find((r) => r.types?.includes("locality")) ??
-              results[0];
-            address = pick?.formatted_address ?? "";
+            const r = await reverseGeocode({ data: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
+            address = r.address;
           } catch (e) { console.warn("Reverse geocode failed", e); }
           onChange({
             address: address || "Detected location",
