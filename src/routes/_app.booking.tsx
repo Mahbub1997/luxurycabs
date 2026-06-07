@@ -171,12 +171,13 @@ function Booking() {
         />
         <div className="my-4 h-px bg-border" />
         <PlaceAutocomplete
-          label={tab === "outstation" ? "To (Drop Location)" : "Drop Location"}
+          label={tab === "outstation" ? "To (Drop Location)" : "Drop"}
           value={drop}
           onChange={setDrop}
-          placeholder="Search drop"
-          accent="red"
+          placeholder="Where to go?"
+          accent="green"
         />
+
         <button
           onClick={swap}
           className="absolute right-3 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full border border-border bg-background shadow"
@@ -224,6 +225,13 @@ function Booking() {
           ))}
         </div>
       )}
+
+      {effectiveTab === "outstation" && tripMode === "round" && (
+        <div className="mx-4 rounded-xl border border-border bg-primary-soft p-3 text-[11px] text-foreground/80">
+          <span className="font-semibold">Round Trip:</span> fare covers both onward and return distance (up & down).
+        </div>
+      )}
+
 
       {/* Schedule */}
       <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">

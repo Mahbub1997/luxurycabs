@@ -42,16 +42,20 @@ export function PlaceAutocomplete({
         try {
           const g = await loadGoogleMaps();
           const geocoder = new g.maps.Geocoder();
-          let address = "Current location";
+          let address = "";
           try {
             const { results } = await geocoder.geocode({
               location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
             });
-            address = results[0]?.formatted_address ?? address;
+            address = results[0]?.formatted_address ?? "";
           } catch (e) { console.warn("Reverse geocode failed", e); }
+          if (!address) {
+            address = `Lat ${pos.coords.latitude.toFixed(5)}, Lng ${pos.coords.longitude.toFixed(5)}`;
+          }
           onChange({ address, lat: pos.coords.latitude, lng: pos.coords.longitude });
         } finally { setDetecting(false); }
       },
+
       () => setDetecting(false),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
