@@ -47,12 +47,19 @@ export function PlaceAutocomplete({
             const { results } = await geocoder.geocode({
               location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
             });
-            address = results[0]?.formatted_address ?? "";
+            // Prefer a concise place-name (locality/sublocality/route) over the raw plus-code formatted_address.
+            const pick =
+              results.find((r) => r.types?.some((t) => ["street_address", "premise", "route"].includes(t))) ??
+              results.find((r) => r.types?.some((t) => ["sublocality", "neighborhood"].includes(t))) ??
+              results.find((r) => r.types?.includes("locality")) ??
+              results[0];
+            address = pick?.formatted_address ?? "";
           } catch (e) { console.warn("Reverse geocode failed", e); }
-          if (!address) {
-            address = `Lat ${pos.coords.latitude.toFixed(5)}, Lng ${pos.coords.longitude.toFixed(5)}`;
-          }
-          onChange({ address, lat: pos.coords.latitude, lng: pos.coords.longitude });
+          onChange({
+            address: address || "Detected location",
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
         } finally { setDetecting(false); }
       },
 
