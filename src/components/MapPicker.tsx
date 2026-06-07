@@ -59,10 +59,8 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
   async function reverse(p: { lat: number; lng: number }) {
     setLoading(true);
     try {
-      const g = await loadGoogleMaps();
-      const geocoder = new g.maps.Geocoder();
-      const { results } = await geocoder.geocode({ location: p });
-      setAddress(results[0]?.formatted_address ?? "Selected location");
+      const r = await reverseGeocode({ data: p });
+      setAddress(r.address || "Selected location");
     } catch {
       setAddress("Selected location");
     } finally {
