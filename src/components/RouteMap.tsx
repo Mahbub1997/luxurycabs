@@ -69,11 +69,13 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
           map: mapRef.current,
           position: driver,
           icon: {
-            path: "M5 14 L7 7 C7.5 5.5 8.5 5 10 5 L14 5 C15.5 5 16.5 5.5 17 7 L19 14 L17 14 A2 2 0 1 1 13 14 L11 14 A2 2 0 1 1 7 14 Z",
-            fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.5, scale: 1.4,
-            anchor: new g.maps.Point(12, 10), rotation: 0,
+            // Top-down car silhouette (windshield + hood + wheels)
+            path: "M -6 -12 C -6 -14 -4 -15 0 -15 C 4 -15 6 -14 6 -12 L 6 -8 L 7.5 -7 L 7.5 8 L 6 9 L 6 13 C 6 14.5 4.5 15 0 15 C -4.5 15 -6 14.5 -6 13 L -6 9 L -7.5 8 L -7.5 -7 L -6 -8 Z M -4 -10 L 4 -10 L 5 -4 L -5 -4 Z M -4 2 L 4 2 L 5 9 L -5 9 Z",
+            fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.2, scale: 1.1,
+            anchor: new g.maps.Point(0, 0), rotation: 0,
           },
         });
+
       } else {
         driverMarkerRef.current.setPosition(driver);
       }
