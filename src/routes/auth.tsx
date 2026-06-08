@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { getProfile, saveProfile } from "@/lib/profile";
+import { AppDrawer } from "@/components/AppDrawer";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Luxury Cabs" }] }),
@@ -36,7 +37,8 @@ function Auth() {
   const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length >= 10;
 
   return (
-    <div className="app-shell flex flex-col bg-gradient-to-b from-primary-soft/40 to-background px-6">
+    <div className="app-shell relative flex flex-col bg-gradient-to-b from-primary-soft/40 to-background px-6">
+      <AppDrawer />
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
