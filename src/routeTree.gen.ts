@@ -11,14 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrackIdRouteImport } from './routes/track.$id'
 import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
 import { Route as CompleteIdRouteImport } from './routes/complete.$id'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppBookingsRouteImport } from './routes/_app.bookings'
 import { Route as AppBookingRouteImport } from './routes/_app.booking'
+import { Route as AuthenticatedAdminFaresRouteImport } from './routes/_authenticated/admin.fares'
+import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authenticated/admin.drivers'
+import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -27,6 +33,10 @@ const AuthRoute = AuthRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -49,6 +59,16 @@ const CompleteIdRoute = CompleteIdRouteImport.update({
   path: '/complete/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -69,6 +89,23 @@ const AppBookingRoute = AppBookingRouteImport.update({
   path: '/booking',
   getParentRoute: () => AppRoute,
 } as any)
+const AuthenticatedAdminFaresRoute = AuthenticatedAdminFaresRouteImport.update({
+  id: '/fares',
+  path: '/fares',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminDriversRoute =
+  AuthenticatedAdminDriversRouteImport.update({
+    id: '/drivers',
+    path: '/drivers',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminBookingsRoute =
+  AuthenticatedAdminBookingsRouteImport.update({
+    id: '/bookings',
+    path: '/bookings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,9 +114,14 @@ export interface FileRoutesByFullPath {
   '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
+  '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/admin/drivers': typeof AuthenticatedAdminDriversRoute
+  '/admin/fares': typeof AuthenticatedAdminFaresRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,22 +130,33 @@ export interface FileRoutesByTo {
   '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
   '/profile': typeof AppProfileRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
+  '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/admin/drivers': typeof AuthenticatedAdminDriversRoute
+  '/admin/fares': typeof AuthenticatedAdminFaresRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/_app/booking': typeof AppBookingRoute
   '/_app/bookings': typeof AppBookingsRoute
   '/_app/notifications': typeof AppNotificationsRoute
   '/_app/profile': typeof AppProfileRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
   '/track/$id': typeof TrackIdRoute
+  '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
+  '/_authenticated/admin/fares': typeof AuthenticatedAdminFaresRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,9 +167,14 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/notifications'
     | '/profile'
+    | '/admin'
+    | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
+    | '/admin/bookings'
+    | '/admin/drivers'
+    | '/admin/fares'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -125,27 +183,40 @@ export interface FileRouteTypes {
     | '/bookings'
     | '/notifications'
     | '/profile'
+    | '/admin'
+    | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
+    | '/admin/bookings'
+    | '/admin/drivers'
+    | '/admin/fares'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/_app'
     | '/auth'
     | '/_app/booking'
     | '/_app/bookings'
     | '/_app/notifications'
     | '/_app/profile'
+    | '/_authenticated/admin'
+    | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
     | '/track/$id'
+    | '/_authenticated/admin/bookings'
+    | '/_authenticated/admin/drivers'
+    | '/_authenticated/admin/fares'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   CompleteIdRoute: typeof CompleteIdRoute
   ConfirmIdRoute: typeof ConfirmIdRoute
   TrackIdRoute: typeof TrackIdRoute
@@ -165,6 +236,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -195,6 +273,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompleteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_app/profile': {
       id: '/_app/profile'
       path: '/profile'
@@ -223,8 +315,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBookingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_authenticated/admin/fares': {
+      id: '/_authenticated/admin/fares'
+      path: '/fares'
+      fullPath: '/admin/fares'
+      preLoaderRoute: typeof AuthenticatedAdminFaresRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/drivers': {
+      id: '/_authenticated/admin/drivers'
+      path: '/drivers'
+      fullPath: '/admin/drivers'
+      preLoaderRoute: typeof AuthenticatedAdminDriversRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/bookings': {
+      id: '/_authenticated/admin/bookings'
+      path: '/bookings'
+      fullPath: '/admin/bookings'
+      preLoaderRoute: typeof AuthenticatedAdminBookingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
+  AuthenticatedAdminDriversRoute: typeof AuthenticatedAdminDriversRoute
+  AuthenticatedAdminFaresRoute: typeof AuthenticatedAdminFaresRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
+  AuthenticatedAdminDriversRoute: AuthenticatedAdminDriversRoute,
+  AuthenticatedAdminFaresRoute: AuthenticatedAdminFaresRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AppRouteChildren {
   AppBookingRoute: typeof AppBookingRoute
@@ -244,8 +383,10 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  AdminLoginRoute: AdminLoginRoute,
   CompleteIdRoute: CompleteIdRoute,
   ConfirmIdRoute: ConfirmIdRoute,
   TrackIdRoute: TrackIdRoute,
@@ -253,3 +394,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
