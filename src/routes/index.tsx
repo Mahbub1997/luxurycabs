@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import splashImg from "@/assets/splash.jpg";
 import { getProfile } from "@/lib/profile";
+import { AppDrawer } from "@/components/AppDrawer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,6 +27,7 @@ function Splash() {
 
   return (
     <div className="app-shell relative flex flex-col items-center justify-end overflow-hidden bg-white">
+      <AppDrawer />
       <img
         src={splashImg}
         alt="Luxury Cabs"
