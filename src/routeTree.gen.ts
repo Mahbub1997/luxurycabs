@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrackIdRouteImport } from './routes/track.$id'
+import { Route as DriverLoginRouteImport } from './routes/driver.login'
 import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
 import { Route as CompleteIdRouteImport } from './routes/complete.$id'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -47,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const TrackIdRoute = TrackIdRouteImport.update({
   id: '/track/$id',
   path: '/track/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DriverLoginRoute = DriverLoginRouteImport.update({
+  id: '/driver/login',
+  path: '/driver/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmIdRoute = ConfirmIdRouteImport.update({
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
+  '/driver/login': typeof DriverLoginRoute
   '/track/$id': typeof TrackIdRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
+  '/driver/login': typeof DriverLoginRoute
   '/track/$id': typeof TrackIdRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
   '/confirm/$id': typeof ConfirmIdRoute
+  '/driver/login': typeof DriverLoginRoute
   '/track/$id': typeof TrackIdRoute
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
+    | '/driver/login'
     | '/track/$id'
     | '/admin/bookings'
     | '/admin/drivers'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
+    | '/driver/login'
     | '/track/$id'
     | '/admin/bookings'
     | '/admin/drivers'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/complete/$id'
     | '/confirm/$id'
+    | '/driver/login'
     | '/track/$id'
     | '/_authenticated/admin/bookings'
     | '/_authenticated/admin/drivers'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   CompleteIdRoute: typeof CompleteIdRoute
   ConfirmIdRoute: typeof ConfirmIdRoute
+  DriverLoginRoute: typeof DriverLoginRoute
   TrackIdRoute: typeof TrackIdRoute
 }
 
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       path: '/track/$id'
       fullPath: '/track/$id'
       preLoaderRoute: typeof TrackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver/login': {
+      id: '/driver/login'
+      path: '/driver/login'
+      fullPath: '/driver/login'
+      preLoaderRoute: typeof DriverLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirm/$id': {
@@ -389,8 +409,19 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   CompleteIdRoute: CompleteIdRoute,
   ConfirmIdRoute: ConfirmIdRoute,
+  DriverLoginRoute: DriverLoginRoute,
   TrackIdRoute: TrackIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
