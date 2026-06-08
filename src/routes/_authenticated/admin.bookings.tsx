@@ -19,8 +19,8 @@ function AdminBookings() {
   async function load() {
     setLoading(true);
     let q = supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(200);
-    if (tab === "pending") q = q.in("status", ["pending", "searching"]);
-    else if (tab === "ongoing") q = q.in("status", ["accepted", "arriving", "in_progress", "started"]);
+    if (tab === "pending") q = q.in("status", ["pending"]);
+    else if (tab === "ongoing") q = q.in("status", ["driver_assigned", "driver_arrived", "in_progress"]);
     else if (tab === "completed") q = q.in("status", ["completed", "cancelled"]);
     const { data } = await q;
     setRows(data ?? []);
