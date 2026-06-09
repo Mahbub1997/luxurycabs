@@ -7,8 +7,8 @@ import { getBooking, updateBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
 
 import {
-  calcLocalFare, calcOutstationFare, formatINR, tariffFor,
-  VEHICLE_MODELS, modelFare, type VehicleType, type VehicleModel,
+  calcLocalFare, calcOutstationFare, formatINR, tariffFor, useFareRates,
+  VEHICLE_MODELS, modelFare, type VehicleType, type VehicleModel, type RatesMap,
 } from "@/lib/fare";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
@@ -19,9 +19,9 @@ export const Route = createFileRoute("/confirm/$id")({
   component: Confirm,
 });
 
-function recalcFare(b: Booking, v: VehicleType): number {
-  if (b.trip_type === "outstation") return calcOutstationFare(v, Number(b.distance_km));
-  return calcLocalFare(v, Number(b.distance_km), b.duration_min);
+function recalcFare(b: Booking, v: VehicleType, rates?: RatesMap): number {
+  if (b.trip_type === "outstation") return calcOutstationFare(v, Number(b.distance_km), rates);
+  return calcLocalFare(v, Number(b.distance_km), b.duration_min, rates);
 }
 
 function Confirm() {

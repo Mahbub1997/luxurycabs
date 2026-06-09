@@ -126,3 +126,13 @@ export function useFareRates(): { rates: RatesMap | undefined; loading: boolean;
   }, [n]);
   return { rates, loading, reload: () => setN((x) => x + 1) };
 }
+
+export function fareBreakdown(v: VehicleType, distanceKm: number, durationMin: number, rates?: RatesMap) {
+  const r = rateFor(v, "local", rates);
+  const base = r.base;
+  const distance = Math.round(r.perKm * distanceKm);
+  const time = Math.round(r.perMin * durationMin);
+  const taxes = Math.round((base + distance + time) * 0.05);
+  const total = base + distance + time + taxes;
+  return { base, distance, time, taxes, total };
+}
