@@ -27,6 +27,7 @@ function recalcFare(b: Booking, v: VehicleType, rates?: RatesMap): number {
 function Confirm() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { rates } = useFareRates();
   const [b, setB] = useState<Booking | null>(null);
   const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
@@ -37,8 +38,8 @@ function Confirm() {
   async function pickModel(m: VehicleModel) {
     if (!b) return;
     const tierFares = {
-      sedan: recalcFare(b, "sedan"),
-      suv: recalcFare(b, "suv"),
+      sedan: recalcFare(b, "sedan", rates),
+      suv: recalcFare(b, "suv", rates),
     };
     const fare = modelFare(m, tierFares);
     const updated = await updateBooking(b.id, {
