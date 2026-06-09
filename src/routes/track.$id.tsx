@@ -8,14 +8,14 @@ import {
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
-import { simulateDrive, offsetLatLng, type LatLng } from "@/lib/maps/sim";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { pickDemoDriver } from "@/lib/drivers";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
+
+type LatLng = { lat: number; lng: number };
 
 export const Route = createFileRoute("/track/$id")({
   head: () => ({ meta: [{ title: "My Booking — Luxury Cabs" }] }),
@@ -58,7 +58,6 @@ function Track() {
 function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
   const code = bookingCode(b.id);
   const tariff = tariffFor(b.vehicle_type as VehicleType);
   const carImg = b.vehicle_type === "suv" ? suvImg : sedanImg;
@@ -84,40 +83,6 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
       `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
-
-  // Simulate admin assigning a driver (dev/testing aid).
-  async function simulateAssignment() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const drv = pickDemoDriver(b.vehicle_type as "sedan" | "suv");
-      const startKm = 1.5 + Math.random() * 1.5;
-      const startBearing = Math.random() * 360;
-      const driverPos = offsetLatLng({ lat: b.pickup_lat, lng: b.pickup_lng }, startKm, startBearing);
-      let toPickupPoly: string | null = null;
-      try {
-        const r = await computeRoute({
-          data: { origin: driverPos, destination: { lat: b.pickup_lat, lng: b.pickup_lng } },
-        });
-        toPickupPoly = r.polyline;
-      } catch (e) { console.error(e); }
-
-      await updateBooking(b.id, {
-        status: "driver_assigned",
-        driver_name: drv.name,
-        driver_phone: drv.phone,
-        driver_photo: drv.photo,
-        driver_rating: drv.rating,
-        driver_trips: drv.trips,
-        vehicle_number: drv.vehicle_number,
-        vehicle_model: drv.vehicle_model,
-        driver_lat: driverPos.lat,
-        driver_lng: driverPos.lng,
-        route_polyline: b.route_polyline ?? toPickupPoly,
-      });
-      if (toPickupPoly) sessionStorage.setItem(`toPickup:${b.id}`, toPickupPoly);
-    } finally { setBusy(false); }
   }
 
   return (
