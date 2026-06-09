@@ -302,8 +302,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
       data: { origin: { lat: b.pickup_lat, lng: b.pickup_lng }, destination: { lat: b.drop_lat, lng: b.drop_lng } },
     }).then((r) => setTripPoly(r.polyline)).catch(() => {});
   }, [phase, b.id]); // eslint-disable-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [b.id, phase]);
 
   function verifyOtp() {
     if (otp.trim() === b.otp) {
