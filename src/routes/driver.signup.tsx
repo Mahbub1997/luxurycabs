@@ -85,7 +85,7 @@ function DriverSignup() {
   );
 }
 
-function Input({ label, value, onChange, type = "text", required, placeholder, minLength }: any) {
+function Input({ label, value, onChange, type = "text", required, placeholder, minLength }: { label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; placeholder?: string; minLength?: number }) {
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold">{label}</label>
@@ -94,7 +94,7 @@ function Input({ label, value, onChange, type = "text", required, placeholder, m
   );
 }
 
-function FileInput({ label, Icon, file, onChange, capture }: any) {
+function FileInput({ label, Icon, file, onChange, capture }: { label: string; Icon: any; file: File | null; onChange: (f: File | null) => void; capture?: "user" | "environment" }) {
   return (
     <div>
       <label className="mb-1 block text-xs font-semibold">{label}</label>
