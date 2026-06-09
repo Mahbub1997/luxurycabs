@@ -9,7 +9,7 @@ import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplet
 import { VehicleCard } from "@/components/VehicleCard";
 
 import {
-  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR,
+  RENTAL_PACKAGES, calcLocalFare, calcOutstationFare, formatINR, useFareRates,
   type TripType, type VehicleType,
 } from "@/lib/fare";
 import { computeRoute } from "@/lib/maps/routes.functions";
@@ -29,6 +29,7 @@ export const Route = createFileRoute("/_app/booking")({
 function Booking() {
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { rates } = useFareRates();
   const [tab, setTab] = useState<TripType>(search.tab ?? "local");
   const [pickup, setPickup] = useState<PlacePick | null>(null);
   const [drop, setDrop] = useState<PlacePick | null>(null);
@@ -72,13 +73,13 @@ function Booking() {
     if (!routeInfo) return { sedan: 0, suv: 0 };
     const km = tripMode === "round" && effectiveTab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm;
     if (effectiveTab === "outstation") {
-      return { sedan: calcOutstationFare("sedan", km), suv: calcOutstationFare("suv", km) };
+      return { sedan: calcOutstationFare("sedan", km, rates), suv: calcOutstationFare("suv", km, rates) };
     }
     return {
-      sedan: calcLocalFare("sedan", km, routeInfo.durationMin),
-      suv: calcLocalFare("suv", km, routeInfo.durationMin),
+      sedan: calcLocalFare("sedan", km, routeInfo.durationMin, rates),
+      suv: calcLocalFare("suv", km, routeInfo.durationMin, rates),
     };
-  }, [tab, effectiveTab, tripMode, routeInfo, pkgId]);
+  }, [tab, effectiveTab, tripMode, routeInfo, pkgId, rates]);
 
   const estimatedFare = vehicle === "sedan" ? fares.sedan : fares.suv;
 

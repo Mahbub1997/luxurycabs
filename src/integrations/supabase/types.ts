@@ -135,13 +135,16 @@ export type Database = {
           created_at: string
           current_lat: number | null
           current_lng: number | null
+          email: string | null
           id: string
           is_online: boolean
           license_number: string | null
+          license_photo_url: string | null
           name: string
           phone: string
           photo: string | null
           rating: number | null
+          selfie_url: string | null
           status: Database["public"]["Enums"]["driver_status"]
           total_trips: number
           updated_at: string
@@ -155,13 +158,16 @@ export type Database = {
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
+          email?: string | null
           id?: string
           is_online?: boolean
           license_number?: string | null
+          license_photo_url?: string | null
           name: string
           phone: string
           photo?: string | null
           rating?: number | null
+          selfie_url?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_trips?: number
           updated_at?: string
@@ -175,13 +181,16 @@ export type Database = {
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
+          email?: string | null
           id?: string
           is_online?: boolean
           license_number?: string | null
+          license_photo_url?: string | null
           name?: string
           phone?: string
           photo?: string | null
           rating?: number | null
+          selfie_url?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_trips?: number
           updated_at?: string

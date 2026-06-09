@@ -1,0 +1,157 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Banknote, Wallet, CreditCard, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { completeRide } from "@/lib/driver.functions";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/driver/trip/$id")({
+  head: () => ({ meta: [{ title: "Trip — Luxury Cabs Driver" }] }),
+  component: DriverTrip,
+});
+
+type Phase = "to_pickup" | "otp" | "in_trip" | "payment";
+
+function DriverTrip() {
+  const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const [b, setB] = useState<any | null>(null);
+  const [phase, setPhase] = useState<Phase>("to_pickup");
+  const [otp, setOtp] = useState("");
+  const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from("bookings").select("*").eq("id", id).maybeSingle().then(({ data }) => {
+      setB(data);
+      if (data?.status === "in_progress") setPhase("in_trip");
+    });
+  }, [id]);
+
+  async function arrivedAtPickup() {
+    if (!b) return;
+    await supabase.from("bookings").update({ status: "driver_arrived", driver_lat: b.pickup_lat, driver_lng: b.pickup_lng }).eq("id", b.id);
+    setPhase("otp");
+  }
+
+  async function verifyOtp() {
+    if (!b) return;
+    if (otp.trim() !== b.otp) { toast.error("Wrong OTP"); return; }
+    await supabase.from("bookings").update({ status: "in_progress" }).eq("id", b.id);
+    setPhase("in_trip");
+    toast.success("Trip started");
+  }
+
+  async function reachedDrop() {
+    if (!b) return;
+    await supabase.from("bookings").update({ driver_lat: b.drop_lat, driver_lng: b.drop_lng }).eq("id", b.id);
+    setPhase("payment");
+  }
+
+  async function collectAndComplete() {
+    if (!b || busy) return;
+    setBusy(true);
+    try {
+      const r = await completeRide({ data: { booking_id: b.id, payment_method: pay } });
+      toast.success(`Trip complete. ₹${r.credit} credited.`);
+      navigate({ to: "/driver" });
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(false); }
+  }
+
+  if (!b) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="min-h-screen bg-background pb-10">
+      <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-card px-3 py-3">
+        <Link to="/driver" className="rounded-full p-2 hover:bg-muted"><ArrowLeft className="h-5 w-5" /></Link>
+        <div>
+          <div className="font-bold">Active Trip</div>
+          <div className="text-[11px] text-muted-foreground">OTP {b.otp}</div>
+        </div>
+      </header>
+
+      <div className="p-4 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-3 text-sm">
+          <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-emerald-600" /><div><div className="text-[10px] uppercase text-muted-foreground">Pickup</div><div className="font-semibold">{b.pickup_address}</div></div></div>
+          <div className="my-2 ml-2 h-4 w-px border-l-2 border-dashed border-muted-foreground/40" />
+          <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-rose-600" /><div><div className="text-[10px] uppercase text-muted-foreground">Drop</div><div className="font-semibold">{b.drop_address}</div></div></div>
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
+            <span className="font-bold">₹{b.fare}</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-3 text-sm flex items-center gap-3">
+          <div className="font-bold flex-1">Customer</div>
+          <a href="tel:+91" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-4 w-4" /></a>
+        </div>
+
+        {phase === "to_pickup" && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="text-sm font-semibold">Drive to pickup</div>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${b.pickup_lat},${b.pickup_lng}`}
+              target="_blank" rel="noreferrer"
+              className="mt-2 block rounded-xl bg-primary py-3 text-center text-sm font-bold text-primary-foreground"
+            >Open in Google Maps</a>
+            <button onClick={arrivedAtPickup} className="mt-2 w-full rounded-xl border-2 border-primary py-3 text-sm font-bold text-primary">I have arrived</button>
+          </div>
+        )}
+
+        {phase === "otp" && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-primary" /> Enter customer OTP</div>
+            <input
+              inputMode="numeric" maxLength={4} value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              className="mt-3 w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-primary"
+              placeholder="••••"
+            />
+            <button
+              onClick={verifyOtp} disabled={otp.length !== 4}
+              className={cn("mt-3 w-full rounded-xl py-3 text-sm font-bold",
+                otp.length === 4 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}
+            >Start Trip</button>
+          </div>
+        )}
+
+        {phase === "in_trip" && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="text-sm font-semibold">Drive to drop</div>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${b.drop_lat},${b.drop_lng}`}
+              target="_blank" rel="noreferrer"
+              className="mt-2 block rounded-xl bg-primary py-3 text-center text-sm font-bold text-primary-foreground"
+            >Open in Google Maps</a>
+            <button onClick={reachedDrop} className="mt-2 w-full rounded-xl border-2 border-primary py-3 text-sm font-bold text-primary">Reached drop</button>
+          </div>
+        )}
+
+        {phase === "payment" && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="text-sm font-semibold">Collect payment</div>
+            <div className="mt-2 text-2xl font-bold text-primary">₹{b.fare}</div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[
+                { id: "cash" as const, I: Banknote, l: "Cash" },
+                { id: "upi" as const, I: Wallet, l: "UPI" },
+                { id: "card" as const, I: CreditCard, l: "Card" },
+              ].map(({ id, I, l }) => (
+                <button key={id} onClick={() => setPay(id)} className={cn("flex flex-col items-center gap-1 rounded-xl border-2 bg-card p-3 text-xs font-semibold",
+                  pay === id ? "border-foreground" : "border-border text-muted-foreground")}>
+                  <I className="h-5 w-5" />{l}
+                </button>
+              ))}
+            </div>
+            <button onClick={collectAndComplete} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete trip</>}
+            </button>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">10% platform commission will be deducted.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -8,14 +8,14 @@ import {
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
-import { simulateDrive, offsetLatLng, type LatLng } from "@/lib/maps/sim";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { pickDemoDriver } from "@/lib/drivers";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
+
+type LatLng = { lat: number; lng: number };
 
 export const Route = createFileRoute("/track/$id")({
   head: () => ({ meta: [{ title: "My Booking — Luxury Cabs" }] }),
@@ -58,7 +58,6 @@ function Track() {
 function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
   const code = bookingCode(b.id);
   const tariff = tariffFor(b.vehicle_type as VehicleType);
   const carImg = b.vehicle_type === "suv" ? suvImg : sedanImg;
@@ -84,40 +83,6 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
       `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
-
-  // Simulate admin assigning a driver (dev/testing aid).
-  async function simulateAssignment() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const drv = pickDemoDriver(b.vehicle_type as "sedan" | "suv");
-      const startKm = 1.5 + Math.random() * 1.5;
-      const startBearing = Math.random() * 360;
-      const driverPos = offsetLatLng({ lat: b.pickup_lat, lng: b.pickup_lng }, startKm, startBearing);
-      let toPickupPoly: string | null = null;
-      try {
-        const r = await computeRoute({
-          data: { origin: driverPos, destination: { lat: b.pickup_lat, lng: b.pickup_lng } },
-        });
-        toPickupPoly = r.polyline;
-      } catch (e) { console.error(e); }
-
-      await updateBooking(b.id, {
-        status: "driver_assigned",
-        driver_name: drv.name,
-        driver_phone: drv.phone,
-        driver_photo: drv.photo,
-        driver_rating: drv.rating,
-        driver_trips: drv.trips,
-        vehicle_number: drv.vehicle_number,
-        vehicle_model: drv.vehicle_model,
-        driver_lat: driverPos.lat,
-        driver_lng: driverPos.lng,
-        route_polyline: b.route_polyline ?? toPickupPoly,
-      });
-      if (toPickupPoly) sessionStorage.setItem(`toPickup:${b.id}`, toPickupPoly);
-    } finally { setBusy(false); }
   }
 
   return (
@@ -258,14 +223,6 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
         <Share2 className="h-4 w-4 text-primary" />
       </button>
 
-      {/* Dev: simulate admin assignment so the flow is testable now */}
-      <button
-        onClick={simulateAssignment}
-        disabled={busy}
-        className="mx-4 mt-6 rounded-xl border-2 border-dashed border-primary/40 bg-primary-soft/40 py-3 text-xs font-semibold text-primary disabled:opacity-50"
-      >
-        {busy ? "Assigning…" : "🛠 Simulate Driver Assignment (dev)"}
-      </button>
     </div>
   );
 }
@@ -312,74 +269,39 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [fitKey, setFitKey] = useState(0);
   const cancelRef = useRef<(() => void) | null>(null);
 
+  // React to live booking updates (driver app pushes status & coords).
   useEffect(() => {
-    if (phase !== "to_pickup") return;
-    const poly = typeof window !== "undefined" ? sessionStorage.getItem(`toPickup:${b.id}`) : null;
-    setToPickupPoly(poly);
-    if (!poly) return;
-    const totalMs = 12000 + Math.random() * 8000;
-    setEta(Math.ceil(totalMs / 1000 / 60) || 1);
-    cancelRef.current?.();
-    cancelRef.current = simulateDrive({
-      polyline: poly,
-      totalMs,
-      intervalMs: 2200,
-      onTick: (p, prog) => {
-        setDriver(p);
-        setEta(Math.max(1, Math.ceil((totalMs * (1 - prog)) / 60000)));
-        updateBooking(b.id, { driver_lat: p.lat, driver_lng: p.lng }).catch(() => {});
-      },
-      onDone: () => {
-        updateBooking(b.id, { status: "driver_arrived", driver_lat: b.pickup_lat, driver_lng: b.pickup_lng }).catch(() => {});
-        setDriver({ lat: b.pickup_lat, lng: b.pickup_lng });
-        setPhase("arrived");
-      },
-    });
-    return () => cancelRef.current?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [b.id, phase]);
+    if (b.driver_lat && b.driver_lng) setDriver({ lat: b.driver_lat, lng: b.driver_lng });
+    if (b.status === "driver_arrived" && phase === "to_pickup") setPhase("arrived");
+    if (b.status === "in_progress" && phase !== "in_trip") setPhase("in_trip");
+    if (b.status === "completed") {
+      navigate({ to: "/complete/$id", params: { id: b.id } });
+    }
+  }, [b.status, b.driver_lat, b.driver_lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Compute the to-pickup route polyline once.
+  useEffect(() => {
+    if (phase !== "to_pickup" || !b.driver_lat || !b.driver_lng) return;
+    const cached = typeof window !== "undefined" ? sessionStorage.getItem(`toPickup:${b.id}`) : null;
+    if (cached) { setToPickupPoly(cached); return; }
+    computeRoute({
+      data: { origin: { lat: b.driver_lat, lng: b.driver_lng }, destination: { lat: b.pickup_lat, lng: b.pickup_lng } },
+    }).then((r) => {
+      setToPickupPoly(r.polyline);
+      try { sessionStorage.setItem(`toPickup:${b.id}`, r.polyline); } catch {}
+    }).catch(() => {});
+    void cancelRef.current; // keep ref referenced
+  }, [phase, b.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Compute the trip polyline (pickup -> drop) when entering the trip.
   useEffect(() => {
     if (phase !== "in_trip") return;
-    (async () => {
-      let poly = b.route_polyline;
-      if (!poly || b.trip_type === "rental") {
-        try {
-          const r = await computeRoute({
-            data: {
-              origin: { lat: b.pickup_lat, lng: b.pickup_lng },
-              destination: { lat: b.drop_lat, lng: b.drop_lng },
-            },
-          });
-          poly = r.polyline;
-        } catch (e) { console.error(e); }
-      }
-      if (!poly) return;
-      setTripPoly(poly);
-      const totalMs = Math.max(15000, Math.min(60000, b.duration_min * 1000));
-      cancelRef.current?.();
-      cancelRef.current = simulateDrive({
-        polyline: poly,
-        totalMs,
-        intervalMs: 2400,
-        onTick: (p, prog) => {
-          setDriver(p);
-          setEta(Math.max(1, Math.ceil((totalMs * (1 - prog)) / 60000)));
-          updateBooking(b.id, { driver_lat: p.lat, driver_lng: p.lng }).catch(() => {});
-        },
-        onDone: async () => {
-          await updateBooking(b.id, {
-            status: "completed",
-            driver_lat: b.drop_lat, driver_lng: b.drop_lng,
-            completed_at: new Date().toISOString(),
-          });
-          navigate({ to: "/complete/$id", params: { id: b.id } });
-        },
-      });
-    })();
-    return () => cancelRef.current?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [b.id, phase]);
+    let poly = b.route_polyline;
+    if (poly) { setTripPoly(poly); return; }
+    computeRoute({
+      data: { origin: { lat: b.pickup_lat, lng: b.pickup_lng }, destination: { lat: b.drop_lat, lng: b.drop_lng } },
+    }).then((r) => setTripPoly(r.polyline)).catch(() => {});
+  }, [phase, b.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function verifyOtp() {
     if (otp.trim() === b.otp) {

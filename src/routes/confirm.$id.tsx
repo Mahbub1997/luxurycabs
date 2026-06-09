@@ -7,8 +7,8 @@ import { getBooking, updateBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
 
 import {
-  calcLocalFare, calcOutstationFare, formatINR, tariffFor,
-  VEHICLE_MODELS, modelFare, type VehicleType, type VehicleModel,
+  calcLocalFare, calcOutstationFare, formatINR, tariffFor, useFareRates,
+  VEHICLE_MODELS, modelFare, type VehicleType, type VehicleModel, type RatesMap,
 } from "@/lib/fare";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
@@ -19,14 +19,15 @@ export const Route = createFileRoute("/confirm/$id")({
   component: Confirm,
 });
 
-function recalcFare(b: Booking, v: VehicleType): number {
-  if (b.trip_type === "outstation") return calcOutstationFare(v, Number(b.distance_km));
-  return calcLocalFare(v, Number(b.distance_km), b.duration_min);
+function recalcFare(b: Booking, v: VehicleType, rates?: RatesMap): number {
+  if (b.trip_type === "outstation") return calcOutstationFare(v, Number(b.distance_km), rates);
+  return calcLocalFare(v, Number(b.distance_km), b.duration_min, rates);
 }
 
 function Confirm() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { rates } = useFareRates();
   const [b, setB] = useState<Booking | null>(null);
   const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
@@ -37,8 +38,8 @@ function Confirm() {
   async function pickModel(m: VehicleModel) {
     if (!b) return;
     const tierFares = {
-      sedan: recalcFare(b, "sedan"),
-      suv: recalcFare(b, "suv"),
+      sedan: recalcFare(b, "sedan", rates),
+      suv: recalcFare(b, "suv", rates),
     };
     const fare = modelFare(m, tierFares);
     const updated = await updateBooking(b.id, {
