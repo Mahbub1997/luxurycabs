@@ -120,7 +120,9 @@ function AssignModal({ booking, onClose }: { booking: any; onClose: () => void }
 
 
 function BookingCard({ b }: { b: any }) {
+  const [assigning, setAssigning] = useState(false);
   const statusColor =
+
     b.status === "completed" ? "bg-emerald-100 text-emerald-700"
     : b.status === "cancelled" ? "bg-rose-100 text-rose-700"
     : b.status === "pending" ? "bg-amber-100 text-amber-700"
