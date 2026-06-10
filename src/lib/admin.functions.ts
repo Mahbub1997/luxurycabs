@@ -223,3 +223,44 @@ export const upsertFare = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/** Admin gets signed URLs for a driver's docs (selfie/license). */
+export const getDriverDocUrls = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ driver_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: drv, error } = await supabaseAdmin
+      .from("drivers")
+      .select("selfie_url, license_photo_url")
+      .eq("id", data.driver_id)
+      .single();
+    if (error) throw new Error(error.message);
+    async function sign(path: string | null) {
+      if (!path) return null;
+      const { data: s } = await supabaseAdmin.storage.from("driver-docs").createSignedUrl(path, 60 * 30);
+      return s?.signedUrl ?? null;
+    }
+    return {
+      selfie: await sign(drv.selfie_url),
+      license: await sign(drv.license_photo_url),
+    };
+  });
+
+/** List approved drivers (for assigning bookings). */
+export const listApprovedDrivers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("drivers")
+      .select("id, name, phone, vehicle_type, vehicle_model, vehicle_number, is_online")
+      .eq("status", "approved")
+      .order("is_online", { ascending: false })
+      .order("name");
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
