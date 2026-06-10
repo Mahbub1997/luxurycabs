@@ -174,6 +174,15 @@ function BookingCard({ b }: { b: any }) {
         </div>
       )}
 
+      {(b.status === "pending" || !b.assigned_driver_id) && b.status !== "completed" && b.status !== "cancelled" && (
+        <button
+          onClick={() => setAssigning(true)}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground"
+        >
+          <UserPlus className="h-3.5 w-3.5" /> {b.assigned_driver_id ? "Reassign Driver" : "Assign Driver"}
+        </button>
+      )}
+
       <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <User className="h-3 w-3" /> {b.id.slice(0, 8)}
@@ -182,9 +191,12 @@ function BookingCard({ b }: { b: any }) {
           <Clock className="h-3 w-3" /> OTP {b.otp}
         </span>
       </div>
+
+      {assigning && <AssignModal booking={b} onClose={() => setAssigning(false)} />}
     </div>
   );
 }
+
 
 function Row({ Icon, text, accent }: { Icon: any; text: string; accent?: string }) {
   return (
