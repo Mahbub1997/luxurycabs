@@ -74,6 +74,51 @@ function AdminBookings() {
   );
 }
 
+function AssignModal({ booking, onClose }: { booking: any; onClose: () => void }) {
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  useEffect(() => {
+    listApprovedDrivers().then(setDrivers).catch((e) => toast.error(e.message));
+  }, []);
+  async function assign(driver_id: string) {
+    setBusyId(driver_id);
+    try {
+      await assignBookingToDriver({ data: { booking_id: booking.id, driver_id } });
+      toast.success("Driver assigned");
+      onClose();
+    } catch (e: any) { toast.error(e.message); } finally { setBusyId(null); }
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
+      <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl max-h-[80vh] overflow-y-auto">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-lg font-bold">Assign Driver</h3>
+          <button onClick={onClose}><X className="h-4 w-4" /></button>
+        </div>
+        <p className="mb-3 text-xs text-muted-foreground">{booking.pickup_address} → {booking.drop_address}</p>
+        <div className="flex flex-col gap-2">
+          {drivers.length === 0 && <p className="text-sm text-muted-foreground">No approved drivers.</p>}
+          {drivers.map((d) => (
+            <button
+              key={d.id}
+              disabled={busyId === d.id}
+              onClick={() => assign(d.id)}
+              className="flex items-center justify-between rounded-xl border border-border bg-background p-3 text-left text-sm hover:bg-muted disabled:opacity-50"
+            >
+              <div>
+                <div className="font-bold">{d.name} {d.is_online ? "🟢" : "⚫"}</div>
+                <div className="text-xs text-muted-foreground">{d.phone} · {d.vehicle_type} · {d.vehicle_number || "—"}</div>
+              </div>
+              {busyId === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4 text-primary" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function BookingCard({ b }: { b: any }) {
   const statusColor =
     b.status === "completed" ? "bg-emerald-100 text-emerald-700"
