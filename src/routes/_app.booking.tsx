@@ -293,42 +293,10 @@ function Booking() {
       )}
 
 
-      {/* Outstation banner: round trip only + return date (required) */}
-      {tab === "outstation" && (
-        <div className={cn(
-          "mx-4 rounded-xl border bg-card p-3",
-          returnAt ? "border-border" : "border-primary"
-        )}>
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <MapIcon className="h-4 w-4 text-primary" /> Round Trip
-            <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">
-              {returnAt ? `${outDays} day${outDays > 1 ? "s" : ""}` : "Select return"}
-            </span>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Return *</span>
-            <input
-              type="date"
-              required
-              value={returnAt}
-              min={scheduledAt.slice(0, 10)}
-              onChange={(e) => setReturnAt(e.target.value)}
-              className="ml-auto bg-transparent text-sm text-foreground outline-none"
-            />
-          </div>
-          {!returnAt && (
-            <div className="mt-1 text-[11px] font-medium text-primary">
-              Return date is required for outstation trips.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Date & time */}
+      {/* Pickup date & time */}
       <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
         <Calendar className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">{tab === "outstation" ? "Pickup" : "Date & Time"}</span>
+        <span className="text-sm font-medium">{tab === "outstation" ? "Pickup Date & Time" : "Date & Time"}</span>
         <input
           type="datetime-local"
           value={scheduledAt}
@@ -336,6 +304,39 @@ function Booking() {
           className="ml-auto bg-transparent text-sm text-foreground outline-none"
         />
       </div>
+
+      {/* Outstation return date & time — same box style, shown after pickup */}
+      {tab === "outstation" && (
+        <>
+          <div className={cn(
+            "mx-4 flex items-center gap-2 rounded-xl border bg-card px-3 py-3",
+            returnAt ? "border-border" : "border-primary"
+          )}>
+            <Calendar className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Return Date & Time</span>
+            <input
+              type="datetime-local"
+              required
+              value={returnAt}
+              min={scheduledAt}
+              onChange={(e) => setReturnAt(e.target.value)}
+              className="ml-auto bg-transparent text-sm text-foreground outline-none"
+            />
+          </div>
+          <div className="mx-4 flex items-center gap-2 text-xs">
+            <MapIcon className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-primary">Round Trip</span>
+            <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">
+              {returnAt ? `${outDays} day${outDays > 1 ? "s" : ""}` : "Select return"}
+            </span>
+          </div>
+          {!returnAt && (
+            <div className="mx-4 -mt-1 text-[11px] font-medium text-primary">
+              Return date & time is required for outstation trips.
+            </div>
+          )}
+        </>
+      )}
 
       {/* Rental packages */}
       {tab === "rental" && (
