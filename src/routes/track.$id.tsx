@@ -295,12 +295,13 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [fitKey, setFitKey] = useState(0);
-  const [secsLeft, setSecsLeft] = useState(120);
+  const [secsLeft, setSecsLeft] = useState(300);
   const cancelRef = useRef<(() => void) | null>(null);
 
-  // OTP countdown (2 minutes, restarts on phase change to arrived/to_pickup).
+  // OTP countdown (5 minutes) — starts only after driver has arrived.
   useEffect(() => {
-    setSecsLeft(120);
+    if (phase !== "arrived" && phase !== "otp") return;
+    setSecsLeft(300);
     const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [phase]);
@@ -458,11 +459,17 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
       {/* Driver card */}
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <img
-            src={b.driver_photo ?? "https://i.pravatar.cc/200"}
-            alt={b.driver_name ?? "Driver"}
-            className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
-          />
+          {b.driver_photo ? (
+            <img
+              src={b.driver_photo}
+              alt={b.driver_name ?? "Driver"}
+              className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
+            />
+          ) : (
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary ring-2 ring-primary/30 font-bold text-lg">
+              {(b.driver_name ?? "D").trim().charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="font-bold leading-tight">{b.driver_name}</div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -534,12 +541,20 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="inline-flex items-center gap-1 text-muted-foreground">
-              <ClockIcon className="h-3 w-3" /> OTP expires in <span className="font-semibold text-foreground">{mmss}</span>
-            </span>
-            <button onClick={() => setSecsLeft(120)} className="font-semibold text-primary">
-              Didn't get OTP? ↻
-            </button>
+            {phase === "arrived" || phase === "otp" ? (
+              <>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <ClockIcon className="h-3 w-3" /> OTP expires in <span className="font-semibold text-foreground">{mmss}</span>
+                </span>
+                <button onClick={() => setSecsLeft(300)} className="font-semibold text-primary">
+                  Didn't get OTP? ↻
+                </button>
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                <ClockIcon className="h-3 w-3" /> 5-min OTP timer starts once your driver arrives.
+              </span>
+            )}
           </div>
 
           {phase === "arrived" && (
