@@ -377,19 +377,17 @@ function Booking() {
       <div className="mx-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold">Select Vehicle</h3>
-          {tab === "outstation" && (
-            <button
-              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
-              className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
-              disabled={!canPickVehicle}
-            >
-              View All <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+            className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
+            disabled={!canPickVehicle}
+          >
+            View All <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
         <div className="mt-2 space-y-2">
           {tab === "outstation" ? (
-            OUTSTATION_VEHICLES.slice(0, 2).map((v) => {
+            OUTSTATION_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
               const km = (routeInfo?.distanceKm ?? 0) * 2;
               const bd = routeInfo && canPickVehicle
                 ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
@@ -417,15 +415,6 @@ function Booking() {
                 selected={vehicle === "sedan" && localModel === "sedan"}
                 disabled={!canPickVehicle}
                 onSelect={() => chooseLocalRental("sedan", "sedan")}
-              />
-              <InlineVehicleRow
-                img={sedanImg}
-                label="Ciaz"
-                seats={4}
-                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                selected={localModel === "ciaz"}
-                disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("sedan", "ciaz")}
               />
               <InlineVehicleRow
                 img={suvImg}
@@ -555,8 +544,27 @@ function Booking() {
                 })
               ) : (
                 <>
-                  <VehicleCard type="sedan" fare={tab === "rental" ? rentalFares.sedan : localFares.sedan} selected={false} onSelect={() => chooseLocalRental("sedan")} />
-                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={false} onSelect={() => chooseLocalRental("suv")} />
+                  <VehicleCard type="sedan" fare={tab === "rental" ? rentalFares.sedan : localFares.sedan} selected={vehicle === "sedan" && localModel === "sedan"} onSelect={() => chooseLocalRental("sedan", "sedan")} />
+                  <button
+                    type="button"
+                    onClick={() => chooseLocalRental("sedan", "ciaz")}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                      localModel === "ciaz" ? "border-foreground" : "border-border"
+                    )}
+                  >
+                    <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
+                      <img src={sedanImg} alt="Ciaz" className="h-full w-full object-contain scale-x-[-1]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-base font-bold text-foreground">Ciaz</span>
+                        <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.sedan : localFares.sedan)}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">Premium sedan · 4 Seats · AC</div>
+                    </div>
+                  </button>
+                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
                 </>
               )}
             </div>
