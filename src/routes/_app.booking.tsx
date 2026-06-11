@@ -549,13 +549,6 @@ function Booking() {
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
         <SheetContent side="bottom" className="rounded-none border-0 p-0 h-screen max-h-screen w-full overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
-          <button
-            onClick={() => setSummaryOpen(false)}
-            className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-muted"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
 
           <div className="px-5 pb-6 pt-5">
             <h2 className="text-center text-xl font-bold">Trip Summary</h2>
