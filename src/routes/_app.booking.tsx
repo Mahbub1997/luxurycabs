@@ -233,38 +233,33 @@ function Booking() {
 
         {/* Pickup + Drop stacked white cards over the map */}
         <div className="absolute inset-x-3 top-3 space-y-2">
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
-            <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-primary">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-            </span>
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Pickup Location</div>
               <PlaceAutocomplete
+                label="Pickup Location"
                 value={pickup}
                 onChange={setPickup}
                 placeholder="Search pickup"
                 autoDetect
-                compact
               />
             </div>
             <Crosshair className="h-4 w-4 shrink-0 text-primary" />
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
-            <MapPin className="h-5 w-5 shrink-0 text-primary" />
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Drop Location</div>
               <PlaceAutocomplete
+                label="Drop Location"
                 value={drop}
                 onChange={setDrop}
                 placeholder="Where to go?"
                 accent="green"
-                compact
               />
             </div>
             <Crosshair className="h-4 w-4 shrink-0 text-primary" />
           </div>
         </div>
       </div>
+
 
       {/* Outstation banner: round trip only + return date (required) */}
       {tab === "outstation" && (
