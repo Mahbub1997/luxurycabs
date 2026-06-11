@@ -354,114 +354,219 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
   const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
 
+  const otpDigits = (b.otp ?? "").padEnd(4, " ").slice(0, 4).split("");
+  const code = bookingCode(b.id);
+
+  async function cancelRide() {
+    if (!confirm("Cancel this ride?")) return;
+    await updateBooking(b.id, { status: "cancelled" }).catch(() => {});
+    navigate({ to: "/booking" });
+  }
+  function shareTrip() {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
+    const text = encodeURIComponent(
+      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  }
+
+  const headerTitle =
+    phase === "in_trip" ? "Trip in progress" :
+    phase === "completing" ? "Completing trip…" :
+    phase === "arrived" ? "Driver has arrived" :
+    "Your driver is on the way";
+  const headerSub =
+    phase === "in_trip" ? "Heading to drop location" :
+    phase === "arrived" ? "Share OTP to start the trip" :
+    "Driver assigned & trip start OTP";
+
   return (
-    <div className="app-shell flex flex-col bg-background">
-      <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
-        <button onClick={onBack} className="rounded-full p-2 hover:bg-muted">
+    <div className="app-shell flex flex-col bg-background pb-6">
+      {/* Top brand header */}
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
+        <button onClick={onBack} className="rounded-full p-2 hover:bg-muted" aria-label="Back">
           <ArrowLeft className="h-5 w-5" />
         </button>
+        <div className="flex items-center gap-1.5 font-display text-lg font-bold text-primary">
+          <Crown className="h-5 w-5" />
+          Luxury Cabs
+        </div>
+        <button className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Notifications">
+          <Bell className="h-5 w-5" />
+          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
+        </button>
+      </div>
+
+      {/* Title + ETA pill */}
+      <div className="flex items-start justify-between gap-3 px-4 pt-4">
         <div>
-          <div className="font-display text-lg font-bold leading-none">
-            {phase === "to_pickup" && "Driver on the way"}
-            {phase === "arrived" && "Driver arrived"}
-            {phase === "otp" && "Verify OTP"}
-            {phase === "in_trip" && "Trip in progress"}
-            {phase === "completing" && "Completing trip…"}
-          </div>
-          <div className="mt-0.5 text-xs text-muted-foreground">
-            Live Tracking · ETA {eta} min
-          </div>
+          <h1 className="font-display text-xl font-bold leading-tight">{headerTitle}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">{headerSub}</p>
+        </div>
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs">
+          <ClockIcon className="h-3.5 w-3.5 text-primary" />
+          <span className="text-muted-foreground">ETA:</span>
+          <span className="font-bold text-primary">{eta} min</span>
         </div>
       </div>
 
-      <div className="relative px-3 pt-3">
+      {/* Map with overlay pickup/drop card */}
+      <div className="relative mx-4 mt-3">
         <RouteMap
           pickup={mapPickup}
           drop={mapDrop}
           polyline={phase === "in_trip" || phase === "completing" ? (tripPoly ?? b.route_polyline) : (toPickupPoly ?? b.route_polyline)}
           driver={driver}
-          height={340}
+          height={300}
           fitKey={fitKey}
         />
-        {/* Live pill */}
-        <div className="pointer-events-none absolute left-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground shadow-lg">
-          <motion.span
-            className="h-1.5 w-1.5 rounded-full bg-white"
-            animate={{ opacity: [1, 0.2, 1] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-          />
-          LIVE · ETA {eta} min
-        </div>
-        {/* Stat chips */}
-        <div className="absolute right-5 top-5 flex flex-col gap-2">
-          <Chip label="Time" value={`${eta}m`} />
-          <Chip label="Distance" value={`${Number(b.distance_km).toFixed(1)}km`} />
-          <Chip label="Fare" value={formatINR(Number(b.fare))} />
-          <Chip label="Toll" value="₹0" />
-        </div>
-        {/* Recenter */}
-        <button
-          onClick={() => setFitKey((k) => k + 1)}
-          aria-label="Recenter"
-          className="absolute bottom-5 right-5 grid h-10 w-10 place-items-center rounded-full bg-background shadow-lg ring-1 ring-border"
-        >
-          <Crosshair className="h-5 w-5 text-primary" />
-        </button>
-      </div>
 
-      {/* Bottom 'ride on the way' bar */}
-      <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary">
-          <Car className="h-5 w-5" />
+        {/* Pickup / Drop overlay */}
+        <div className="absolute left-3 top-3 w-[68%] max-w-[280px] rounded-xl bg-card/95 p-3 shadow-lg ring-1 ring-border backdrop-blur">
+          <div className="flex items-start gap-2">
+            <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-primary">Pickup Location</div>
+              <div className="truncate text-xs font-semibold">{b.pickup_address}</div>
+            </div>
+          </div>
+          <div className="my-1.5 ml-1 h-3 w-px border-l-2 border-dashed border-muted-foreground/40" />
+          <div className="flex items-start gap-2">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-destructive">Drop Location</div>
+              <div className="truncate text-xs font-semibold">{b.drop_address}</div>
+            </div>
+          </div>
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-bold">Your Ride is on the way</div>
-          <div className="text-[11px] text-muted-foreground">Driver is following the best route</div>
+
+        {/* Left side action stack */}
+        <div className="absolute left-3 bottom-3 flex flex-col gap-2">
+          <button
+            onClick={() => setFitKey((k) => k + 1)}
+            aria-label="Recenter"
+            className="grid h-9 w-9 place-items-center rounded-lg bg-card shadow ring-1 ring-border"
+          >
+            <Crosshair className="h-4 w-4 text-primary" />
+          </button>
+          <button aria-label="Safety" className="grid h-9 w-9 place-items-center rounded-lg bg-card shadow ring-1 ring-border">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+          </button>
         </div>
       </div>
 
       {/* Driver card */}
-      <div className="mx-3 mt-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <img
             src={b.driver_photo ?? "https://i.pravatar.cc/200"}
             alt={b.driver_name ?? "Driver"}
             className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
           />
-          <div className="flex-1">
-            <div className="font-bold">{b.driver_name}</div>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex-1 min-w-0">
+            <div className="font-bold leading-tight">{b.driver_name}</div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-              {b.driver_rating} · {b.driver_trips} trips
+              <span className="font-semibold text-foreground">{b.driver_rating ?? "—"}</span>
+              <span>({b.driver_trips ?? 0} trips)</span>
             </div>
-            <div className="mt-0.5 text-xs font-semibold text-foreground">
-              {b.vehicle_model} · <span className="text-primary">{b.vehicle_number}</span>
+            <div className="mt-0.5 truncate text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{b.vehicle_number ?? "—"}</span>
+              <span> · {b.vehicle_model ?? "—"}</span>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <a href={`tel:${b.driver_phone}`} className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
-              <Phone className="h-4 w-4" />
-            </a>
-            <button className="grid h-10 w-10 place-items-center rounded-full border border-border text-foreground">
-              <MessageSquare className="h-4 w-4" />
-            </button>
+          <img
+            src={b.vehicle_type === "suv" ? suvImg : sedanImg}
+            alt="Car"
+            className="hidden h-12 w-16 object-contain sm:block"
+          />
+          <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
+            <div className="text-sm font-bold text-primary leading-none">{eta} min</div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
           </div>
         </div>
 
-        {phase === "to_pickup" && (
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary-soft p-2.5 text-xs text-foreground/80">
-            <Shield className="h-4 w-4 text-primary" /> Share your OTP only at pickup — never before.
-          </div>
-        )}
-
-        {phase === "arrived" && (
-          <button
-            onClick={() => setPhase("otp")}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
-          >
-            <KeyRound className="h-4 w-4" /> Start Trip (Enter OTP)
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <a href={`tel:${b.driver_phone}`} className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold text-primary">
+            <Phone className="h-4 w-4" /> Call Driver
+          </a>
+          <button className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold">
+            <MessageSquare className="h-4 w-4" /> Chat
           </button>
-        )}
+        </div>
+      </div>
+
+      {/* Driver mins away strip */}
+      <div className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary">
+          <Car className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-bold">Driver is {eta} mins away</div>
+          <div className="text-[11px] text-muted-foreground">
+            {Number(b.distance_km).toFixed(1)} km from your location
+          </div>
+        </div>
+        <button className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+          Live Tracking <span aria-hidden>›</span>
+        </button>
+      </div>
+
+      {/* Trip Start Verification (OTP display) */}
+      {phase !== "in_trip" && phase !== "completing" && (
+        <div className="mx-4 mt-3 rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary-soft text-primary">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-bold">Trip Start Verification</div>
+              <div className="text-[11px] text-muted-foreground">
+                Please share this OTP with your driver to start the trip
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 flex justify-center gap-2">
+            {otpDigits.map((d, i) => (
+              <div key={i} className="grid h-14 w-14 place-items-center rounded-xl border-2 border-border bg-background text-2xl font-bold text-primary">
+                {d.trim() || "•"}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between text-[11px]">
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <ClockIcon className="h-3 w-3" /> OTP expires in <span className="font-semibold text-foreground">{mmss}</span>
+            </span>
+            <button onClick={() => setSecsLeft(120)} className="font-semibold text-primary">
+              Didn't get OTP? ↻
+            </button>
+          </div>
+
+          {phase === "arrived" && (
+            <button
+              onClick={() => setPhase("otp")}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+            >
+              <KeyRound className="h-4 w-4" /> Start Trip (Enter OTP)
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Share / Cancel */}
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
+        <button
+          onClick={shareTrip}
+          className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
+        >
+          <Share2 className="h-4 w-4" /> Share Trip
+        </button>
+        <button
+          onClick={cancelRide}
+          className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
+        >
+          <XCircle className="h-4 w-4" /> Cancel Ride
+        </button>
       </div>
 
       {phase === "otp" && (
@@ -470,9 +575,9 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl"
         >
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
-          <h3 className="text-center font-display text-xl font-bold">Share OTP with Driver</h3>
+          <h3 className="text-center font-display text-xl font-bold">Confirm OTP to Start Trip</h3>
           <p className="mt-1 text-center text-xs text-muted-foreground">
-            Your trip OTP is <span className="font-bold text-primary">{b.otp}</span>. Driver will enter it from their app.
+            Your trip OTP is <span className="font-bold text-primary">{b.otp}</span>.
           </p>
           <input
             inputMode="numeric"
@@ -495,11 +600,10 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           </button>
         </motion.div>
       )}
-
-      <div className="h-6" />
     </div>
   );
 }
+
 
 function Chip({ label, value }: { label: string; value: string }) {
   return (
