@@ -79,10 +79,13 @@ export const OUTSTATION_NIGHT_HALT = 500;
 export const OUTSTATION_MIN_KM_PER_DAY = 300;
 
 export function diffDays(pickupISO: string, returnISO: string): number {
-  const a = new Date(pickupISO).getTime();
-  const b = new Date(returnISO).getTime();
-  if (!isFinite(a) || !isFinite(b) || b <= a) return 1;
-  return Math.max(1, Math.ceil((b - a) / (24 * 60 * 60 * 1000)));
+  const a = new Date(pickupISO);
+  const b = new Date(returnISO);
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return 1;
+  const ad = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+  const bd = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+  const diff = Math.round((bd - ad) / (24 * 60 * 60 * 1000));
+  return Math.max(1, diff + 1);
 }
 
 export interface OutstationBreakdown {
