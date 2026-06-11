@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight, ShieldCheck,
-  Loader2, Shield, Sparkles, AlertTriangle,
+  Loader2, Shield, Sparkles,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -16,7 +16,7 @@ import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
 import { cn } from "@/lib/utils";
 
-const LOCAL_LIMIT_KM = 15;
+
 
 const searchSchema = z.object({ tab: z.enum(["local", "outstation", "rental"]).optional() });
 
@@ -59,10 +59,8 @@ function Booking() {
       .finally(() => { if (!cancelled) setRouteLoading(false); });
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
-
-  // 15km guard — prompt user to switch instead of auto-switching.
-  const overLimit = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
   const effectiveTab: TripType = tab;
+
 
 
   const fares = useMemo(() => {
@@ -88,9 +86,9 @@ function Booking() {
   const canBook = (() => {
     if (!pickup || !drop) return false;
     if (tab === "rental") return true;
-    if (overLimit) return false;
     return !!routeInfo && !routeLoading && estimatedFare > 0;
   })();
+  // removed redundant return below
 
   async function handleBook() {
     if (!pickup || !drop || submitting) return;
@@ -188,26 +186,8 @@ function Booking() {
         </button>
       </div>
 
-      {/* 15km limit — force user to switch to Outstation */}
-      {overLimit && (
-        <div className="mx-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <div className="flex-1">
-              <div className="font-semibold">Trip exceeds {LOCAL_LIMIT_KM} km city limit</div>
-              <div className="opacity-80">
-                Distance is {routeInfo!.distanceKm.toFixed(1)} km. Switch to Outstation pricing to continue.
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => setTab("outstation")}
-            className="mt-2 w-full rounded-lg bg-amber-600 py-2 text-xs font-bold text-white"
-          >
-            Switch to Outstation
-          </button>
-        </div>
-      )}
+
+
 
       {/* Outstation: one way / round trip */}
       {effectiveTab === "outstation" && (
