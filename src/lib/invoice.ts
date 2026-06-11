@@ -1,9 +1,13 @@
 import jsPDF from "jspdf";
 import type { Booking } from "@/lib/booking-store";
-import { formatINR, fareBreakdown, OUTSTATION_VEHICLES, calcOutstationBreakdown, type VehicleType } from "@/lib/fare";
+import { fareBreakdown, OUTSTATION_VEHICLES, calcOutstationBreakdown, type VehicleType } from "@/lib/fare";
 
 // Brand color (Luxury Cabs green)
 const BRAND = { r: 22, g: 122, b: 56 };
+
+// jsPDF default Helvetica lacks the ₹ glyph (renders as "¹"). Use "Rs." instead.
+const inr = (n: number) =>
+  `Rs. ${Math.round(Number(n) || 0).toLocaleString("en-IN")}`;
 
 function invoiceNumber(b: Booking) {
   const d = new Date(b.completed_at ?? b.scheduled_at);
@@ -22,28 +26,32 @@ function bookingNumber(b: Booking) {
   return `BOOK-${y}-${m}-${day}-${tail}`;
 }
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
 }
 
-function drawCrown(doc: jsPDF, x: number, y: number, size = 22) {
+// Crown drawn as 3 triangle peaks + base bar (legible at small size).
+function drawCrown(doc: jsPDF, x: number, y: number, size = 24) {
   doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
-  // Crown body
-  const pts: Array<[number, number]> = [
-    [x, y + size * 0.7],
-    [x + size * 0.15, y + size * 0.25],
-    [x + size * 0.32, y + size * 0.55],
-    [x + size * 0.5, y + size * 0.15],
-    [x + size * 0.68, y + size * 0.55],
-    [x + size * 0.85, y + size * 0.25],
-    [x + size, y + size * 0.7],
-  ];
-  doc.lines(pts.map((p, i) => i === 0 ? [0, 0] : [p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]]), x, y + size * 0.7, [1, 1], "F", true);
-  // jewels
-  doc.circle(x + size * 0.15, y + size * 0.22, 1.6, "F");
-  doc.circle(x + size * 0.5, y + size * 0.12, 1.8, "F");
-  doc.circle(x + size * 0.85, y + size * 0.22, 1.6, "F");
-  // base
-  doc.rect(x, y + size * 0.72, size, size * 0.12, "F");
+  const baseY = y + size * 0.78;
+  const topY = y + size * 0.10;
+  const midY = y + size * 0.52;
+  const w = size;
+  // Left peak
+  doc.triangle(x, baseY, x + w * 0.25, topY, x + w * 0.33, midY, "F");
+  // Center peak
+  doc.triangle(x + w * 0.33, midY, x + w * 0.5, topY - size * 0.04, x + w * 0.67, midY, "F");
+  // Right peak
+  doc.triangle(x + w * 0.67, midY, x + w * 0.75, topY, x + w, baseY, "F");
+  // Body fill
+  doc.triangle(x, baseY, x + w * 0.33, midY, x + w * 0.67, midY, "F");
+  doc.triangle(x, baseY, x + w * 0.67, midY, x + w, baseY, "F");
+  // Base bar
+  doc.rect(x, baseY, w, size * 0.14, "F");
+  // Jewels
+  doc.setFillColor(255, 215, 0);
+  doc.circle(x + w * 0.25, topY + size * 0.02, 1.4, "F");
+  doc.circle(x + w * 0.5, topY - size * 0.02, 1.6, "F");
+  doc.circle(x + w * 0.75, topY + size * 0.02, 1.4, "F");
 }
 
 export function generateInvoice(b: Booking) {
@@ -52,28 +60,25 @@ export function generateInvoice(b: Booking) {
   const H = doc.internal.pageSize.getHeight();
   const M = 36;
 
-  // Top title bar
   doc.setTextColor(20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("Invoice", W / 2, 40, { align: "center" });
 
-  // Main card border
   let y = 70;
   doc.setDrawColor(225);
   doc.setLineWidth(0.6);
   doc.roundedRect(M, y, W - M * 2, H - y - 80, 10, 10);
 
-  // Crown + brand
-  drawCrown(doc, M + 16, y + 18, 26);
+  drawCrown(doc, M + 16, y + 14, 28);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.text("Luxury Cabs", M + 52, y + 32);
+  doc.text("Luxury Cabs", M + 56, y + 32);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(110);
-  doc.text("Safe. Reliable. Comfortable.", M + 52, y + 46);
+  doc.text("Safe. Reliable. Comfortable.", M + 56, y + 46);
 
   // PAID pill
   doc.setDrawColor(BRAND.r, BRAND.g, BRAND.b);
@@ -89,13 +94,13 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("Luxury Cabs Pvt. Ltd.", M + 16, yy);
+  doc.text("Luxury Cabs", M + 16, yy);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(80);
-  doc.text("HSR Layout, Bengaluru - 560102, Karnataka, India", M + 16, yy + 14);
-  doc.text("GSTIN: 29ABCDE1234F1Z5", M + 16, yy + 28);
-  doc.text("SAC Code: 996411", M + 16, yy + 42);
+  doc.text("Proprietor: Mabubbasha S", M + 16, yy + 14);
+  doc.text("Email: luxurycabs5678@gmail.com", M + 16, yy + 28);
+  doc.text("Phone / WhatsApp: +91 97912 98406", M + 16, yy + 42);
 
   // Right column invoice meta
   const rx = W / 2 + 10;
@@ -121,7 +126,6 @@ export function generateInvoice(b: Booking) {
     my += 13;
   });
 
-  // Divider
   yy = Math.max(yy + 60, my + 4);
   doc.setDrawColor(230);
   doc.line(M + 12, yy, W - M - 12, yy);
@@ -153,14 +157,16 @@ export function generateInvoice(b: Booking) {
   doc.text("DURATION", mx, yy + 30);
   doc.setTextColor(20);
   doc.setFontSize(11);
-  doc.text(`${b.duration_min} min`, mx, yy + 43);
+  const dMin = b.duration_min;
+  const durLabel = dMin >= 60 ? `${Math.floor(dMin / 60)}h ${dMin % 60}m` : `${dMin} min`;
+  doc.text(durLabel, mx, yy + 43);
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFontSize(8.5);
   doc.text("TOTAL FARE", mx, yy + 60);
   doc.setTextColor(20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.text(formatINR(Number(b.fare)), mx, yy + 75);
+  doc.text(inr(Number(b.fare)), mx, yy + 75);
 
   yy += 95;
   doc.setDrawColor(230);
@@ -174,11 +180,11 @@ export function generateInvoice(b: Booking) {
   doc.text("DRIVER DETAILS", M + 16, yy);
   doc.setTextColor(20);
   doc.setFontSize(11);
-  doc.text(b.driver_name ?? "—", M + 16, yy + 16);
+  doc.text(b.driver_name ?? "-", M + 16, yy + 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(80);
-  doc.text(b.vehicle_number ?? "—", M + 16, yy + 32);
+  doc.text(b.vehicle_number ?? "-", M + 16, yy + 32);
   doc.text(`${(b.vehicle_model ?? "")}`, M + 16, yy + 46);
 
   yy += 70;
@@ -204,23 +210,23 @@ export function generateInvoice(b: Booking) {
       OUTSTATION_VEHICLES.find((v) => v.tier === (b.vehicle_type as VehicleType)) ??
       OUTSTATION_VEHICLES[0];
     const bd = calcOutstationBreakdown(ov, { distanceKm: Number(b.distance_km), days: 1 });
-    items.push([`Distance Fare (${bd.chargedKm} km × ₹${ov.perKm})`, bd.distance]);
-    items.push([`Driver Bata (${bd.days} × ₹${ov.bata})`, bd.driverBata]);
-    if (bd.nightHalts > 0) items.push([`Night Halt (${bd.nightHalts} × ₹500)`, bd.nightHalt]);
+    items.push([`Distance Fare (${bd.chargedKm} km x Rs.${ov.perKm})`, bd.distance]);
+    items.push([`Driver Bata (${bd.days} x Rs.${ov.bata})`, bd.driverBata]);
+    if (bd.nightHalts > 0) items.push([`Night Halt (${bd.nightHalts} x Rs.500)`, bd.nightHalt]);
     items.push([`Tolls (est.)`, bd.tolls]);
     items.push([`Taxes & Fees`, bd.taxes]);
   } else {
     const fb = fareBreakdown((b.vehicle_type as VehicleType) ?? "sedan", Number(b.distance_km), b.duration_min);
     items.push(["Base Fare", fb.base]);
     items.push([`Distance Fare (${Number(b.distance_km).toFixed(1)} km)`, fb.distance]);
-    items.push([`Time Fare (${b.duration_min} min)`, fb.time]);
+    items.push([`Time Fare (${durLabel})`, fb.time]);
     items.push(["Taxes & Fees", fb.taxes]);
   }
   items.forEach(([k, v]) => {
     doc.setTextColor(60);
     doc.text(k, M + 16, yy);
     doc.setTextColor(20);
-    doc.text(formatINR(v), W / 2 - 16, yy, { align: "right" });
+    doc.text(inr(v), W / 2 - 16, yy, { align: "right" });
     yy += 14;
   });
 
@@ -241,16 +247,16 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(60);
   doc.text("CGST (2.5%)", tx + 12, ty + 36);
   doc.setTextColor(20);
-  doc.text(formatINR(cgst), W - M - 28, ty + 36, { align: "right" });
+  doc.text(inr(cgst), W - M - 28, ty + 36, { align: "right" });
   doc.setTextColor(60);
   doc.text("SGST (2.5%)", tx + 12, ty + 52);
   doc.setTextColor(20);
-  doc.text(formatINR(sgst), W - M - 28, ty + 52, { align: "right" });
+  doc.text(inr(sgst), W - M - 28, ty + 52, { align: "right" });
   doc.setDrawColor(200);
   doc.line(tx + 12, ty + 62, W - M - 28, ty + 62);
   doc.setFont("helvetica", "bold");
   doc.text("Total Tax", tx + 12, ty + 78);
-  doc.text(formatINR(taxTotal), W - M - 28, ty + 78, { align: "right" });
+  doc.text(inr(taxTotal), W - M - 28, ty + 78, { align: "right" });
 
   // Total Fare row
   yy += 4;
@@ -265,12 +271,12 @@ export function generateInvoice(b: Booking) {
   doc.text("Total Fare", M + 16, yy);
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFontSize(13);
-  doc.text(formatINR(Number(b.fare)), W / 2 - 16, yy, { align: "right" });
+  doc.text(inr(Number(b.fare)), W / 2 - 16, yy, { align: "right" });
 
   // Thank-you bar
   yy += 28;
   doc.setFillColor(240, 248, 240);
-  doc.roundedRect(M + 12, yy, W - M * 2 - 24, 56, 8, 8, "F");
+  doc.roundedRect(M + 12, yy, W - M * 2 - 24, 62, 8, 8, "F");
   doc.setTextColor(20);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -282,10 +288,11 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Need help?", W / 2 + 30, yy + 18);
+  doc.text("Need help?", W / 2 + 30, yy + 16);
   doc.setFont("helvetica", "normal");
-  doc.text("Phone: 080-1234-5678", W / 2 + 30, yy + 32);
-  doc.text("Email: support@luxurycabs.com", W / 2 + 30, yy + 46);
+  doc.setTextColor(60);
+  doc.text("Helpline / WhatsApp: +91 97912 98406", W / 2 + 30, yy + 30);
+  doc.text("Email: luxurycabs5678@gmail.com", W / 2 + 30, yy + 44);
 
   // Footer green bar
   doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
@@ -293,7 +300,7 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(255);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("www.luxurycabs.com", M + 16, H - 30);
+  doc.text("luxurycabs5678@gmail.com", M + 16, H - 30);
   doc.setFont("helvetica", "bold");
   doc.text("Thank you for riding with us!", W - M - 16, H - 30, { align: "right" });
 
