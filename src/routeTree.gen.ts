@@ -27,6 +27,7 @@ import { Route as AppNotificationsRouteImport } from './routes/_app.notification
 import { Route as AppBookingsRouteImport } from './routes/_app.bookings'
 import { Route as AppBookingRouteImport } from './routes/_app.booking'
 import { Route as DriverTripIdRouteImport } from './routes/driver.trip.$id'
+import { Route as AuthenticatedAdminLocalFaresRouteImport } from './routes/_authenticated/admin.local-fares'
 import { Route as AuthenticatedAdminFaresRouteImport } from './routes/_authenticated/admin.fares'
 import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authenticated/admin.drivers'
 import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
@@ -119,6 +120,12 @@ const DriverTripIdRoute = DriverTripIdRouteImport.update({
   path: '/driver/trip/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminLocalFaresRoute =
+  AuthenticatedAdminLocalFaresRouteImport.update({
+    id: '/local-fares',
+    path: '/local-fares',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFaresRoute = AuthenticatedAdminFaresRouteImport.update({
   id: '/fares',
   path: '/fares',
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
 }
 export interface FileRoutesByTo {
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
 }
 export interface FileRoutesById {
@@ -201,6 +210,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/_authenticated/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/_authenticated/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
 }
 export interface FileRouteTypes {
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/admin/bookings'
     | '/admin/drivers'
     | '/admin/fares'
+    | '/admin/local-fares'
     | '/driver/trip/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/admin/bookings'
     | '/admin/drivers'
     | '/admin/fares'
+    | '/admin/local-fares'
     | '/driver/trip/$id'
   id:
     | '__root__'
@@ -268,6 +280,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/bookings'
     | '/_authenticated/admin/drivers'
     | '/_authenticated/admin/fares'
+    | '/_authenticated/admin/local-fares'
     | '/driver/trip/$id'
   fileRoutesById: FileRoutesById
 }
@@ -415,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DriverTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/local-fares': {
+      id: '/_authenticated/admin/local-fares'
+      path: '/local-fares'
+      fullPath: '/admin/local-fares'
+      preLoaderRoute: typeof AuthenticatedAdminLocalFaresRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/fares': {
       id: '/_authenticated/admin/fares'
       path: '/fares'
@@ -443,12 +463,14 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
   AuthenticatedAdminDriversRoute: typeof AuthenticatedAdminDriversRoute
   AuthenticatedAdminFaresRoute: typeof AuthenticatedAdminFaresRoute
+  AuthenticatedAdminLocalFaresRoute: typeof AuthenticatedAdminLocalFaresRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
   AuthenticatedAdminDriversRoute: AuthenticatedAdminDriversRoute,
   AuthenticatedAdminFaresRoute: AuthenticatedAdminFaresRoute,
+  AuthenticatedAdminLocalFaresRoute: AuthenticatedAdminLocalFaresRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
