@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
+  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
   Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck,
 } from "lucide-react";
@@ -294,8 +294,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [eta, setEta] = useState<number>(b.duration_min);
   const [tripPoly, setTripPoly] = useState<string | null>(null);
   const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
   const [fitKey, setFitKey] = useState(0);
   const [secsLeft, setSecsLeft] = useState(300);
   const cancelRef = useRef<(() => void) | null>(null);
@@ -344,15 +342,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
     }).then((r) => setTripPoly(r.polyline)).catch(() => {});
   }, [phase, b.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function verifyOtp() {
-    if (otp.trim() === b.otp) {
-      setOtpError("");
-      updateBooking(b.id, { status: "in_progress" }).catch(() => {});
-      setPhase("in_trip");
-    } else {
-      setOtpError("Invalid OTP. Please ask the driver again.");
-    }
-  }
 
   const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
   const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
@@ -546,14 +535,9 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             )}
           </div>
 
-          {phase === "arrived" && (
-            <button
-              onClick={() => setPhase("otp")}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
-            >
-              <KeyRound className="h-4 w-4" /> Start Trip (Enter OTP)
-            </button>
-          )}
+          <div className="mt-3 text-center text-[11px] text-muted-foreground">
+            Share this OTP with your driver. The driver will enter it to start your trip.
+          </div>
         </div>
       )}
 
@@ -573,37 +557,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         </button>
       </div>
 
-      {phase === "otp" && (
-        <motion.div
-          initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl"
-        >
-          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
-          <h3 className="text-center font-display text-xl font-bold">Confirm OTP to Start Trip</h3>
-          <p className="mt-1 text-center text-xs text-muted-foreground">
-            Your trip OTP is <span className="font-bold text-primary">{b.otp}</span>.
-          </p>
-          <input
-            inputMode="numeric"
-            maxLength={4}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            className="mt-4 w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-primary"
-            placeholder="••••"
-          />
-          {otpError && <div className="mt-2 text-center text-xs text-destructive">{otpError}</div>}
-          <button
-            onClick={verifyOtp}
-            disabled={otp.length !== 4}
-            className={cn(
-              "mt-4 w-full rounded-xl py-3 text-sm font-bold transition",
-              otp.length === 4 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            )}
-          >
-            Verify & Start Trip
-          </button>
-        </motion.div>
-      )}
     </div>
   );
 }

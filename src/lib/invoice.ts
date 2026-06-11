@@ -57,9 +57,6 @@ export function generateInvoice(b: Booking) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("Invoice", W / 2, 40, { align: "center" });
-  doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.setFontSize(11);
-  doc.text("Download", W - M, 40, { align: "right" });
 
   // Main card border
   let y = 70;
@@ -85,7 +82,7 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("✓ PAID", W - M - 90 + 37, y + 30, { align: "center" });
+  doc.text("PAID", W - M - 90 + 37, y + 30, { align: "center" });
 
   // Company + Invoice details row
   let yy = y + 70;
@@ -287,8 +284,8 @@ export function generateInvoice(b: Booking) {
   doc.setFontSize(9);
   doc.text("Need help?", W / 2 + 30, yy + 18);
   doc.setFont("helvetica", "normal");
-  doc.text("☎  080-1234-5678", W / 2 + 30, yy + 32);
-  doc.text("✉  support@luxurycabs.com", W / 2 + 30, yy + 46);
+  doc.text("Phone: 080-1234-5678", W / 2 + 30, yy + 32);
+  doc.text("Email: support@luxurycabs.com", W / 2 + 30, yy + 46);
 
   // Footer green bar
   doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
