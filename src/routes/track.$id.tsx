@@ -12,6 +12,7 @@ import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
+import { formatDuration, formatTime12 } from "@/lib/utils";
 import { notify, ensureNotifyPermission } from "@/lib/notify";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
