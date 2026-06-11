@@ -459,11 +459,17 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
       {/* Driver card */}
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <img
-            src={b.driver_photo ?? "https://i.pravatar.cc/200"}
-            alt={b.driver_name ?? "Driver"}
-            className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
-          />
+          {b.driver_photo ? (
+            <img
+              src={b.driver_photo}
+              alt={b.driver_name ?? "Driver"}
+              className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
+            />
+          ) : (
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary ring-2 ring-primary/30 font-bold text-lg">
+              {(b.driver_name ?? "D").trim().charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="font-bold leading-tight">{b.driver_name}</div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
