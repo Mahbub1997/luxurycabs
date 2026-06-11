@@ -60,7 +60,7 @@ function DriverBookings() {
                 <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-rose-600" /><span className="text-xs">{b.drop_address}</span></div>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs">
-                <span>{Number(b.distance_km).toFixed(1)} km · {b.duration_min} min</span>
+                <span>{Number(b.distance_km).toFixed(1)} km · {formatDuration(b.duration_min)}</span>
                 <span className="font-bold">₹{b.fare}</span>
               </div>
             </Link>
