@@ -180,16 +180,31 @@ export const assignBookingToDriver = createServerFn({ method: "POST" })
     if (!isAdmin.data) throw new Error("Not admin");
     const { data: drv, error: dErr } = await supabaseAdmin
       .from("drivers")
-      .select("id, name, phone, photo, vehicle_model, vehicle_number, rating, total_trips, current_lat, current_lng, status")
+      .select("id, name, phone, photo, selfie_url, vehicle_model, vehicle_number, rating, total_trips, current_lat, current_lng, status")
       .eq("id", data.driver_id).single();
     if (dErr) throw new Error(dErr.message);
     if (drv.status !== "approved") throw new Error("Driver not approved");
+
+    // Resolve a displayable photo URL. Prefer drivers.photo if it's already
+    // a full URL, otherwise sign the private selfie_url from driver-docs.
+    let photoUrl: string | null = null;
+    const raw = (drv as any).photo as string | null;
+    if (raw && /^https?:\/\//i.test(raw)) {
+      photoUrl = raw;
+    } else if ((drv as any).selfie_url) {
+      const { data: signed } = await supabaseAdmin
+        .storage.from("driver-docs")
+        .createSignedUrl((drv as any).selfie_url, 60 * 60 * 24 * 7);
+      photoUrl = signed?.signedUrl ?? null;
+    }
+
     const { error } = await supabaseAdmin.from("bookings").update({
       assigned_driver_id: drv.id,
       status: "driver_assigned",
       driver_name: drv.name,
       driver_phone: drv.phone,
-      driver_photo: drv.photo,
+      driver_photo: photoUrl,
+
       driver_rating: drv.rating,
       driver_trips: drv.total_trips,
       vehicle_model: drv.vehicle_model,
