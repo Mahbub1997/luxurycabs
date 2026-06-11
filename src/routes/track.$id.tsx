@@ -8,6 +8,7 @@ import {
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
+import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
@@ -389,8 +390,8 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-1.5 font-display text-lg font-bold text-primary">
-          <Crown className="h-5 w-5" />
-          Luxury Cabs
+          <CrownCarLogo className="h-5 w-5" />
+          Credoom
         </div>
         <button className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Notifications">
           <Bell className="h-5 w-5" />

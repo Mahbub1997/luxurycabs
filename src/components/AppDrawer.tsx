@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, Home, Shield, Car, Phone, X } from "lucide-react";
 import { getProfile } from "@/lib/profile";
+import { CredoomWordmark } from "@/components/Brand";
 
 const HELP_PHONE = "9791298406";
 
@@ -29,7 +30,7 @@ export function AppDrawer() {
           <aside className="relative z-10 flex h-full w-72 max-w-[80%] flex-col bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <div className="font-display text-lg font-bold text-primary">Luxury Cabs</div>
+                <CredoomWordmark />
                 <p className="text-[11px] text-muted-foreground">Comfort. Class. Every ride.</p>
               </div>
               <button
@@ -62,7 +63,7 @@ export function AppDrawer() {
             </nav>
 
             <div className="border-t border-border px-5 py-3 text-[10px] text-muted-foreground">
-              v1.0 — Luxury Cabs
+              v1.0 — Credoom
             </div>
           </aside>
         </div>
