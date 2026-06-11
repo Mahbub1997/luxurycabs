@@ -19,7 +19,6 @@ import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as DriverSignupRouteImport } from './routes/driver.signup'
 import { Route as DriverLoginRouteImport } from './routes/driver.login'
 import { Route as DriverBookingsRouteImport } from './routes/driver.bookings'
-import { Route as ConfirmIdRouteImport } from './routes/confirm.$id'
 import { Route as CompleteIdRouteImport } from './routes/complete.$id'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -78,11 +77,6 @@ const DriverLoginRoute = DriverLoginRouteImport.update({
 const DriverBookingsRoute = DriverBookingsRouteImport.update({
   id: '/driver/bookings',
   path: '/driver/bookings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfirmIdRoute = ConfirmIdRouteImport.update({
-  id: '/confirm/$id',
-  path: '/confirm/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompleteIdRoute = CompleteIdRouteImport.update({
@@ -153,7 +147,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
-  '/confirm/$id': typeof ConfirmIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
   '/driver/signup': typeof DriverSignupRoute
@@ -175,7 +168,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
-  '/confirm/$id': typeof ConfirmIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
   '/driver/signup': typeof DriverSignupRoute
@@ -200,7 +192,6 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/complete/$id': typeof CompleteIdRoute
-  '/confirm/$id': typeof ConfirmIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
   '/driver/signup': typeof DriverSignupRoute
@@ -224,7 +215,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/login'
     | '/complete/$id'
-    | '/confirm/$id'
     | '/driver/bookings'
     | '/driver/login'
     | '/driver/signup'
@@ -246,7 +236,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/login'
     | '/complete/$id'
-    | '/confirm/$id'
     | '/driver/bookings'
     | '/driver/login'
     | '/driver/signup'
@@ -270,7 +259,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/admin/login'
     | '/complete/$id'
-    | '/confirm/$id'
     | '/driver/bookings'
     | '/driver/login'
     | '/driver/signup'
@@ -290,7 +278,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   AdminLoginRoute: typeof AdminLoginRoute
   CompleteIdRoute: typeof CompleteIdRoute
-  ConfirmIdRoute: typeof ConfirmIdRoute
   DriverBookingsRoute: typeof DriverBookingsRoute
   DriverLoginRoute: typeof DriverLoginRoute
   DriverSignupRoute: typeof DriverSignupRoute
@@ -370,13 +357,6 @@ declare module '@tanstack/react-router' {
       path: '/driver/bookings'
       fullPath: '/driver/bookings'
       preLoaderRoute: typeof DriverBookingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/confirm/$id': {
-      id: '/confirm/$id'
-      path: '/confirm/$id'
-      fullPath: '/confirm/$id'
-      preLoaderRoute: typeof ConfirmIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/complete/$id': {
@@ -508,7 +488,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   AdminLoginRoute: AdminLoginRoute,
   CompleteIdRoute: CompleteIdRoute,
-  ConfirmIdRoute: ConfirmIdRoute,
   DriverBookingsRoute: DriverBookingsRoute,
   DriverLoginRoute: DriverLoginRoute,
   DriverSignupRoute: DriverSignupRoute,
@@ -520,3 +499,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

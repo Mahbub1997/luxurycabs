@@ -12,7 +12,7 @@ const items = [
 export function BottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="sticky bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
+    <nav data-app-chrome className="sticky bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
       {items.map(({ to, label, Icon, match }) => {
         const active = match(path);
         return (

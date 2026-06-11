@@ -99,3 +99,6 @@
 
 /* Google places dropdown above our UI */
 .pac-container { z-index: 9999 !important; }
+
+/* Hide app chrome (header / bottom nav) when booking shows vehicle picker */
+.chrome-hidden [data-app-chrome] { display: none !important; }
