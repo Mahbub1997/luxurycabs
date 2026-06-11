@@ -16,7 +16,7 @@ import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
 import { cn } from "@/lib/utils";
 
-const LOCAL_LIMIT_KM = 15;
+
 
 const searchSchema = z.object({ tab: z.enum(["local", "outstation", "rental"]).optional() });
 
