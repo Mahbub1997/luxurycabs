@@ -406,7 +406,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         <div className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs">
           <ClockIcon className="h-3.5 w-3.5 text-primary" />
           <span className="text-muted-foreground">ETA:</span>
-          <span className="font-bold text-primary">{eta} min</span>
+          <span className="font-bold text-primary">{formatDuration(eta)}</span>
         </div>
       </div>
 
