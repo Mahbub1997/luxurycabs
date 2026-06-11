@@ -30,11 +30,10 @@ function LogoImage({ className }: { className?: string }) {
 }
 
 export function CredoomWordmark({ className, label }: { className?: string; label?: string }) {
-  // `label` is accepted for API compatibility but the uploaded logo image is used as the wordmark.
   void label;
   return (
     <div className={cn("flex items-center", className)}>
-      <LogoImage />
+      <LogoImage className="h-10" />
     </div>
   );
 }
