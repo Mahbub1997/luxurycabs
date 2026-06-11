@@ -511,11 +511,11 @@ function Booking() {
           </button>
 
           <div className="px-5 pb-6 pt-5">
-            <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center">
               <div className="grid h-14 w-14 place-items-center rounded-full bg-primary">
                 <CrownCarLogo className="h-7 w-7 text-primary-foreground" />
               </div>
-              <div className="mt-2 text-xs font-bold tracking-wide text-primary">LUXURY CABS</div>
+                <div className="mt-2 text-xs font-bold tracking-wide text-primary">CREDOOM</div>
             </div>
 
             <h2 className="mt-4 text-center text-lg font-bold">Trip Summary</h2>
@@ -603,6 +603,55 @@ function Booking() {
               </div>
             </div>
 
+            <div className="mt-3 rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold">Date & Time</div>
+                  <div className="text-[11px] text-muted-foreground">Adjust your schedule before confirming.</div>
+                </div>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                  <Pencil className="h-3 w-3" /> Change
+                </span>
+              </div>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
+              />
+              {tab === "outstation" && (
+                <input
+                  type="date"
+                  value={returnAt}
+                  min={scheduledAt.slice(0, 10)}
+                  onChange={(e) => setReturnAt(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
+                />
+              )}
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-4">
+              <div className="text-sm font-semibold text-primary">What happens next</div>
+              <div className="mt-3 space-y-2">
+                {[
+                  "Check pickup and drop locations.",
+                  "Confirm vehicle and timing.",
+                  "Tap confirm booking to send your ride request.",
+                  "We assign a driver and show live trip details.",
+                ].map((step, index) => (
+                  <div key={step} className="flex items-start gap-3 text-sm">
+                    <div className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {index + 1}
+                    </div>
+                    <p className="pt-0.5 text-foreground/85">{step}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-foreground/70">
+                Important note: final fare may update slightly if route, tolls, or waiting time changes during the trip.
+              </p>
+            </div>
+
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
               <span className="h-4 w-px bg-border" />
@@ -621,7 +670,7 @@ function Booking() {
                 onClick={handleBook}
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Book Now <ArrowRight className="h-4 w-4" /></>}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
               </button>
             </div>
           </div>
@@ -641,14 +690,17 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function InlineVehicleRow({
-  img, label, seats, fare, onSelect, disabled,
-}: { img: string; label: string; seats: number; fare: number; onSelect: () => void; disabled?: boolean }) {
+  img, label, seats, fare, onSelect, disabled, selected,
+}: { img: string; label: string; seats: number; fare: number; onSelect: () => void; disabled?: boolean; selected?: boolean }) {
   return (
     <button
       type="button"
       onClick={onSelect}
       disabled={disabled}
-      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary disabled:opacity-60"
+      className={cn(
+        "flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition disabled:opacity-60",
+        selected ? "border-primary bg-primary-soft/40" : "border-border hover:border-primary"
+      )}
     >
       <div className="grid h-16 w-24 shrink-0 place-items-center">
         <img src={img} alt={label} className="h-full w-full object-contain" />
@@ -665,7 +717,12 @@ function InlineVehicleRow({
         <div className="text-base font-extrabold text-primary">{fare > 0 ? formatINR(fare) : "—"}</div>
         <div className="text-[10px] text-muted-foreground">Estimated Fare</div>
       </div>
-      <span className="ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-muted-foreground/40 bg-card" />
+      <span className={cn(
+        "ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 bg-card",
+        selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+      )}>
+        {selected ? <span className="h-2 w-2 rounded-full bg-primary-foreground" /> : null}
+      </span>
     </button>
   );
 }
