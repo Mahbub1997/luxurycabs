@@ -26,7 +26,6 @@ function DriverTrip() {
   const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
 
-  // Live driver position + ETA driven by sim.
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
@@ -42,7 +41,6 @@ function DriverTrip() {
     });
   }, [id]);
 
-  // Compute route + start sim for current phase.
   useEffect(() => {
     if (!b) return;
     if (phase !== "to_pickup" && phase !== "in_trip") return;
@@ -63,25 +61,22 @@ function DriverTrip() {
         setPoly(r.polyline);
         const totalMin = Math.max(1, Math.round(r.durationMin ?? 10));
         setEtaMin(totalMin);
-        // Compress to a manageable demo duration: 1 min real per 3 trip-min, min 30s, max 5min.
         const totalMs = Math.min(5 * 60 * 1000, Math.max(30 * 1000, totalMin * 20_000));
         const startedAt = Date.now();
         cancelSimRef.current = simulateDrive({
           polyline: r.polyline,
           totalMs,
-          intervalMs: 2000,
-          onTick: (p, progress) => {
+          intervalMs: 1500,
+          onTick: (p) => {
             setPos(p);
             const remainingMs = totalMs - (Date.now() - startedAt);
             const remainingMin = Math.max(0, Math.round((remainingMs / totalMs) * totalMin));
             setEtaMin(remainingMin);
-            // Push to DB every ~8s to update customer's live tracking.
             const now = Date.now();
             if (now - dbTickRef.current > 8000) {
               dbTickRef.current = now;
               supabase.from("bookings").update({ driver_lat: p.lat, driver_lng: p.lng }).eq("id", b.id).then(() => {});
             }
-            void progress;
           },
           onDone: () => {
             beep(500, 1040);
@@ -96,7 +91,7 @@ function DriverTrip() {
           },
         });
       } catch {
-        // ignore route errors; map will still render endpoints
+        // ignore
       }
     })();
     return () => { cancelled = true; cancelSimRef.current?.(); };
@@ -144,6 +139,75 @@ function DriverTrip() {
     : { pickup: pos ?? mapPickup, drop: mapPickup };
   const destLabel = phase === "in_trip" ? "drop" : "pickup";
 
+  // Full-screen layout while driving
+  if (showMap) {
+    return (
+      <div className="fixed inset-0 bg-background">
+        {/* Full-screen map */}
+        <div className="absolute inset-0">
+          <RouteMap
+            pickup={mapEndpoints.pickup}
+            drop={mapEndpoints.drop}
+            polyline={poly}
+            driver={pos}
+            height="100%"
+          />
+        </div>
+
+        {/* Top header overlay */}
+        <header className="absolute top-0 left-0 right-0 z-20 flex items-center gap-2 bg-card/95 backdrop-blur px-3 py-3 shadow-sm">
+          <Link to="/driver" className="rounded-full p-2 hover:bg-muted"><ArrowLeft className="h-5 w-5" /></Link>
+          <div className="flex-1">
+            <div className="font-bold text-sm">Drive to {destLabel}</div>
+            <div className="text-[11px] text-muted-foreground">OTP {b.otp}</div>
+          </div>
+          {etaMin !== null && (
+            <div className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
+              <ClockIcon className="h-3 w-3" /> {etaMin} min
+            </div>
+          )}
+        </header>
+
+        {/* Bottom sheet */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl bg-card shadow-2xl border-t border-border p-4 space-y-3 max-h-[55%] overflow-auto">
+          <div className="mx-auto h-1 w-12 rounded-full bg-muted-foreground/30" />
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="mt-0.5 h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase text-muted-foreground">Pickup</div>
+              <div className="font-semibold truncate">{b.pickup_address}</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="mt-0.5 h-4 w-4 text-rose-600 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase text-muted-foreground">Drop</div>
+              <div className="font-semibold truncate">{b.drop_address}</div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
+            <span className="font-bold">₹{b.fare}</span>
+            <a href="tel:+91" className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-3.5 w-3.5" /></a>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${phase === "in_trip" ? `${b.drop_lat},${b.drop_lng}` : `${b.pickup_lat},${b.pickup_lng}`}`}
+              target="_blank" rel="noreferrer"
+              className="flex items-center justify-center gap-1 rounded-xl border-2 border-primary py-3 text-sm font-bold text-primary"
+            ><Navigation className="h-4 w-4" /> Navigate</a>
+            <button
+              onClick={phase === "in_trip" ? reachedDrop : arrivedAtPickup}
+              className="rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+            >Reached {destLabel}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-map phases (otp / payment) — centered card layout
   return (
     <div className="min-h-screen bg-background pb-10">
       <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-card px-3 py-3">
@@ -152,26 +216,9 @@ function DriverTrip() {
           <div className="font-bold">Active Trip</div>
           <div className="text-[11px] text-muted-foreground">OTP {b.otp}</div>
         </div>
-        {etaMin !== null && showMap && (
-          <div className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
-            <ClockIcon className="h-3 w-3" /> {etaMin} min
-          </div>
-        )}
       </header>
 
       <div className="p-4 space-y-3">
-        {showMap && (
-          <div className="overflow-hidden rounded-2xl border border-border">
-            <RouteMap
-              pickup={mapEndpoints.pickup}
-              drop={mapEndpoints.drop}
-              polyline={poly}
-              driver={pos}
-              height={280}
-            />
-          </div>
-        )}
-
         <div className="rounded-2xl border border-border bg-card p-3 text-sm">
           <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 text-emerald-600" /><div><div className="text-[10px] uppercase text-muted-foreground">Pickup</div><div className="font-semibold">{b.pickup_address}</div></div></div>
           <div className="my-2 ml-2 h-4 w-px border-l-2 border-dashed border-muted-foreground/40" />
@@ -181,24 +228,6 @@ function DriverTrip() {
             <span className="font-bold">₹{b.fare}</span>
           </div>
         </div>
-
-        <div className="rounded-2xl border border-border bg-card p-3 text-sm flex items-center gap-3">
-          <div className="font-bold flex-1">Customer</div>
-          <a href="tel:+91" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-4 w-4" /></a>
-        </div>
-
-        {phase === "to_pickup" && (
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold"><Navigation className="h-4 w-4 text-primary" /> Drive to {destLabel}</div>
-            <p className="mt-1 text-[11px] text-muted-foreground">Live tracking is on. You'll get a sound alert on arrival.</p>
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${b.pickup_lat},${b.pickup_lng}`}
-              target="_blank" rel="noreferrer"
-              className="mt-3 block rounded-xl bg-primary py-3 text-center text-sm font-bold text-primary-foreground"
-            >Open in Google Maps</a>
-            <button onClick={arrivedAtPickup} className="mt-2 w-full rounded-xl border-2 border-primary py-3 text-sm font-bold text-primary">I have arrived</button>
-          </div>
-        )}
 
         {phase === "otp" && (
           <div className="rounded-2xl border border-border bg-card p-4">
@@ -216,32 +245,28 @@ function DriverTrip() {
             >Start Trip</button>
           </div>
         )}
+      </div>
 
-        {phase === "in_trip" && (
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold"><Navigation className="h-4 w-4 text-primary" /> Drive to drop</div>
-            <p className="mt-1 text-[11px] text-muted-foreground">Live tracking is on. You'll get a sound alert on arrival.</p>
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${b.drop_lat},${b.drop_lng}`}
-              target="_blank" rel="noreferrer"
-              className="mt-3 block rounded-xl bg-primary py-3 text-center text-sm font-bold text-primary-foreground"
-            >Open in Google Maps</a>
-            <button onClick={reachedDrop} className="mt-2 w-full rounded-xl border-2 border-primary py-3 text-sm font-bold text-primary">Reached drop</button>
-          </div>
-        )}
+      {/* Payment modal popup */}
+      {phase === "payment" && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border p-5 animate-in slide-in-from-bottom-4 fade-in">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+              <CheckCircle2 className="h-8 w-8" />
+            </div>
+            <div className="mt-3 text-center text-base font-bold">Trip Complete</div>
+            <div className="mt-1 text-center text-xs text-muted-foreground">Reached drop location. Collect payment to finish.</div>
+            <div className="mt-4 text-center text-3xl font-bold text-primary">₹{b.fare}</div>
 
-        {phase === "payment" && (
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="text-sm font-semibold">Collect payment</div>
-            <div className="mt-2 text-2xl font-bold text-primary">₹{b.fare}</div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-4 text-center text-xs font-semibold text-muted-foreground">Payment method</div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
               {[
                 { id: "cash" as const, I: Banknote, l: "Cash" },
                 { id: "upi" as const, I: Wallet, l: "UPI" },
                 { id: "card" as const, I: CreditCard, l: "Card" },
               ].map(({ id, I, l }) => (
                 <button key={id} onClick={() => setPay(id)} className={cn("flex flex-col items-center gap-1 rounded-xl border-2 bg-card p-3 text-xs font-semibold",
-                  pay === id ? "border-foreground" : "border-border text-muted-foreground")}>
+                  pay === id ? "border-primary text-primary" : "border-border text-muted-foreground")}>
                   <I className="h-5 w-5" />{l}
                 </button>
               ))}
@@ -249,10 +274,12 @@ function DriverTrip() {
             <button onClick={collectAndComplete} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete trip</>}
             </button>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">10% platform commission will be deducted from your wallet.</p>
+            {pay === "cash" && (
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">10% platform commission will be deducted from your wallet.</p>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
