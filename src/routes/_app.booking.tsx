@@ -619,27 +619,6 @@ function Booking() {
               )}
             </div>
 
-            <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-4">
-              <div className="text-sm font-semibold text-primary">What happens next</div>
-              <div className="mt-3 space-y-2">
-                {[
-                  "Check pickup and drop locations.",
-                  "Confirm vehicle and timing.",
-                  "Tap confirm booking to send your ride request.",
-                  "We assign a driver and show live trip details.",
-                ].map((step, index) => (
-                  <div key={step} className="flex items-start gap-3 text-sm">
-                    <div className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      {index + 1}
-                    </div>
-                    <p className="pt-0.5 text-foreground/85">{step}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-[11px] text-foreground/70">
-                Important note: final fare may update slightly if route, tolls, or waiting time changes during the trip.
-              </p>
-            </div>
 
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
