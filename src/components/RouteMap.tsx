@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
 
@@ -12,48 +12,63 @@ interface Props {
   fitKey?: number;
 }
 
+type Status = "loading" | "ready" | "error";
+
 export function RouteMap({ pickup, drop, polyline, driver, height = 260, interactive = false, fitKey = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const [status, setStatus] = useState<Status>("loading");
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
+    setStatus("loading");
     (async () => {
-      const g = await loadGoogleMaps();
-      if (cancelled || !ref.current) return;
-      const map = new g.maps.Map(ref.current, {
-        center: pickup,
-        zoom: 13,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: "greedy",
-        clickableIcons: false,
-        styles: [
-          { featureType: "poi", stylers: [{ visibility: "off" }] },
-          { featureType: "transit", stylers: [{ visibility: "off" }] },
-        ],
-      });
-      mapRef.current = map;
+      try {
+        const g = await loadGoogleMaps();
+        if (cancelled || !ref.current) return;
+        const map = new g.maps.Map(ref.current, {
+          center: pickup,
+          zoom: 13,
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+          styles: [
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+            { featureType: "transit", stylers: [{ visibility: "off" }] },
+          ],
+        });
+        mapRef.current = map;
 
-      new g.maps.Marker({
-        position: pickup, map,
-        icon: { path: g.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
-      });
-      new g.maps.Marker({
-        position: drop, map,
-        icon: { path: "M12 0C7 0 3 4 3 9c0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z", fillColor: "#e23b3b", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.5, scale: 1.4, anchor: new g.maps.Point(12, 24) },
-      });
+        new g.maps.Marker({
+          position: pickup, map,
+          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+        });
+        new g.maps.Marker({
+          position: drop, map,
+          icon: { path: "M12 0C7 0 3 4 3 9c0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z", fillColor: "#e23b3b", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.5, scale: 1.4, anchor: new g.maps.Point(12, 24) },
+        });
 
-      const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
-      new g.maps.Polyline({
-        path, map,
-        strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
-      });
+        const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
+        new g.maps.Polyline({
+          path, map,
+          strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
+        });
 
-      const bounds = new g.maps.LatLngBounds();
-      path.forEach((p) => bounds.extend(p));
-      map.fitBounds(bounds, 48);
+        const bounds = new g.maps.LatLngBounds();
+        path.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds, 48);
+
+        g.maps.event.addListenerOnce(map, "idle", () => {
+          if (!cancelled) setStatus("ready");
+        });
+      } catch (e) {
+        if (cancelled) return;
+        setErrorMsg(e instanceof Error ? e.message : "Failed to load map");
+        setStatus("error");
+      }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,25 +77,50 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
   // Driver marker
   useEffect(() => {
     (async () => {
-      const g = await loadGoogleMaps();
-      if (!mapRef.current || !driver) return;
-      if (!driverMarkerRef.current) {
-        driverMarkerRef.current = new g.maps.Marker({
-          map: mapRef.current,
-          position: driver,
-          icon: {
-            // Top-down car silhouette (windshield + hood + wheels)
-            path: "M -6 -12 C -6 -14 -4 -15 0 -15 C 4 -15 6 -14 6 -12 L 6 -8 L 7.5 -7 L 7.5 8 L 6 9 L 6 13 C 6 14.5 4.5 15 0 15 C -4.5 15 -6 14.5 -6 13 L -6 9 L -7.5 8 L -7.5 -7 L -6 -8 Z M -4 -10 L 4 -10 L 5 -4 L -5 -4 Z M -4 2 L 4 2 L 5 9 L -5 9 Z",
-            fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.2, scale: 1.1,
-            anchor: new g.maps.Point(0, 0), rotation: 0,
-          },
-        });
-
-      } else {
-        driverMarkerRef.current.setPosition(driver);
+      try {
+        const g = await loadGoogleMaps();
+        if (!mapRef.current || !driver) return;
+        if (!driverMarkerRef.current) {
+          driverMarkerRef.current = new g.maps.Marker({
+            map: mapRef.current,
+            position: driver,
+            icon: {
+              path: "M -6 -12 C -6 -14 -4 -15 0 -15 C 4 -15 6 -14 6 -12 L 6 -8 L 7.5 -7 L 7.5 8 L 6 9 L 6 13 C 6 14.5 4.5 15 0 15 C -4.5 15 -6 14.5 -6 13 L -6 9 L -7.5 8 L -7.5 -7 L -6 -8 Z M -4 -10 L 4 -10 L 5 -4 L -5 -4 Z M -4 2 L 4 2 L 5 9 L -5 9 Z",
+              fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.2, scale: 1.1,
+              anchor: new g.maps.Point(0, 0), rotation: 0,
+            },
+          });
+        } else {
+          driverMarkerRef.current.setPosition(driver);
+        }
+      } catch {
+        // map load error already surfaced by main effect
       }
     })();
   }, [driver?.lat, driver?.lng]);
 
-  return <div ref={ref} className="w-full rounded-2xl overflow-hidden border border-border" style={{ height }} />;
+  return (
+    <div
+      className="relative w-full rounded-2xl overflow-hidden border border-border bg-muted"
+      style={{ height }}
+    >
+      <div ref={ref} className="absolute inset-0" />
+      {status === "loading" && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/80 animate-pulse">
+          <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
+            <div className="h-6 w-6 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            <span>Loading map…</span>
+          </div>
+        </div>
+      )}
+      {status === "error" && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted p-4 text-center">
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground mb-1">Map unavailable</p>
+            <p className="text-xs">{errorMsg || "Please check your connection and try again."}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
