@@ -295,12 +295,13 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [fitKey, setFitKey] = useState(0);
-  const [secsLeft, setSecsLeft] = useState(120);
+  const [secsLeft, setSecsLeft] = useState(300);
   const cancelRef = useRef<(() => void) | null>(null);
 
-  // OTP countdown (2 minutes, restarts on phase change to arrived/to_pickup).
+  // OTP countdown (5 minutes) — starts only after driver has arrived.
   useEffect(() => {
-    setSecsLeft(120);
+    if (phase !== "arrived" && phase !== "otp") return;
+    setSecsLeft(300);
     const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [phase]);
