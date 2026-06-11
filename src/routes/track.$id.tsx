@@ -568,37 +568,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         </button>
       </div>
 
-      {phase === "otp" && (
-        <motion.div
-          initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] rounded-t-3xl border-t border-border bg-card p-5 shadow-2xl"
-        >
-          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
-          <h3 className="text-center font-display text-xl font-bold">Confirm OTP to Start Trip</h3>
-          <p className="mt-1 text-center text-xs text-muted-foreground">
-            Your trip OTP is <span className="font-bold text-primary">{b.otp}</span>.
-          </p>
-          <input
-            inputMode="numeric"
-            maxLength={4}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            className="mt-4 w-full rounded-xl border-2 border-border bg-background px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-primary"
-            placeholder="••••"
-          />
-          {otpError && <div className="mt-2 text-center text-xs text-destructive">{otpError}</div>}
-          <button
-            onClick={verifyOtp}
-            disabled={otp.length !== 4}
-            className={cn(
-              "mt-4 w-full rounded-xl py-3 text-sm font-bold transition",
-              otp.length === 4 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            )}
-          >
-            Verify & Start Trip
-          </button>
-        </motion.div>
-      )}
     </div>
   );
 }
