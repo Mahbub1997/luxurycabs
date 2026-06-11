@@ -377,15 +377,13 @@ function Booking() {
       <div className="mx-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold">Select Vehicle</h3>
-          {tab === "outstation" && (
-            <button
-              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
-              className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
-              disabled={!canPickVehicle}
-            >
-              View All <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+            className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
+            disabled={!canPickVehicle}
+          >
+            View All <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
         <div className="mt-2 space-y-2">
           {tab === "outstation" ? (
