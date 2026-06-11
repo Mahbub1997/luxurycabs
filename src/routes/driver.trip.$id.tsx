@@ -61,7 +61,7 @@ function DriverTrip() {
         const r = await computeRoute({ data: { origin, destination: dest } });
         if (cancelled) return;
         setPoly(r.polyline);
-        const totalMin = Math.max(1, Math.round((r.durationSec ?? 600) / 60));
+        const totalMin = Math.max(1, Math.round(r.durationMin ?? 10));
         setEtaMin(totalMin);
         // Compress to a manageable demo duration: 1 min real per 3 trip-min, min 30s, max 5min.
         const totalMs = Math.min(5 * 60 * 1000, Math.max(30 * 1000, totalMin * 20_000));
