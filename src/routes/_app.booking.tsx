@@ -184,16 +184,29 @@ function Booking() {
   const tariffLabel = tab === "outstation" ? outVehicle.label : vehicle === "sedan" ? "Sedan" : "SUV";
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
+  // Hide app header + bottom nav once both pickup & drop are selected so the
+  // vehicle picker fits on-screen without scrolling.
+  const hideChrome = !!(pickup && drop);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (hideChrome) root.classList.add("chrome-hidden");
+    else root.classList.remove("chrome-hidden");
+    return () => { root.classList.remove("chrome-hidden"); };
+  }, [hideChrome]);
+
   return (
     <div className="flex flex-col gap-3 pb-40">
       {/* Header with crown */}
-      <div className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
-        <CrownCarLogo className="h-6 w-6" />
-        <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
-        <button className="absolute right-4 grid h-9 w-9 place-items-center rounded-full border border-border bg-card" aria-label="Notifications">
-          <Bell className="h-4 w-4 text-foreground" />
-        </button>
-      </div>
+      {!hideChrome && (
+        <div data-app-chrome className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
+          <CrownCarLogo className="h-6 w-6 text-green-600" />
+          <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
+          <button className="absolute right-4 grid h-9 w-9 place-items-center rounded-full border border-border bg-card" aria-label="Notifications">
+            <Bell className="h-4 w-4 text-foreground" />
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="mx-4 grid grid-cols-3 gap-2">
