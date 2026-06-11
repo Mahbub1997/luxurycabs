@@ -174,7 +174,7 @@ function Booking() {
         route_polyline: tab === "rental" ? null : routeInfo!.polyline,
       });
       pushRecentBooking(booking.id);
-      navigate({ to: "/confirm/$id", params: { id: booking.id } });
+      navigate({ to: "/track/$id", params: { id: booking.id } });
     } catch (e) {
       console.error(e);
       alert("Could not create booking. Please try again.");
