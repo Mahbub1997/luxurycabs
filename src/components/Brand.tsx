@@ -20,12 +20,10 @@ export function CrownCarLogo({ className }: { className?: string }) {
 
 function LogoImage({ className }: { className?: string }) {
   return (
-    <img
-      src={headerLogo.url}
-      alt="Luxury Cabs"
-      className={cn("h-8 w-auto object-contain object-left", className)}
-      style={{ maxWidth: "70%" }}
-    />
+    <div className={cn("flex items-center gap-2", className)} aria-label="Luxury Cabs">
+      <CrownCarLogo className="h-7 w-7 shrink-0" />
+      <span className="text-lg font-semibold text-primary">Luxury Cabs</span>
+    </div>
   );
 }
 
@@ -33,7 +31,7 @@ export function CredoomWordmark({ className, label }: { className?: string; labe
   void label;
   return (
     <div className={cn("flex items-center", className)}>
-      <LogoImage className="h-10" />
+      <LogoImage className="text-2xl" />
     </div>
   );
 }
@@ -43,7 +41,7 @@ export function BrandHeader({ title, right }: { title?: string; right?: React.Re
   return (
     <div className="sticky top-0 z-30 flex h-14 items-center justify-between bg-background/95 px-4 backdrop-blur border-b border-border">
       <div className="w-10" />
-      <LogoImage className="h-7" />
+      <LogoImage />
       <div className="flex w-10 justify-end">{right}</div>
     </div>
   );
