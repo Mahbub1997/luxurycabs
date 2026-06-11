@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { getBooking, type Booking } from "@/lib/booking-store";
 import { formatINR, fareBreakdown, tariffFor } from "@/lib/fare";
 import { generateInvoice } from "@/lib/invoice";
+import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/complete/$id")({
   head: () => ({ meta: [{ title: "Trip Complete — Luxury Cabs" }] }),
