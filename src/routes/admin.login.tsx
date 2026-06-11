@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Shield, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { CrownCarLogo } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { claimFirstAdmin, checkIsAdmin } from "@/lib/admin.functions";
 import { toast } from "sonner";
@@ -73,9 +74,9 @@ function AdminLogin() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary-soft/40 to-background px-6">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2 text-primary">
-          <Shield className="h-6 w-6" />
-          <span className="font-display text-xl font-bold">Admin Console</span>
+        <div className="mb-6 flex items-center justify-center gap-2 text-primary">
+          <CrownCarLogo className="h-7 w-7" />
+          <span className="font-display text-xl font-bold">Luxury Cabs Admin</span>
         </div>
         <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h1 className="text-lg font-bold">{mode === "login" ? "Admin sign in" : "Create admin account"}</h1>
