@@ -338,59 +338,62 @@ function Booking() {
         </div>
       )}
 
-      {/* Select Vehicle — inline list (image 2 style) */}
-      {canPickVehicle && (
-        <div className="mx-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold">Select Vehicle</h3>
-            {tab === "outstation" && (
-              <button
-                onClick={() => setVehicleSheetOpen(true)}
-                className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary"
-              >
-                View All <ChevronRight className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="mt-2 space-y-2">
-            {tab === "outstation" ? (
-              OUTSTATION_VEHICLES.slice(0, 2).map((v) => {
-                const km = (routeInfo?.distanceKm ?? 0) * 2;
-                const bd = routeInfo
-                  ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
-                  : null;
-                return (
-                  <InlineVehicleRow
-                    key={v.id}
-                    img={v.tier === "sedan" ? sedanImg : suvImg}
-                    label={v.label}
-                    seats={v.seats}
-                    fare={bd?.total ?? 0}
-                    onSelect={() => chooseOutstation(v.id)}
-                  />
-                );
-              })
-            ) : (
-              <>
-                <InlineVehicleRow
-                  img={sedanImg}
-                  label="Sedan"
-                  seats={4}
-                  fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                  onSelect={() => chooseLocalRental("sedan")}
-                />
-                <InlineVehicleRow
-                  img={suvImg}
-                  label="SUV"
-                  seats={7}
-                  fare={tab === "rental" ? rentalFares.suv : localFares.suv}
-                  onSelect={() => chooseLocalRental("suv")}
-                />
-              </>
-            )}
-          </div>
+      {/* Select Vehicle — always visible directly under the map */}
+      <div className="mx-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold">Select Vehicle</h3>
+          {tab === "outstation" && (
+            <button
+              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+              className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
+              disabled={!canPickVehicle}
+            >
+              View All <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
-      )}
+        <div className="mt-2 space-y-2">
+          {tab === "outstation" ? (
+            OUTSTATION_VEHICLES.slice(0, 2).map((v) => {
+              const km = (routeInfo?.distanceKm ?? 0) * 2;
+              const bd = routeInfo && canPickVehicle
+                ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
+                : null;
+              return (
+                <InlineVehicleRow
+                  key={v.id}
+                  img={v.tier === "sedan" ? sedanImg : suvImg}
+                  label={v.label}
+                  seats={v.seats}
+                  fare={bd?.total ?? 0}
+                  disabled={!canPickVehicle}
+                  onSelect={() => chooseOutstation(v.id)}
+                />
+              );
+            })
+          ) : (
+            <>
+              <InlineVehicleRow
+                img={sedanImg}
+                label="Sedan"
+                seats={4}
+                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
+                disabled={!canPickVehicle}
+                onSelect={() => chooseLocalRental("sedan")}
+              />
+              <InlineVehicleRow
+                img={suvImg}
+                label="SUV"
+                seats={7}
+                fare={tab === "rental" ? rentalFares.suv : localFares.suv}
+                disabled={!canPickVehicle}
+                onSelect={() => chooseLocalRental("suv")}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
 
       {/* Trust strip */}
       <div className="mx-4 mt-2 grid grid-cols-4 gap-2 border-t border-border pt-4 text-center">
