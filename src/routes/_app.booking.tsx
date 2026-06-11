@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Calendar, Car, Map as MapIcon, Clock, ArrowUpDown, ArrowRight,
-  Loader2, X, Pencil, ShieldCheck, Bell, Users, Snowflake,
+  Calendar, Car, Map as MapIcon, Clock, ArrowRight, ChevronRight,
+  Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
+  Bell, Users, Snowflake, Crosshair,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -53,7 +54,7 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
+  
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
@@ -81,15 +82,7 @@ function Booking() {
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
 
-  // Auto-open vehicle sheet when route becomes ready (once per pickup+drop)
-  useEffect(() => {
-    if (!pickup || !drop || tab === "rental" || !routeInfo) return;
-    if (tab === "outstation" && !returnAt) return;
-    const key = `${pickup.lat},${pickup.lng}->${drop.lat},${drop.lng}:${tab}:${returnAt}`;
-    if (autoOpenedFor === key) return;
-    setAutoOpenedFor(key);
-    setVehicleSheetOpen(true);
-  }, [pickup, drop, tab, routeInfo, returnAt, autoOpenedFor]);
+  // (Vehicle sheet no longer auto-opens — vehicles render inline)
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
@@ -223,47 +216,50 @@ function Booking() {
         ))}
       </div>
 
-      {/* Map background + Pickup/Drop overlay */}
+      {/* Map section with overlaid pickup & drop cards */}
       <div className="relative mx-4">
-        {pickup && drop && tab !== "rental" ? (
-          <div className="absolute inset-x-0 top-0 overflow-hidden rounded-2xl">
+        <div className="overflow-hidden rounded-2xl border border-border bg-muted">
+          {pickup && drop && tab !== "rental" ? (
             <RouteMap
               pickup={{ lat: pickup.lat, lng: pickup.lng }}
               drop={{ lat: drop.lat, lng: drop.lng }}
               polyline={routeInfo?.polyline ?? null}
-              height={360}
+              height={pickup && drop ? 420 : 280}
             />
-          </div>
-        ) : null}
-
-        <div className="relative z-10 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
-          <div className="absolute left-6 top-12 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
-          <PlaceAutocomplete
-            label="Pickup Location"
-            value={pickup}
-            onChange={setPickup}
-            placeholder="Search pickup"
-            autoDetect
-          />
-          <div className="my-3 h-px bg-border" />
-          <PlaceAutocomplete
-            label="Drop Location"
-            value={drop}
-            onChange={setDrop}
-            placeholder="Where to go?"
-            accent="green"
-          />
-          <button
-            onClick={swap}
-            className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow"
-            aria-label="Swap"
-          >
-            <ArrowUpDown className="h-4 w-4 text-foreground" />
-          </button>
+          ) : (
+            <div className="h-[280px] w-full bg-gradient-to-b from-muted to-muted/60" />
+          )}
         </div>
 
-        {pickup && drop && tab !== "rental" ? <div className="h-[240px]" /> : null}
+        {/* Pickup + Drop stacked white cards over the map */}
+        <div className="absolute inset-x-3 top-3 space-y-2">
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
+            <div className="min-w-0 flex-1">
+              <PlaceAutocomplete
+                label="Pickup Location"
+                value={pickup}
+                onChange={setPickup}
+                placeholder="Search pickup"
+                autoDetect
+              />
+            </div>
+            <Crosshair className="h-4 w-4 shrink-0 text-primary" />
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
+            <div className="min-w-0 flex-1">
+              <PlaceAutocomplete
+                label="Drop Location"
+                value={drop}
+                onChange={setDrop}
+                placeholder="Where to go?"
+                accent="green"
+              />
+            </div>
+            <Crosshair className="h-4 w-4 shrink-0 text-primary" />
+          </div>
+        </div>
       </div>
+
 
       {/* Outstation banner: round trip only + return date (required) */}
       {tab === "outstation" && (
@@ -346,16 +342,76 @@ function Booking() {
         </div>
       )}
 
-      {/* Bottom CTA → opens Vehicle sheet */}
-      <div className="fixed inset-x-0 bottom-[64px] z-20 mx-auto max-w-[480px] px-3 pb-2 pt-2">
-        <button
-          disabled={!canPickVehicle}
-          onClick={openVehicleSheet}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-base font-bold text-primary-foreground shadow-2xl disabled:opacity-50"
-        >
-          Select Vehicle <ArrowRight className="h-5 w-5" />
-        </button>
+      {/* Select Vehicle — inline list (image 2 style) */}
+      {canPickVehicle && (
+        <div className="mx-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold">Select Vehicle</h3>
+            {tab === "outstation" && (
+              <button
+                onClick={() => setVehicleSheetOpen(true)}
+                className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary"
+              >
+                View All <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="mt-2 space-y-2">
+            {tab === "outstation" ? (
+              OUTSTATION_VEHICLES.slice(0, 2).map((v) => {
+                const km = (routeInfo?.distanceKm ?? 0) * 2;
+                const bd = routeInfo
+                  ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
+                  : null;
+                return (
+                  <InlineVehicleRow
+                    key={v.id}
+                    img={v.tier === "sedan" ? sedanImg : suvImg}
+                    label={v.label}
+                    seats={v.seats}
+                    fare={bd?.total ?? 0}
+                    onSelect={() => chooseOutstation(v.id)}
+                  />
+                );
+              })
+            ) : (
+              <>
+                <InlineVehicleRow
+                  img={sedanImg}
+                  label="Sedan"
+                  seats={4}
+                  fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
+                  onSelect={() => chooseLocalRental("sedan")}
+                />
+                <InlineVehicleRow
+                  img={suvImg}
+                  label="SUV"
+                  seats={7}
+                  fare={tab === "rental" ? rentalFares.suv : localFares.suv}
+                  onSelect={() => chooseLocalRental("suv")}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Trust strip */}
+      <div className="mx-4 mt-2 grid grid-cols-4 gap-2 border-t border-border pt-4 text-center">
+        {[
+          { I: ShieldAlert, t: "Safety Secure", s: "Your safety is our priority" },
+          { I: UserCheck, t: "Verified Driver", s: "Experienced & background checked" },
+          { I: Headphones, t: "Help & Support", s: "24/7 assistance whenever you need" },
+          { I: IndianRupee, t: "Transparent Fare", s: "No hidden charges, ever" },
+        ].map(({ I, t, s }) => (
+          <div key={t} className="flex flex-col items-center gap-1 px-1">
+            <I className="h-5 w-5 text-primary" />
+            <div className="text-[10px] font-bold leading-tight">{t}</div>
+            <div className="text-[9px] leading-tight text-muted-foreground">{s}</div>
+          </div>
+        ))}
       </div>
+
 
       {/* Vehicle picker Sheet */}
       <Sheet open={vehicleSheetOpen} onOpenChange={setVehicleSheetOpen}>
@@ -546,5 +602,34 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-semibold text-foreground">{value}</span>
     </div>
+  );
+}
+
+function InlineVehicleRow({
+  img, label, seats, fare, onSelect,
+}: { img: string; label: string; seats: number; fare: number; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary"
+    >
+      <div className="grid h-16 w-24 shrink-0 place-items-center">
+        <img src={img} alt={label} className="h-full w-full object-contain" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-base font-bold">{label}</div>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {seats} Seats</span>
+          <span className="inline-flex items-center gap-1"><Snowflake className="h-3 w-3" /> AC</span>
+        </div>
+        <div className="mt-0.5 text-[11px] text-primary">Best for {seats} People</div>
+      </div>
+      <div className="text-right">
+        <div className="text-base font-extrabold text-primary">{fare > 0 ? formatINR(fare) : "—"}</div>
+        <div className="text-[10px] text-muted-foreground">Estimated Fare</div>
+      </div>
+      <span className="ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-muted-foreground/40 bg-card" />
+    </button>
   );
 }
