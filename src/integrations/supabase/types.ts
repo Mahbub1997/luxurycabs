@@ -241,6 +241,48 @@ export type Database = {
         }
         Relationships: []
       }
+      local_drop_fares: {
+        Row: {
+          base_fare: number
+          created_at: string
+          id: string
+          is_above: boolean
+          max_km: number
+          notes: string | null
+          per_km: number
+          per_min: number
+          total_fare: number
+          updated_at: string
+          vehicle_type: string
+        }
+        Insert: {
+          base_fare?: number
+          created_at?: string
+          id?: string
+          is_above?: boolean
+          max_km: number
+          notes?: string | null
+          per_km?: number
+          per_min?: number
+          total_fare?: number
+          updated_at?: string
+          vehicle_type?: string
+        }
+        Update: {
+          base_fare?: number
+          created_at?: string
+          id?: string
+          is_above?: boolean
+          max_km?: number
+          notes?: string | null
+          per_km?: number
+          per_min?: number
+          total_fare?: number
+          updated_at?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
