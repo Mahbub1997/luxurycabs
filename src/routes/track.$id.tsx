@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
+  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
   Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck,
 } from "lucide-react";
