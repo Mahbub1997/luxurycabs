@@ -30,7 +30,7 @@ export function VehicleCard({ type, fare, selected, onSelect }: Props) {
           width={112}
           height={80}
           loading="lazy"
-          className="h-full w-full object-contain"
+          className="h-full w-full object-contain scale-x-[-1]"
         />
       </div>
       <div className="min-w-0 flex-1">

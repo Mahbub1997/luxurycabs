@@ -14,13 +14,15 @@ interface Props {
 
 type Status = "loading" | "ready" | "error";
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, interactive = false, fitKey = 0 }: Props) {
+export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  // Init map + base markers ONLY when endpoints change (not on polyline change).
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
@@ -51,14 +53,9 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
           icon: { path: "M12 0C7 0 3 4 3 9c0 7 9 15 9 15s9-8 9-15c0-5-4-9-9-9z", fillColor: "#e23b3b", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.5, scale: 1.4, anchor: new g.maps.Point(12, 24) },
         });
 
-        const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
-        new g.maps.Polyline({
-          path, map,
-          strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
-        });
-
         const bounds = new g.maps.LatLngBounds();
-        path.forEach((p) => bounds.extend(p));
+        bounds.extend(pickup);
+        bounds.extend(drop);
         map.fitBounds(bounds, 48);
 
         g.maps.event.addListenerOnce(map, "idle", () => {
@@ -70,9 +67,32 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, interac
         setStatus("error");
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      polylineRef.current?.setMap(null);
+      polylineRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup.lat, pickup.lng, drop.lat, drop.lng, polyline, fitKey]);
+  }, [pickup.lat, pickup.lng, drop.lat, drop.lng, fitKey]);
+
+  // Draw / update the polyline overlay without re-creating the map.
+  useEffect(() => {
+    (async () => {
+      const g = await loadGoogleMaps().catch(() => null);
+      if (!g || !mapRef.current) return;
+      polylineRef.current?.setMap(null);
+      const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
+      polylineRef.current = new g.maps.Polyline({
+        path, map: mapRef.current,
+        strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
+      });
+      if (polyline) {
+        const bounds = new g.maps.LatLngBounds();
+        path.forEach((p) => bounds.extend(p));
+        mapRef.current.fitBounds(bounds, 48);
+      }
+    })();
+  }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
 
   // Driver marker
   useEffect(() => {

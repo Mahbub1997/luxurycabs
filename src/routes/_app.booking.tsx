@@ -41,6 +41,7 @@ function Booking() {
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
+  const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv">("sedan");
   const [outVehicleId, setOutVehicleId] = useState<string>(OUTSTATION_VEHICLES[0].id);
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
@@ -58,7 +59,8 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   
 
-  useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
+  // Note: routeInfo is overwritten by the route-fetch effect below; don't
+  // null it here or the map polyline flickers off/on between picks.
 
   useEffect(() => {
     if (!pickup || !drop || tab === "rental") return;
@@ -137,8 +139,9 @@ function Booking() {
     setSummaryOpen(true);
   }
 
-  function chooseLocalRental(v: VehicleType) {
+  function chooseLocalRental(v: VehicleType, model: "sedan" | "ciaz" | "suv" = v as any) {
     setVehicle(v);
+    setLocalModel(model);
     setVehicleSheetOpen(false);
   }
   function chooseOutstation(id: string) {
@@ -156,7 +159,7 @@ function Booking() {
       let distance: number;
       let duration: number;
       let vehicleType: VehicleType = vehicle;
-      let vehicleModel: string = vehicle === "sedan" ? "Sedan" : "SUV";
+      let vehicleModel: string = localModel === "ciaz" ? "Ciaz" : vehicle === "sedan" ? "Sedan" : "SUV";
 
       if (tab === "rental") {
         distance = pkg!.km;
@@ -197,7 +200,14 @@ function Booking() {
     } finally { setSubmitting(false); }
   }
 
-  const tariffLabel = tab === "outstation" ? outVehicle.label : vehicle === "sedan" ? "Sedan" : "SUV";
+  const tariffLabel =
+    tab === "outstation"
+      ? outVehicle.label
+      : localModel === "ciaz"
+        ? "Ciaz"
+        : vehicle === "sedan"
+          ? "Sedan"
+          : "SUV";
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
   // Hide app header + bottom nav once both pickup & drop are selected so the
@@ -404,9 +414,18 @@ function Booking() {
                 label="Sedan"
                 seats={4}
                 fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                selected={vehicle === "sedan"}
+                selected={vehicle === "sedan" && localModel === "sedan"}
                 disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("sedan")}
+                onSelect={() => chooseLocalRental("sedan", "sedan")}
+              />
+              <InlineVehicleRow
+                img={sedanImg}
+                label="Ciaz"
+                seats={4}
+                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
+                selected={localModel === "ciaz"}
+                disabled={!canPickVehicle}
+                onSelect={() => chooseLocalRental("sedan", "ciaz")}
               />
               <InlineVehicleRow
                 img={suvImg}
@@ -415,7 +434,7 @@ function Booking() {
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
                 selected={vehicle === "suv"}
                 disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("suv")}
+                onSelect={() => chooseLocalRental("suv", "suv")}
               />
             </>
           )}
@@ -467,7 +486,7 @@ function Booking() {
             <p className="mt-1 text-center text-xs text-muted-foreground">Selected vehicle and fare estimate</p>
 
             <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary bg-primary-soft/30 p-3">
-              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain" />
+              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain scale-x-[-1]" />
               <div className="min-w-0 flex-1">
                 <div className="text-base font-bold">{tariffLabel}</div>
                 <div className="text-[11px] text-muted-foreground">Best for {tab === "outstation" ? outVehicle.seats : vehicle === "sedan" ? 4 : 7} People · AC</div>
@@ -515,7 +534,7 @@ function Booking() {
                       className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left hover:border-primary"
                     >
                       <div className="grid h-16 w-24 shrink-0 place-items-center">
-                        <img src={v.tier === "sedan" ? sedanImg : suvImg} alt={v.label} className="h-full w-full object-contain" />
+                        <img src={v.tier === "sedan" ? sedanImg : suvImg} alt={v.label} className="h-full w-full object-contain scale-x-[-1]" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold">{v.label}</div>
@@ -547,10 +566,10 @@ function Booking() {
 
       {/* Trip Summary Sheet — full screen */}
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-screen max-h-screen w-full overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-[100dvh] max-h-[100dvh] w-full overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
 
-          <div className="px-5 pb-6 pt-5">
+          <div className="px-5 pb-6 pt-3" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
             <h2 className="text-center text-xl font-bold">Trip Summary</h2>
 
 
@@ -590,7 +609,7 @@ function Booking() {
             {/* Selected vehicle + fare */}
             <div className="relative mt-3 rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center gap-3">
-                <img src={carImg} alt={tariffLabel} className="h-14 w-20 object-contain" />
+                <img src={carImg} alt={tariffLabel} className="h-14 w-20 object-contain scale-x-[-1]" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Selected Vehicle</div>
                   <div className="text-base font-bold">{tariffLabel}</div>
@@ -701,7 +720,7 @@ function InlineVehicleRow({
       )}
     >
       <div className="grid h-16 w-24 shrink-0 place-items-center">
-        <img src={img} alt={label} className="h-full w-full object-contain" />
+        <img src={img} alt={label} className="h-full w-full object-contain scale-x-[-1]" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-base font-bold">{label}</div>

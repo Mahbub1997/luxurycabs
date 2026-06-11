@@ -70,6 +70,7 @@ export interface OutstationVehicle {
 
 export const OUTSTATION_VEHICLES: OutstationVehicle[] = [
   { id: "sedan",  label: "Sedan",         perKm: 12, bata: 400, seats: 4, bags: 2, tier: "sedan" },
+  { id: "ciaz",   label: "Ciaz",          perKm: 13, bata: 400, seats: 4, bags: 2, tier: "sedan" },
   { id: "ertiga", label: "SUV Ertiga",    perKm: 17, bata: 500, seats: 6, bags: 3, tier: "suv"   },
   { id: "innova", label: "SUV Innova",    perKm: 19, bata: 500, seats: 7, bags: 4, tier: "suv"   },
   { id: "crysta", label: "Innova Crysta", perKm: 21, bata: 500, seats: 7, bags: 4, tier: "suv"   },
