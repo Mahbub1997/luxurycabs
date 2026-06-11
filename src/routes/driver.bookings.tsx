@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration, formatDateTime12 } from "@/lib/utils";
 
 export const Route = createFileRoute("/driver/bookings")({
   head: () => ({ meta: [{ title: "My Bookings — Driver" }] }),
