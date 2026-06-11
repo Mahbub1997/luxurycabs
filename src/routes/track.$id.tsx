@@ -535,12 +535,20 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px]">
-            <span className="inline-flex items-center gap-1 text-muted-foreground">
-              <ClockIcon className="h-3 w-3" /> OTP expires in <span className="font-semibold text-foreground">{mmss}</span>
-            </span>
-            <button onClick={() => setSecsLeft(120)} className="font-semibold text-primary">
-              Didn't get OTP? ↻
-            </button>
+            {phase === "arrived" || phase === "otp" ? (
+              <>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <ClockIcon className="h-3 w-3" /> OTP expires in <span className="font-semibold text-foreground">{mmss}</span>
+                </span>
+                <button onClick={() => setSecsLeft(300)} className="font-semibold text-primary">
+                  Didn't get OTP? ↻
+                </button>
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                <ClockIcon className="h-3 w-3" /> 5-min OTP timer starts once your driver arrives.
+              </span>
+            )}
           </div>
 
           {phase === "arrived" && (
