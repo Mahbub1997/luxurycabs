@@ -521,14 +521,8 @@ function Booking() {
           </button>
 
           <div className="px-5 pb-6 pt-5">
-              <div className="flex flex-col items-center">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary">
-                <CrownCarLogo className="h-7 w-7 text-primary-foreground" />
-              </div>
-                <div className="mt-2 text-xs font-bold tracking-wide text-primary">CREDOOM</div>
-            </div>
+            <h2 className="text-center text-xl font-bold">Trip Summary</h2>
 
-            <h2 className="mt-4 text-center text-lg font-bold">Trip Summary</h2>
 
             {/* Route */}
             <div className="relative mt-4 rounded-2xl border border-border bg-card p-4">
