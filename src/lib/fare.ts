@@ -78,11 +78,19 @@ export const OUTSTATION_VEHICLES: OutstationVehicle[] = [
 export const OUTSTATION_NIGHT_HALT = 500;
 export const OUTSTATION_MIN_KM_PER_DAY = 300;
 
+function parseLocalDate(s: string): Date | null {
+  if (!s) return null;
+  // "YYYY-MM-DD" — parse as local midnight to avoid UTC offset bugs
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
 export function diffDays(pickupISO: string, returnISO: string): number {
-  const a = new Date(pickupISO).getTime();
-  const b = new Date(returnISO).getTime();
-  if (!isFinite(a) || !isFinite(b) || b <= a) return 1;
-  return Math.max(1, Math.ceil((b - a) / (24 * 60 * 60 * 1000)));
+  const a = parseLocalDate(pickupISO);
+  const b = parseLocalDate(returnISO);
+  if (!a || !b) return 1;
+  const diff = Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
+  return Math.max(1, diff + 1);
 }
 
 export interface OutstationBreakdown {

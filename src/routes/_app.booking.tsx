@@ -47,17 +47,13 @@ function Booking() {
     const off = d.getTimezoneOffset();
     return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
   });
-  const [returnAt, setReturnAt] = useState<string>(() => {
-    const d = new Date(Date.now() + 24 * 60 * 60_000);
-    d.setSeconds(0, 0);
-    const off = d.getTimezoneOffset();
-    return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
-  });
+  const [returnAt, setReturnAt] = useState<string>("");
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string; tollInr: number } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
@@ -77,13 +73,23 @@ function Booking() {
     [outVehicleId]
   );
 
-  const outDays = useMemo(() => diffDays(scheduledAt, returnAt), [scheduledAt, returnAt]);
+  const outDays = useMemo(() => (returnAt ? diffDays(scheduledAt, returnAt) : 1), [scheduledAt, returnAt]);
 
   const outBreakdown = useMemo(() => {
     if (tab !== "outstation" || !routeInfo) return null;
     const km = routeInfo.distanceKm * 2; // round trip only
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
+
+  // Auto-open vehicle sheet when route becomes ready (once per pickup+drop)
+  useEffect(() => {
+    if (!pickup || !drop || tab === "rental" || !routeInfo) return;
+    if (tab === "outstation" && !returnAt) return;
+    const key = `${pickup.lat},${pickup.lng}->${drop.lat},${drop.lng}:${tab}:${returnAt}`;
+    if (autoOpenedFor === key) return;
+    setAutoOpenedFor(key);
+    setVehicleSheetOpen(true);
+  }, [pickup, drop, tab, routeInfo, returnAt, autoOpenedFor]);
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
@@ -110,11 +116,13 @@ function Booking() {
   const canPickVehicle = (() => {
     if (!pickup || !drop) return tab === "rental";
     if (tab === "rental") return true;
+    if (tab === "outstation" && !returnAt) return false;
     return !!routeInfo && !routeLoading;
   })();
 
   function openVehicleSheet() {
     if (!canPickVehicle) return;
+    setSummaryOpen(false);
     setVehicleSheetOpen(true);
   }
 
@@ -215,65 +223,77 @@ function Booking() {
         ))}
       </div>
 
-      {/* Map (background area) */}
-      {pickup && drop && tab !== "rental" ? (
-        <div className="mx-4 -mt-1 overflow-hidden rounded-2xl">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo?.polyline ?? null}
-            height={300}
-          />
-        </div>
-      ) : null}
+      {/* Map background + Pickup/Drop overlay */}
+      <div className="relative mx-4">
+        {pickup && drop && tab !== "rental" ? (
+          <div className="absolute inset-x-0 top-0 overflow-hidden rounded-2xl">
+            <RouteMap
+              pickup={{ lat: pickup.lat, lng: pickup.lng }}
+              drop={{ lat: drop.lat, lng: drop.lng }}
+              polyline={routeInfo?.polyline ?? null}
+              height={360}
+            />
+          </div>
+        ) : null}
 
-      {/* Pickup / Drop */}
-      <div className="mx-4 relative rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <div className="absolute left-6 top-12 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
-        <PlaceAutocomplete
-          label="Pickup Location"
-          value={pickup}
-          onChange={setPickup}
-          placeholder="Search pickup"
-          autoDetect
-        />
-        <div className="my-3 h-px bg-border" />
-        <PlaceAutocomplete
-          label="Drop Location"
-          value={drop}
-          onChange={setDrop}
-          placeholder="Where to go?"
-          accent="green"
-        />
-        <button
-          onClick={swap}
-          className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow"
-          aria-label="Swap"
-        >
-          <ArrowUpDown className="h-4 w-4 text-foreground" />
-        </button>
+        <div className="relative z-10 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
+          <div className="absolute left-6 top-12 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
+          <PlaceAutocomplete
+            label="Pickup Location"
+            value={pickup}
+            onChange={setPickup}
+            placeholder="Search pickup"
+            autoDetect
+          />
+          <div className="my-3 h-px bg-border" />
+          <PlaceAutocomplete
+            label="Drop Location"
+            value={drop}
+            onChange={setDrop}
+            placeholder="Where to go?"
+            accent="green"
+          />
+          <button
+            onClick={swap}
+            className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow"
+            aria-label="Swap"
+          >
+            <ArrowUpDown className="h-4 w-4 text-foreground" />
+          </button>
+        </div>
+
+        {pickup && drop && tab !== "rental" ? <div className="h-[240px]" /> : null}
       </div>
 
-      {/* Outstation banner: round trip only + return date */}
+      {/* Outstation banner: round trip only + return date (required) */}
       {tab === "outstation" && (
-        <div className="mx-4 rounded-xl border border-border bg-card p-3">
+        <div className={cn(
+          "mx-4 rounded-xl border bg-card p-3",
+          returnAt ? "border-border" : "border-primary"
+        )}>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <MapIcon className="h-4 w-4 text-primary" /> Round Trip
             <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">
-              {outDays} day{outDays > 1 ? "s" : ""}
+              {returnAt ? `${outDays} day${outDays > 1 ? "s" : ""}` : "Select return"}
             </span>
           </div>
           <div className="mt-2 flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Return</span>
+            <span className="text-xs text-muted-foreground">Return *</span>
             <input
-              type="datetime-local"
+              type="date"
+              required
               value={returnAt}
-              min={scheduledAt}
+              min={scheduledAt.slice(0, 10)}
               onChange={(e) => setReturnAt(e.target.value)}
               className="ml-auto bg-transparent text-sm text-foreground outline-none"
             />
           </div>
+          {!returnAt && (
+            <div className="mt-1 text-[11px] font-medium text-primary">
+              Return date is required for outstation trips.
+            </div>
+          )}
         </div>
       )}
 
@@ -454,6 +474,13 @@ function Booking() {
                       ₹{outVehicle.perKm}/km · Bata ₹{outVehicle.bata}/day · {outDays} day{outDays > 1 ? "s" : ""}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={openVehicleSheet}
+                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+                  >
+                    <Pencil className="h-3 w-3" /> Change vehicle
+                  </button>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-extrabold text-primary">{formatINR(estimatedFare)}</div>
