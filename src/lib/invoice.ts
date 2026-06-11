@@ -57,9 +57,6 @@ export function generateInvoice(b: Booking) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("Invoice", W / 2, 40, { align: "center" });
-  doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
-  doc.setFontSize(11);
-  doc.text("Download", W - M, 40, { align: "right" });
 
   // Main card border
   let y = 70;
