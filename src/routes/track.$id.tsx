@@ -342,15 +342,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
     }).then((r) => setTripPoly(r.polyline)).catch(() => {});
   }, [phase, b.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function verifyOtp() {
-    if (otp.trim() === b.otp) {
-      setOtpError("");
-      updateBooking(b.id, { status: "in_progress" }).catch(() => {});
-      setPhase("in_trip");
-    } else {
-      setOtpError("Invalid OTP. Please ask the driver again.");
-    }
-  }
 
   const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
   const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
