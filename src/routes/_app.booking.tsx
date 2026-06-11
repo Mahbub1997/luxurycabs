@@ -200,7 +200,14 @@ function Booking() {
     } finally { setSubmitting(false); }
   }
 
-  const tariffLabel = tab === "outstation" ? outVehicle.label : vehicle === "sedan" ? "Sedan" : "SUV";
+  const tariffLabel =
+    tab === "outstation"
+      ? outVehicle.label
+      : localModel === "ciaz"
+        ? "Ciaz"
+        : vehicle === "sedan"
+          ? "Sedan"
+          : "SUV";
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
   // Hide app header + bottom nav once both pickup & drop are selected so the
