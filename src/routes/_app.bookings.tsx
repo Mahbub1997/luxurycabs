@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
-import { CalendarCheck, ChevronRight, MapPin } from "lucide-react";
+import { CalendarCheck, ChevronRight } from "lucide-react";
 import { getRecentBookingIds, getBooking, type Booking } from "@/lib/booking-store";
 import { formatINR } from "@/lib/fare";
 
@@ -45,9 +45,6 @@ function Bookings() {
             const target = b.status === "completed" ? ({ to: "/complete/$id", params: { id: b.id } } as const) : ({ to: "/track/$id", params: { id: b.id } } as const);
             return (
               <Link key={b.id} {...target} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary">
-                  <MapPin className="h-4 w-4" />
-                </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">{b.drop_address}</div>
                   <div className="truncate text-xs text-muted-foreground">{b.trip_type.toUpperCase()} · {b.vehicle_type.toUpperCase()} · {formatINR(Number(b.fare))}</div>
