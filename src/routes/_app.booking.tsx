@@ -18,6 +18,7 @@ import {
   type OutstationVehicle,
   type TripType, type VehicleType,
 } from "@/lib/fare";
+import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
 import { cn } from "@/lib/utils";
