@@ -223,43 +223,46 @@ function Booking() {
         ))}
       </div>
 
-      {/* Map (background area) */}
-      {pickup && drop && tab !== "rental" ? (
-        <div className="mx-4 -mt-1 overflow-hidden rounded-2xl">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo?.polyline ?? null}
-            height={300}
-          />
-        </div>
-      ) : null}
+      {/* Map background + Pickup/Drop overlay */}
+      <div className="relative mx-4">
+        {pickup && drop && tab !== "rental" ? (
+          <div className="absolute inset-x-0 top-0 overflow-hidden rounded-2xl">
+            <RouteMap
+              pickup={{ lat: pickup.lat, lng: pickup.lng }}
+              drop={{ lat: drop.lat, lng: drop.lng }}
+              polyline={routeInfo?.polyline ?? null}
+              height={360}
+            />
+          </div>
+        ) : null}
 
-      {/* Pickup / Drop */}
-      <div className="mx-4 relative rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <div className="absolute left-6 top-12 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
-        <PlaceAutocomplete
-          label="Pickup Location"
-          value={pickup}
-          onChange={setPickup}
-          placeholder="Search pickup"
-          autoDetect
-        />
-        <div className="my-3 h-px bg-border" />
-        <PlaceAutocomplete
-          label="Drop Location"
-          value={drop}
-          onChange={setDrop}
-          placeholder="Where to go?"
-          accent="green"
-        />
-        <button
-          onClick={swap}
-          className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow"
-          aria-label="Swap"
-        >
-          <ArrowUpDown className="h-4 w-4 text-foreground" />
-        </button>
+        <div className="relative z-10 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
+          <div className="absolute left-6 top-12 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
+          <PlaceAutocomplete
+            label="Pickup Location"
+            value={pickup}
+            onChange={setPickup}
+            placeholder="Search pickup"
+            autoDetect
+          />
+          <div className="my-3 h-px bg-border" />
+          <PlaceAutocomplete
+            label="Drop Location"
+            value={drop}
+            onChange={setDrop}
+            placeholder="Where to go?"
+            accent="green"
+          />
+          <button
+            onClick={swap}
+            className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow"
+            aria-label="Swap"
+          >
+            <ArrowUpDown className="h-4 w-4 text-foreground" />
+          </button>
+        </div>
+
+        {pickup && drop && tab !== "rental" ? <div className="h-[240px]" /> : null}
       </div>
 
       {/* Outstation banner: round trip only + return date */}
