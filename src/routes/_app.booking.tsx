@@ -47,17 +47,13 @@ function Booking() {
     const off = d.getTimezoneOffset();
     return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
   });
-  const [returnAt, setReturnAt] = useState<string>(() => {
-    const d = new Date(Date.now() + 24 * 60 * 60_000);
-    d.setSeconds(0, 0);
-    const off = d.getTimezoneOffset();
-    return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
-  });
+  const [returnAt, setReturnAt] = useState<string>("");
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string; tollInr: number } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
