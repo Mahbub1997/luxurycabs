@@ -139,8 +139,9 @@ function Booking() {
     setSummaryOpen(true);
   }
 
-  function chooseLocalRental(v: VehicleType) {
+  function chooseLocalRental(v: VehicleType, model: "sedan" | "ciaz" | "suv" = v as any) {
     setVehicle(v);
+    setLocalModel(model);
     setVehicleSheetOpen(false);
   }
   function chooseOutstation(id: string) {
