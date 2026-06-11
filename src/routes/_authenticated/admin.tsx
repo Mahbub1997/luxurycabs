@@ -27,7 +27,7 @@ function AdminShell() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2 text-primary">
-          <CredoomWordmark label="Credoom Admin" />
+          <CredoomWordmark label="Luxury Cabs Admin" />
         </div>
         <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
           <LogOut className="h-4 w-4" /> Sign out

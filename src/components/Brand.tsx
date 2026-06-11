@@ -14,7 +14,7 @@ export function CrownCarLogo({ className }: { className?: string }) {
   );
 }
 
-export function CredoomWordmark({ className, label = "Credoom" }: { className?: string; label?: string }) {
+export function CredoomWordmark({ className, label = "Luxury Cabs" }: { className?: string; label?: string }) {
   return (
     <div className={cn("flex items-center gap-2 text-primary", className)}>
       <CrownCarLogo className="h-6 w-6" />
@@ -23,7 +23,7 @@ export function CredoomWordmark({ className, label = "Credoom" }: { className?: 
   );
 }
 
-export function BrandHeader({ title = "Credoom", right }: { title?: string; right?: React.ReactNode }) {
+export function BrandHeader({ title = "Luxury Cabs", right }: { title?: string; right?: React.ReactNode }) {
   return (
     <div className="sticky top-0 z-30 flex h-14 items-center justify-between bg-background/95 px-4 backdrop-blur border-b border-border">
       <div className="w-10" />

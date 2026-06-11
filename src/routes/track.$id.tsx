@@ -391,7 +391,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         </button>
         <div className="flex items-center gap-1.5 font-display text-lg font-bold text-primary">
           <CrownCarLogo className="h-5 w-5" />
-          Credoom
+          Luxury Cabs
         </div>
         <button className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Notifications">
           <Bell className="h-5 w-5" />

@@ -75,7 +75,7 @@ function AdminLogin() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary-soft/40 to-background px-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-center gap-2 text-primary">
-          <CredoomWordmark label="Credoom Admin" />
+          <CredoomWordmark label="Luxury Cabs Admin" />
         </div>
         <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h1 className="text-lg font-bold">{mode === "login" ? "Admin sign in" : "Create admin account"}</h1>

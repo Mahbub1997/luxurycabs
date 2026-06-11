@@ -109,7 +109,7 @@ function DriverHome() {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2 text-primary">
-          <CredoomWordmark label="Credoom Driver" />
+          <CredoomWordmark label="Luxury Cabs Driver" />
         </div>
         <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground"><LogOut className="h-4 w-4" /> Sign out</button>
       </header>
