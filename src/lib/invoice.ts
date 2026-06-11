@@ -82,7 +82,7 @@ export function generateInvoice(b: Booking) {
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("✓ PAID", W - M - 90 + 37, y + 30, { align: "center" });
+  doc.text("PAID", W - M - 90 + 37, y + 30, { align: "center" });
 
   // Company + Invoice details row
   let yy = y + 70;
