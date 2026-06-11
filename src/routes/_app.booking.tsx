@@ -508,9 +508,9 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Trip Summary Sheet */}
+      {/* Trip Summary Sheet — full screen */}
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0 max-h-[92vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-screen max-h-screen w-full overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
           <button
             onClick={() => setSummaryOpen(false)}
