@@ -1,19 +1,16 @@
 import { cn } from "@/lib/utils";
-import headerLogo from "@/assets/luxury-cabs-header.jpg.asset.json";
+import { Crown } from "lucide-react";
 
 export function CrownCarLogo({ className }: { className?: string }) {
-  // Kept for backwards-compatibility; renders the crown+wordmark image cropped to the logo area.
   return (
     <span
-      className={cn("inline-block h-7 w-7 overflow-hidden", className)}
+      className={cn(
+        "inline-grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm",
+        className,
+      )}
       aria-hidden
     >
-      <img
-        src={headerLogo.url}
-        alt=""
-        className="h-full w-auto object-cover object-left"
-        style={{ aspectRatio: "1 / 1" }}
-      />
+      <Crown className="h-[60%] w-[60%]" strokeWidth={2.5} />
     </span>
   );
 }
@@ -21,8 +18,8 @@ export function CrownCarLogo({ className }: { className?: string }) {
 function LogoImage({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2", className)} aria-label="Luxury Cabs">
-      <CrownCarLogo className="h-7 w-7 shrink-0" />
-      <span className="text-lg font-semibold text-primary">Luxury Cabs</span>
+      <CrownCarLogo />
+      <span className="text-lg font-semibold tracking-tight text-primary">Luxury Cabs</span>
     </div>
   );
 }
