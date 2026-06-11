@@ -546,14 +546,9 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             )}
           </div>
 
-          {phase === "arrived" && (
-            <button
-              onClick={() => setPhase("otp")}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
-            >
-              <KeyRound className="h-4 w-4" /> Start Trip (Enter OTP)
-            </button>
-          )}
+          <div className="mt-3 text-center text-[11px] text-muted-foreground">
+            Share this OTP with your driver. The driver will enter it to start your trip.
+          </div>
         </div>
       )}
 
