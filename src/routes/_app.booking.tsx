@@ -414,9 +414,18 @@ function Booking() {
                 label="Sedan"
                 seats={4}
                 fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                selected={vehicle === "sedan"}
+                selected={vehicle === "sedan" && localModel === "sedan"}
                 disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("sedan")}
+                onSelect={() => chooseLocalRental("sedan", "sedan")}
+              />
+              <InlineVehicleRow
+                img={sedanImg}
+                label="Ciaz"
+                seats={4}
+                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
+                selected={localModel === "ciaz"}
+                disabled={!canPickVehicle}
+                onSelect={() => chooseLocalRental("sedan", "ciaz")}
               />
               <InlineVehicleRow
                 img={suvImg}
@@ -425,7 +434,7 @@ function Booking() {
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
                 selected={vehicle === "suv"}
                 disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("suv")}
+                onSelect={() => chooseLocalRental("suv", "suv")}
               />
             </>
           )}
