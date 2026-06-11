@@ -474,6 +474,13 @@ function Booking() {
                       ₹{outVehicle.perKm}/km · Bata ₹{outVehicle.bata}/day · {outDays} day{outDays > 1 ? "s" : ""}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={openVehicleSheet}
+                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+                  >
+                    <Pencil className="h-3 w-3" /> Change vehicle
+                  </button>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-extrabold text-primary">{formatINR(estimatedFare)}</div>
