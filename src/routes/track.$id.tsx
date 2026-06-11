@@ -609,3 +609,36 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   );
 }
 
+function DriverPhoto({ src, name }: { src?: string | null; name?: string | null }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setLoaded(false); setErrored(false); }, [src]);
+  const initial = (name ?? "D").trim().charAt(0).toUpperCase();
+  const showImg = !!src && !errored;
+  return (
+    <div className="relative h-14 w-14 shrink-0">
+      {showImg && (
+        <img
+          src={src!}
+          alt={name ?? "Driver"}
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          className={cn(
+            "h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 transition-opacity duration-300",
+            loaded ? "opacity-100" : "opacity-0"
+          )}
+        />
+      )}
+      {(!showImg || !loaded) && (
+        <div className={cn(
+          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30 font-bold text-lg",
+          showImg ? "animate-pulse bg-muted text-transparent" : "bg-primary-soft text-primary"
+        )}>
+          {initial}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
