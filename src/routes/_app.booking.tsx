@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Bell, Users, Snowflake, Crosshair,
+  Users, Snowflake, Crosshair,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -53,6 +53,8 @@ function Booking() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [farePopupOpen, setFarePopupOpen] = useState(false);
+  const [farePopupShownFor, setFarePopupShownFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
 
@@ -112,6 +114,17 @@ function Booking() {
     if (tab === "outstation" && !returnAt) return false;
     return !!routeInfo && !routeLoading;
   })();
+
+  // Auto-open fare popup when route is ready (Local / Outstation).
+  const routeKey = pickup && drop && routeInfo ? `${pickup.lat},${pickup.lng}-${drop.lat},${drop.lng}-${tab}` : null;
+  useEffect(() => {
+    if (tab === "rental") return;
+    if (canPickVehicle && routeKey && farePopupShownFor !== routeKey && !summaryOpen) {
+      setFarePopupOpen(true);
+      setFarePopupShownFor(routeKey);
+    }
+  }, [canPickVehicle, routeKey, tab, farePopupShownFor, summaryOpen]);
+
 
   function openVehicleSheet() {
     if (!canPickVehicle) return;
@@ -205,9 +218,6 @@ function Booking() {
         <div data-app-chrome className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
           <CrownCarLogo className="h-6 w-6 text-green-600" />
           <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
-          <button className="absolute right-4 grid h-9 w-9 place-items-center rounded-full border border-border bg-card" aria-label="Notifications">
-            <Bell className="h-4 w-4 text-foreground" />
-          </button>
         </div>
       )}
 
@@ -448,6 +458,43 @@ function Booking() {
       </div>
 
 
+      {/* Fare popup — auto-opens after route is calculated */}
+      <Sheet open={farePopupOpen} onOpenChange={setFarePopupOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0">
+          <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
+          <div className="px-5 pb-6 pt-4">
+            <h2 className="text-center text-lg font-bold">Your Ride is Ready</h2>
+            <p className="mt-1 text-center text-xs text-muted-foreground">Selected vehicle and fare estimate</p>
+
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary bg-primary-soft/30 p-3">
+              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain" />
+              <div className="min-w-0 flex-1">
+                <div className="text-base font-bold">{tariffLabel}</div>
+                <div className="text-[11px] text-muted-foreground">Best for {tab === "outstation" ? outVehicle.seats : vehicle === "sedan" ? 4 : 7} People · AC</div>
+                <button
+                  type="button"
+                  onClick={() => { setFarePopupOpen(false); setVehicleSheetOpen(true); }}
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary"
+                >
+                  <Pencil className="h-3 w-3" /> Change vehicle
+                </button>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] text-muted-foreground">Total Fare</div>
+                <div className="text-xl font-extrabold text-primary">{formatINR(estimatedFare)}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setFarePopupOpen(false); setSummaryOpen(true); }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
+            >
+              Book Now <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Vehicle picker Sheet */}
       <Sheet open={vehicleSheetOpen} onOpenChange={setVehicleSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0 max-h-[85vh] overflow-y-auto">
@@ -498,9 +545,9 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Trip Summary Sheet */}
+      {/* Trip Summary Sheet — full screen */}
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0 max-h-[92vh] overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-screen max-h-screen w-full overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
           <button
             onClick={() => setSummaryOpen(false)}
@@ -511,14 +558,8 @@ function Booking() {
           </button>
 
           <div className="px-5 pb-6 pt-5">
-              <div className="flex flex-col items-center">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary">
-                <CrownCarLogo className="h-7 w-7 text-primary-foreground" />
-              </div>
-                <div className="mt-2 text-xs font-bold tracking-wide text-primary">CREDOOM</div>
-            </div>
+            <h2 className="text-center text-xl font-bold">Trip Summary</h2>
 
-            <h2 className="mt-4 text-center text-lg font-bold">Trip Summary</h2>
 
             {/* Route */}
             <div className="relative mt-4 rounded-2xl border border-border bg-card p-4">
@@ -578,21 +619,6 @@ function Booking() {
                 </div>
               </div>
 
-              {/* Breakdown — only outstation */}
-              {tab === "outstation" && outBreakdown && (
-                <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-sm">
-                  <Row label={`Distance (${outBreakdown.chargedKm} km × ₹${outBreakdown.perKm})`} value={formatINR(outBreakdown.distance)} />
-                  <Row label={`Driver Bata (${outBreakdown.days} × ₹${outVehicle.bata})`} value={formatINR(outBreakdown.driverBata)} />
-                  {outBreakdown.nightHalts > 0 && (
-                    <Row label={`Night Halt (${outBreakdown.nightHalts} × ₹500)`} value={formatINR(outBreakdown.nightHalt)} />
-                  )}
-                  <Row label="Tolls (est.)" value={formatINR(outBreakdown.tolls)} />
-                  <Row label="Taxes & Fees (5%)" value={formatINR(outBreakdown.taxes)} />
-                  <div className="!mt-2 rounded-lg bg-primary-soft p-2 text-[11px] text-foreground/80">
-                    Min 300 km/day applied. Parking & inter-state permits (other than TN/KA) charged extra.
-                  </div>
-                </div>
-              )}
 
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
@@ -630,27 +656,6 @@ function Booking() {
               )}
             </div>
 
-            <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-4">
-              <div className="text-sm font-semibold text-primary">What happens next</div>
-              <div className="mt-3 space-y-2">
-                {[
-                  "Check pickup and drop locations.",
-                  "Confirm vehicle and timing.",
-                  "Tap confirm booking to send your ride request.",
-                  "We assign a driver and show live trip details.",
-                ].map((step, index) => (
-                  <div key={step} className="flex items-start gap-3 text-sm">
-                    <div className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                      {index + 1}
-                    </div>
-                    <p className="pt-0.5 text-foreground/85">{step}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-[11px] text-foreground/70">
-                Important note: final fare may update slightly if route, tolls, or waiting time changes during the trip.
-              </p>
-            </div>
 
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
