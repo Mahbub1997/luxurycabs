@@ -63,7 +63,7 @@ export function AppDrawer() {
             </nav>
 
             <div className="border-t border-border px-5 py-3 text-[10px] text-muted-foreground">
-              v1.0 — Credoom
+              v1.0 — Luxury Cabs
             </div>
           </aside>
         </div>
