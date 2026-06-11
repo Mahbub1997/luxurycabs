@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ClipboardList, Users, IndianRupee, LogOut, Shield } from "lucide-react";
+import { ClipboardList, Users, IndianRupee, LogOut } from "lucide-react";
+import { CrownCarLogo } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ function AdminShell() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2 text-primary">
-          <Shield className="h-5 w-5" />
+          <CrownCarLogo className="h-6 w-6" />
           <span className="font-display font-bold">Luxury Cabs Admin</span>
         </div>
         <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">

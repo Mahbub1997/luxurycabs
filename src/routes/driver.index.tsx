@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
-import { Car, LogOut, Wallet, ClipboardList, Power, MapPin, Bell, Loader2 } from "lucide-react";
+import { LogOut, Wallet, ClipboardList, Power, MapPin, Bell, Loader2 } from "lucide-react";
+import { CrownCarLogo } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { acceptRide, rejectRide } from "@/lib/driver.functions";
 import { toast } from "sonner";
@@ -108,8 +109,8 @@ function DriverHome() {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2 text-primary">
-          <Car className="h-5 w-5" />
-          <span className="font-display font-bold">Driver</span>
+          <CrownCarLogo className="h-6 w-6" />
+          <span className="font-display font-bold">Luxury Cabs Driver</span>
         </div>
         <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground"><LogOut className="h-4 w-4" /> Sign out</button>
       </header>
