@@ -18,6 +18,7 @@ import {
   type OutstationVehicle,
   type TripType, type VehicleType,
 } from "@/lib/fare";
+import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
 import { cn } from "@/lib/utils";
@@ -606,7 +607,7 @@ function Booking() {
                         <div className="font-bold text-foreground">
                           {(tab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm).toFixed(1)} km
                         </div>
-                        <div>{tab === "outstation" ? routeInfo.durationMin * 2 : routeInfo.durationMin} min</div>
+                        <div>{formatDuration(tab === "outstation" ? routeInfo.durationMin * 2 : routeInfo.durationMin)}</div>
                       </div>
                     )}
                   </div>

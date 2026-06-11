@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration, formatDateTime12 } from "@/lib/utils";
 
 export const Route = createFileRoute("/driver/bookings")({
   head: () => ({ meta: [{ title: "My Bookings — Driver" }] }),
@@ -53,14 +53,14 @@ function DriverBookings() {
             <Link key={b.id} to="/driver/trip/$id" params={{ id: b.id }} className="block rounded-2xl border border-border bg-card p-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">{b.status}</span>
-                <span className="text-[10px] text-muted-foreground">{new Date(b.created_at).toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground">{formatDateTime12(new Date(b.created_at))}</span>
               </div>
               <div className="mt-2 space-y-1">
                 <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-emerald-600" /><span className="text-xs">{b.pickup_address}</span></div>
                 <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-rose-600" /><span className="text-xs">{b.drop_address}</span></div>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs">
-                <span>{Number(b.distance_km).toFixed(1)} km · {b.duration_min} min</span>
+                <span>{Number(b.distance_km).toFixed(1)} km · {formatDuration(b.duration_min)}</span>
                 <span className="font-bold">₹{b.fare}</span>
               </div>
             </Link>

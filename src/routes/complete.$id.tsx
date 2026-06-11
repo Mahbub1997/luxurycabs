@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { getBooking, type Booking } from "@/lib/booking-store";
 import { formatINR, fareBreakdown, tariffFor } from "@/lib/fare";
 import { generateInvoice } from "@/lib/invoice";
+import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/complete/$id")({
   head: () => ({ meta: [{ title: "Trip Complete — Luxury Cabs" }] }),
@@ -72,7 +73,7 @@ function Complete() {
         </div>
         <div className="mt-3 flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-xs">
           <span>{tariff.label} · {b.trip_type}</span>
-          <span>{Number(b.distance_km).toFixed(1)} km · {b.duration_min} min</span>
+          <span>{Number(b.distance_km).toFixed(1)} km · {formatDuration(b.duration_min)}</span>
         </div>
       </div>
 

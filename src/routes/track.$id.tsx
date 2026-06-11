@@ -12,6 +12,7 @@ import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
+import { formatDuration, formatTime12 } from "@/lib/utils";
 import { notify, ensureNotifyPermission } from "@/lib/notify";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
@@ -171,9 +172,9 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <Stat label="Date" value={scheduled.toLocaleDateString()} />
-            <Stat label="Time" value={scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} />
+            <Stat label="Time" value={formatTime12(scheduled)} />
             <Stat label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
-            <Stat label="ETA" value={`${b.duration_min} min`} />
+            <Stat label="ETA" value={formatDuration(b.duration_min)} />
           </div>
         </div>
       </div>
@@ -405,7 +406,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
         <div className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary-soft px-3 py-2 text-xs">
           <ClockIcon className="h-3.5 w-3.5 text-primary" />
           <span className="text-muted-foreground">ETA:</span>
-          <span className="font-bold text-primary">{eta} min</span>
+          <span className="font-bold text-primary">{formatDuration(eta)}</span>
         </div>
       </div>
 
@@ -476,7 +477,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             className="hidden h-12 w-16 object-contain sm:block"
           />
           <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
-            <div className="text-sm font-bold text-primary leading-none">{eta} min</div>
+            <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
           </div>
         </div>
@@ -497,7 +498,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           <Car className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <div className="text-sm font-bold">Driver is {eta} mins away</div>
+          <div className="text-sm font-bold">Driver is {formatDuration(eta)} away</div>
           <div className="text-[11px] text-muted-foreground">
             {Number(b.distance_km).toFixed(1)} km from your location
           </div>
