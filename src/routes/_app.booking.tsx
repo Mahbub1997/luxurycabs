@@ -265,26 +265,35 @@ function Booking() {
         {pickup && drop && tab !== "rental" ? <div className="h-[240px]" /> : null}
       </div>
 
-      {/* Outstation banner: round trip only + return date */}
+      {/* Outstation banner: round trip only + return date (required) */}
       {tab === "outstation" && (
-        <div className="mx-4 rounded-xl border border-border bg-card p-3">
+        <div className={cn(
+          "mx-4 rounded-xl border bg-card p-3",
+          returnAt ? "border-border" : "border-primary"
+        )}>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <MapIcon className="h-4 w-4 text-primary" /> Round Trip
             <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">
-              {outDays} day{outDays > 1 ? "s" : ""}
+              {returnAt ? `${outDays} day${outDays > 1 ? "s" : ""}` : "Select return"}
             </span>
           </div>
           <div className="mt-2 flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Return</span>
+            <span className="text-xs text-muted-foreground">Return *</span>
             <input
-              type="datetime-local"
+              type="date"
+              required
               value={returnAt}
-              min={scheduledAt}
+              min={scheduledAt.slice(0, 10)}
               onChange={(e) => setReturnAt(e.target.value)}
               className="ml-auto bg-transparent text-sm text-foreground outline-none"
             />
           </div>
+          {!returnAt && (
+            <div className="mt-1 text-[11px] font-medium text-primary">
+              Return date is required for outstation trips.
+            </div>
+          )}
         </div>
       )}
 
