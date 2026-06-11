@@ -116,11 +116,13 @@ function Booking() {
   const canPickVehicle = (() => {
     if (!pickup || !drop) return tab === "rental";
     if (tab === "rental") return true;
+    if (tab === "outstation" && !returnAt) return false;
     return !!routeInfo && !routeLoading;
   })();
 
   function openVehicleSheet() {
     if (!canPickVehicle) return;
+    setSummaryOpen(false);
     setVehicleSheetOpen(true);
   }
 
