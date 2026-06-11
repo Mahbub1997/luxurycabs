@@ -720,7 +720,7 @@ function InlineVehicleRow({
       )}
     >
       <div className="grid h-16 w-24 shrink-0 place-items-center">
-        <img src={img} alt={label} className="h-full w-full object-contain" />
+        <img src={img} alt={label} className="h-full w-full object-contain scale-x-[-1]" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-base font-bold">{label}</div>
