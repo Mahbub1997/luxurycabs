@@ -43,19 +43,19 @@ function Auth() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-16"
+        className="mt-12 flex flex-col items-center"
       >
-        <CredoomWordmark className="text-3xl" />
-        <p className="mt-1 text-sm text-muted-foreground">Comfort. Class. Every ride.</p>
+        <CredoomWordmark className="scale-[1.6] origin-left" />
+        <p className="mt-3 text-sm text-muted-foreground">Comfort. Class. Every ride.</p>
       </motion.div>
 
       <form
         onSubmit={submit}
-        className="mt-10 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
+        className="mt-12 flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
       >
-        <div>
-          <h1 className="text-lg font-bold">Login or create account</h1>
-          <p className="text-xs text-muted-foreground">Tell us your name and number to continue.</p>
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-primary">Please login to continue</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Enter your name and mobile number to book your ride.</p>
         </div>
 
         <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
