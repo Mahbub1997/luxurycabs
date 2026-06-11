@@ -582,21 +582,6 @@ function Booking() {
                 </div>
               </div>
 
-              {/* Breakdown — only outstation */}
-              {tab === "outstation" && outBreakdown && (
-                <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-sm">
-                  <Row label={`Distance (${outBreakdown.chargedKm} km × ₹${outBreakdown.perKm})`} value={formatINR(outBreakdown.distance)} />
-                  <Row label={`Driver Bata (${outBreakdown.days} × ₹${outVehicle.bata})`} value={formatINR(outBreakdown.driverBata)} />
-                  {outBreakdown.nightHalts > 0 && (
-                    <Row label={`Night Halt (${outBreakdown.nightHalts} × ₹500)`} value={formatINR(outBreakdown.nightHalt)} />
-                  )}
-                  <Row label="Tolls (est.)" value={formatINR(outBreakdown.tolls)} />
-                  <Row label="Taxes & Fees (5%)" value={formatINR(outBreakdown.taxes)} />
-                  <div className="!mt-2 rounded-lg bg-primary-soft p-2 text-[11px] text-foreground/80">
-                    Min 300 km/day applied. Parking & inter-state permits (other than TN/KA) charged extra.
-                  </div>
-                </div>
-              )}
 
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
