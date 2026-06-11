@@ -172,9 +172,9 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <Stat label="Date" value={scheduled.toLocaleDateString()} />
-            <Stat label="Time" value={scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} />
+            <Stat label="Time" value={formatTime12(scheduled)} />
             <Stat label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
-            <Stat label="ETA" value={`${b.duration_min} min`} />
+            <Stat label="ETA" value={formatDuration(b.duration_min)} />
           </div>
         </div>
       </div>
