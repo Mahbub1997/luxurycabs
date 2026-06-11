@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { getProfile, saveProfile } from "@/lib/profile";
 import { AppDrawer } from "@/components/AppDrawer";
+import { CredoomWordmark } from "@/components/Brand";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Luxury Cabs" }] }),
@@ -44,7 +45,7 @@ function Auth() {
         animate={{ opacity: 1, y: 0 }}
         className="mt-16"
       >
-        <div className="font-display text-3xl font-bold text-primary">Luxury Cabs</div>
+        <CredoomWordmark className="text-3xl" />
         <p className="mt-1 text-sm text-muted-foreground">Comfort. Class. Every ride.</p>
       </motion.div>
 

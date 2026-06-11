@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import { decode } from "@googlemaps/polyline-codec";
+import polylineCodec from "@googlemaps/polyline-codec";
+
+const { decode } = polylineCodec;
 
 interface Props {
   pickup: { lat: number; lng: number };
