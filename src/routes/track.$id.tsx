@@ -294,8 +294,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [eta, setEta] = useState<number>(b.duration_min);
   const [tripPoly, setTripPoly] = useState<string | null>(null);
   const [toPickupPoly, setToPickupPoly] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
   const [fitKey, setFitKey] = useState(0);
   const [secsLeft, setSecsLeft] = useState(300);
   const cancelRef = useRef<(() => void) | null>(null);
