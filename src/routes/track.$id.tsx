@@ -477,7 +477,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
             className="hidden h-12 w-16 object-contain sm:block"
           />
           <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
-            <div className="text-sm font-bold text-primary leading-none">{eta} min</div>
+            <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
           </div>
         </div>
