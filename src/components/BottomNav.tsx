@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, CalendarCheck, Bell, User } from "lucide-react";
+import { Home, CalendarCheck, Inbox, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/booking", label: "Home", Icon: Home, match: (p: string) => p === "/booking" || p === "/" },
   { to: "/bookings", label: "Bookings", Icon: CalendarCheck, match: (p: string) => p.startsWith("/bookings") },
-  { to: "/notifications", label: "Alerts", Icon: Bell, match: (p: string) => p.startsWith("/notifications") },
+  { to: "/notifications", label: "Alerts", Icon: Inbox, match: (p: string) => p.startsWith("/notifications") },
   { to: "/profile", label: "Profile", Icon: User, match: (p: string) => p.startsWith("/profile") },
 ] as const;
 

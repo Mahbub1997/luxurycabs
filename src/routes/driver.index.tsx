@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
-import { LogOut, Wallet, ClipboardList, Power, MapPin, Bell, Loader2 } from "lucide-react";
+import { LogOut, Wallet, ClipboardList, Power, MapPin, Clock, Car, Loader2 } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { acceptRide, rejectRide } from "@/lib/driver.functions";
@@ -151,7 +151,7 @@ function DriverHome() {
 
         {!incoming && driver.status === "approved" && driver.is_online && (
           <div className="mt-6 rounded-2xl border-2 border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            <Bell className="mx-auto mb-2 h-6 w-6 text-primary" />
+            <Clock className="mx-auto mb-2 h-6 w-6 text-primary" />
             Waiting for ride assignment…
           </div>
         )}
@@ -188,7 +188,7 @@ function IncomingModal({ booking, onAccept, onReject }: { booking: any; onAccept
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-md rounded-t-3xl bg-card p-5 shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom">
         <div className="flex items-center gap-2 text-primary">
-          <Bell className="h-5 w-5 animate-pulse" />
+          <Car className="h-5 w-5 animate-pulse" />
           <span className="font-bold uppercase tracking-wide">New Ride Request</span>
         </div>
         <div className="mt-3 space-y-2 rounded-xl bg-muted/40 p-3 text-sm">

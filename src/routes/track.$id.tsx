@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car, Bell, Clock as ClockIcon, ShieldCheck,
+  Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
@@ -393,10 +393,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           <CrownCarLogo className="h-5 w-5" />
           Luxury Cabs
         </div>
-        <button className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Notifications">
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-        </button>
+        <span className="h-9 w-9" />
       </div>
 
       {/* Title + ETA pill */}
