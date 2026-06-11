@@ -605,13 +605,14 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function InlineVehicleRow({
-  img, label, seats, fare, onSelect,
-}: { img: string; label: string; seats: number; fare: number; onSelect: () => void }) {
+  img, label, seats, fare, onSelect, disabled,
+}: { img: string; label: string; seats: number; fare: number; onSelect: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary"
+      disabled={disabled}
+      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary disabled:opacity-60"
     >
       <div className="grid h-16 w-24 shrink-0 place-items-center">
         <img src={img} alt={label} className="h-full w-full object-contain" />
