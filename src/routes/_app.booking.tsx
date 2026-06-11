@@ -729,7 +729,7 @@ function InlineVehicleRow({
         selected ? "border-primary bg-primary-soft/40" : "border-border hover:border-primary"
       )}
     >
-      <div className="grid h-16 w-24 shrink-0 place-items-center">
+      <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-white">
         <img src={img} alt={label} className="h-full w-full object-contain scale-x-[-1]" />
       </div>
       <div className="min-w-0 flex-1">
