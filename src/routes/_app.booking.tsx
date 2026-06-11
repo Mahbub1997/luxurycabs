@@ -566,10 +566,10 @@ function Booking() {
 
       {/* Trip Summary Sheet — full screen */}
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-screen max-h-screen w-full overflow-y-auto">
+        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-[100dvh] max-h-[100dvh] w-full overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
 
-          <div className="px-5 pb-6 pt-5">
+          <div className="px-5 pb-6 pt-3" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
             <h2 className="text-center text-xl font-bold">Trip Summary</h2>
 
 
