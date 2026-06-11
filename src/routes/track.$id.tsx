@@ -498,7 +498,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
           <Car className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <div className="text-sm font-bold">Driver is {eta} mins away</div>
+          <div className="text-sm font-bold">Driver is {formatDuration(eta)} away</div>
           <div className="text-[11px] text-muted-foreground">
             {Number(b.distance_km).toFixed(1)} km from your location
           </div>
