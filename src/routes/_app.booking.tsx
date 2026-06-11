@@ -82,15 +82,7 @@ function Booking() {
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
 
-  // Auto-open vehicle sheet when route becomes ready (once per pickup+drop)
-  useEffect(() => {
-    if (!pickup || !drop || tab === "rental" || !routeInfo) return;
-    if (tab === "outstation" && !returnAt) return;
-    const key = `${pickup.lat},${pickup.lng}->${drop.lat},${drop.lng}:${tab}:${returnAt}`;
-    if (autoOpenedFor === key) return;
-    setAutoOpenedFor(key);
-    setVehicleSheetOpen(true);
-  }, [pickup, drop, tab, routeInfo, returnAt, autoOpenedFor]);
+  // (Vehicle sheet no longer auto-opens — vehicles render inline)
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
