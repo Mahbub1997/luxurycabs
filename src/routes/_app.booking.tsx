@@ -115,6 +115,17 @@ function Booking() {
     return !!routeInfo && !routeLoading;
   })();
 
+  // Auto-open fare popup when route is ready (Local / Outstation).
+  const routeKey = pickup && drop && routeInfo ? `${pickup.lat},${pickup.lng}-${drop.lat},${drop.lng}-${tab}` : null;
+  useEffect(() => {
+    if (tab === "rental") return;
+    if (canPickVehicle && routeKey && farePopupShownFor !== routeKey && !summaryOpen) {
+      setFarePopupOpen(true);
+      setFarePopupShownFor(routeKey);
+    }
+  }, [canPickVehicle, routeKey, tab, farePopupShownFor, summaryOpen]);
+
+
   function openVehicleSheet() {
     if (!canPickVehicle) return;
     setSummaryOpen(false);
