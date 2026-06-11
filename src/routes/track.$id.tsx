@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car,
+  Sparkles, Crosshair, Car, Bell, Crown, Clock as ClockIcon, ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
@@ -11,9 +11,11 @@ import { RouteMap } from "@/components/RouteMap";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
+import { notify, ensureNotifyPermission } from "@/lib/notify";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
+
 
 type LatLng = { lat: number; lng: number };
 
