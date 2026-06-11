@@ -604,3 +604,32 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function InlineVehicleRow({
+  img, label, seats, fare, onSelect,
+}: { img: string; label: string; seats: number; fare: number; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left transition hover:border-primary"
+    >
+      <div className="grid h-16 w-24 shrink-0 place-items-center">
+        <img src={img} alt={label} className="h-full w-full object-contain" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-base font-bold">{label}</div>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {seats} Seats</span>
+          <span className="inline-flex items-center gap-1"><Snowflake className="h-3 w-3" /> AC</span>
+        </div>
+        <div className="mt-0.5 text-[11px] text-primary">Best for {seats} People</div>
+      </div>
+      <div className="text-right">
+        <div className="text-base font-extrabold text-primary">{fare > 0 ? formatINR(fare) : "—"}</div>
+        <div className="text-[10px] text-muted-foreground">Estimated Fare</div>
+      </div>
+      <span className="ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 border-muted-foreground/40 bg-card" />
+    </button>
+  );
+}
