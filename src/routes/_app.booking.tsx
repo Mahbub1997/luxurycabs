@@ -389,7 +389,7 @@ function Booking() {
         </div>
         <div className="mt-2 space-y-2">
           {tab === "outstation" ? (
-            OUTSTATION_VEHICLES.slice(0, 2).map((v) => {
+            OUTSTATION_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
               const km = (routeInfo?.distanceKm ?? 0) * 2;
               const bd = routeInfo && canPickVehicle
                 ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
