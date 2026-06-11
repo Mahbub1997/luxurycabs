@@ -419,15 +419,6 @@ function Booking() {
                 onSelect={() => chooseLocalRental("sedan", "sedan")}
               />
               <InlineVehicleRow
-                img={sedanImg}
-                label="Ciaz"
-                seats={4}
-                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                selected={localModel === "ciaz"}
-                disabled={!canPickVehicle}
-                onSelect={() => chooseLocalRental("sedan", "ciaz")}
-              />
-              <InlineVehicleRow
                 img={suvImg}
                 label="SUV"
                 seats={7}
