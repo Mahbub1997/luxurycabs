@@ -295,7 +295,17 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState("");
   const [fitKey, setFitKey] = useState(0);
+  const [secsLeft, setSecsLeft] = useState(120);
   const cancelRef = useRef<(() => void) | null>(null);
+
+  // OTP countdown (2 minutes, restarts on phase change to arrived/to_pickup).
+  useEffect(() => {
+    setSecsLeft(120);
+    const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [phase]);
+  const mmss = `${String(Math.floor(secsLeft / 60)).padStart(2, "0")}:${String(secsLeft % 60).padStart(2, "0")}`;
+
 
   // React to live booking updates (driver app pushes status & coords).
   useEffect(() => {
