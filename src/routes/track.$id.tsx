@@ -30,16 +30,41 @@ function Track() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [b, setB] = useState<Booking | null>(null);
+  const prevRef = useRef<{ driverId: string | null; status: string | null }>({ driverId: null, status: null });
+
+  // Ask for notification permission once.
+  useEffect(() => { ensureNotifyPermission(); }, []);
 
   // Load + subscribe to realtime updates so admin assignment flips the UI.
   useEffect(() => {
     let mounted = true;
-    getBooking(id).then((row) => { if (mounted) setB(row); });
+    getBooking(id).then((row) => {
+      if (!mounted) return;
+      setB(row);
+      if (row) prevRef.current = { driverId: row.assigned_driver_id ?? null, status: row.status };
+    });
     const ch = supabase
       .channel(`booking:${id}`)
       .on("postgres_changes",
         { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${id}` },
-        (p) => setB(p.new as Booking))
+        (p) => {
+          const next = p.new as Booking;
+          const prev = prevRef.current;
+          // Driver newly assigned
+          if (!prev.driverId && next.assigned_driver_id) {
+            notify("Driver assigned 🚗", `${next.driver_name ?? "Your driver"} is on the way.`, next.driver_photo ?? undefined);
+          }
+          // Driver arrived
+          if (prev.status !== "driver_arrived" && next.status === "driver_arrived") {
+            notify("Driver arrived 📍", "Your driver is at the pickup point. Share your OTP to start.");
+          }
+          // Trip complete
+          if (prev.status !== "completed" && next.status === "completed") {
+            notify("Trip completed ✅", `Fare ₹${next.fare}. Thanks for riding with Luxury Cabs!`);
+          }
+          prevRef.current = { driverId: next.assigned_driver_id ?? null, status: next.status };
+          setB(next);
+        })
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [id]);
@@ -54,6 +79,7 @@ function Track() {
   }
   return <LiveTracking b={b} onBack={() => navigate({ to: "/booking" })} />;
 }
+
 
 // ---------- Awaiting driver assignment ----------
 
