@@ -284,8 +284,8 @@ export function generateInvoice(b: Booking) {
   doc.setFontSize(9);
   doc.text("Need help?", W / 2 + 30, yy + 18);
   doc.setFont("helvetica", "normal");
-  doc.text("☎  080-1234-5678", W / 2 + 30, yy + 32);
-  doc.text("✉  support@luxurycabs.com", W / 2 + 30, yy + 46);
+  doc.text("Phone: 080-1234-5678", W / 2 + 30, yy + 32);
+  doc.text("Email: support@luxurycabs.com", W / 2 + 30, yy + 46);
 
   // Footer green bar
   doc.setFillColor(BRAND.r, BRAND.g, BRAND.b);
