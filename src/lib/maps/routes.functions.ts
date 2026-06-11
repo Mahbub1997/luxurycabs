@@ -19,13 +19,15 @@ export const computeRoute = createServerFn({ method: "POST" })
           "X-Connection-Api-Key": mapsKey,
           "Content-Type": "application/json",
           "X-Goog-FieldMask":
-            "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+            "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.travelAdvisory.tollInfo",
         },
         body: JSON.stringify({
           origin: { location: { latLng: { latitude: data.origin.lat, longitude: data.origin.lng } } },
           destination: { location: { latLng: { latitude: data.destination.lat, longitude: data.destination.lng } } },
           travelMode: "DRIVE",
           routingPreference: "TRAFFIC_AWARE",
+          extraComputations: ["TOLLS"],
+          routeModifiers: { vehicleInfo: { emissionType: "GASOLINE" } },
         }),
       }
     );
@@ -38,14 +40,28 @@ export const computeRoute = createServerFn({ method: "POST" })
         distanceMeters: number;
         duration: string;
         polyline: { encodedPolyline: string };
+        travelAdvisory?: {
+          tollInfo?: {
+            estimatedPrice?: Array<{ currencyCode: string; units?: string; nanos?: number }>;
+          };
+        };
       }>;
     };
     const route = json.routes?.[0];
     if (!route) throw new Error("No route found");
     const seconds = Number(route.duration.replace("s", ""));
+    let tollInr = 0;
+    const prices = route.travelAdvisory?.tollInfo?.estimatedPrice ?? [];
+    for (const p of prices) {
+      const amt = Number(p.units ?? 0) + (p.nanos ?? 0) / 1e9;
+      if (p.currencyCode === "INR") tollInr += amt;
+      else if (p.currencyCode === "USD") tollInr += amt * 83;
+      else tollInr += amt;
+    }
     return {
       distanceKm: route.distanceMeters / 1000,
       durationMin: Math.round(seconds / 60),
       polyline: route.polyline.encodedPolyline,
+      tollInr: Math.round(tollInr),
     };
   });

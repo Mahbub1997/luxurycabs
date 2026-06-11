@@ -51,10 +51,70 @@ export function calcLocalFare(v: VehicleType, distanceKm: number, durationMin: n
   return Math.max(Math.round(raw / 10) * 10, r.min);
 }
 
-export function calcOutstationFare(v: VehicleType, distanceKm: number, rates?: RatesMap) {
-  const r = rateFor(v, "outstation", rates);
-  const raw = r.base * 4 + r.outstationPerKm * distanceKm + 350;
-  return Math.max(Math.round(raw / 10) * 10, 1500);
+export function calcOutstationFare(v: VehicleType, distanceKm: number, _rates?: RatesMap) {
+  const ov = v === "sedan" ? OUTSTATION_VEHICLES[0] : OUTSTATION_VEHICLES[1];
+  return calcOutstationBreakdown(ov, { distanceKm, days: 1 }).total;
+}
+
+// ---------- Outstation (new spec) ----------
+
+export interface OutstationVehicle {
+  id: string;
+  label: string;
+  perKm: number;
+  bata: number; // driver bata per day
+  seats: number;
+  bags: number;
+  tier: VehicleType;
+}
+
+export const OUTSTATION_VEHICLES: OutstationVehicle[] = [
+  { id: "sedan",  label: "Sedan",         perKm: 12, bata: 400, seats: 4, bags: 2, tier: "sedan" },
+  { id: "ertiga", label: "SUV Ertiga",    perKm: 17, bata: 500, seats: 6, bags: 3, tier: "suv"   },
+  { id: "innova", label: "SUV Innova",    perKm: 19, bata: 500, seats: 7, bags: 4, tier: "suv"   },
+  { id: "crysta", label: "Innova Crysta", perKm: 21, bata: 500, seats: 7, bags: 4, tier: "suv"   },
+];
+
+export const OUTSTATION_NIGHT_HALT = 500;
+export const OUTSTATION_MIN_KM_PER_DAY = 300;
+
+export function diffDays(pickupISO: string, returnISO: string): number {
+  const a = new Date(pickupISO).getTime();
+  const b = new Date(returnISO).getTime();
+  if (!isFinite(a) || !isFinite(b) || b <= a) return 1;
+  return Math.max(1, Math.ceil((b - a) / (24 * 60 * 60 * 1000)));
+}
+
+export interface OutstationBreakdown {
+  perKm: number;
+  chargedKm: number;
+  actualKm: number;
+  days: number;
+  nightHalts: number;
+  distance: number;
+  driverBata: number;
+  nightHalt: number;
+  tolls: number;
+  taxes: number;
+  total: number;
+}
+
+export function calcOutstationBreakdown(
+  v: OutstationVehicle,
+  opts: { distanceKm: number; days: number; tollFare?: number }
+): OutstationBreakdown {
+  const days = Math.max(1, opts.days || 1);
+  const actualKm = opts.distanceKm;
+  const chargedKm = Math.max(actualKm, OUTSTATION_MIN_KM_PER_DAY * days);
+  const distance = Math.round(v.perKm * chargedKm);
+  const driverBata = v.bata * days;
+  const nightHalts = Math.max(0, days - 1);
+  const nightHalt = nightHalts * OUTSTATION_NIGHT_HALT;
+  const tolls = Math.round(opts.tollFare ?? 0);
+  const subtotal = distance + driverBata + nightHalt + tolls;
+  const taxes = Math.round(subtotal * 0.05);
+  const total = Math.round((subtotal + taxes) / 10) * 10;
+  return { perKm: v.perKm, chargedKm, actualKm, days, nightHalts, distance, driverBata, nightHalt, tolls, taxes, total };
 }
 
 export const formatINR = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
