@@ -244,14 +244,14 @@ function Booking() {
         </div>
       </div>
 
-      {/* Map — only after both locations are picked, auto-fits both */}
+      {/* Map — compact so vehicle cards stay above the fold */}
       {pickup && drop && tab !== "rental" && (
         <div className="mx-4 overflow-hidden rounded-2xl border border-border">
           <RouteMap
             pickup={{ lat: pickup.lat, lng: pickup.lng }}
             drop={{ lat: drop.lat, lng: drop.lng }}
             polyline={routeInfo?.polyline ?? null}
-            height={260}
+            height={160}
           />
         </div>
       )}
