@@ -54,7 +54,7 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [autoOpenedFor, setAutoOpenedFor] = useState<string | null>(null);
+  
 
   useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
 
