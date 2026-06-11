@@ -53,7 +53,7 @@ function DriverBookings() {
             <Link key={b.id} to="/driver/trip/$id" params={{ id: b.id }} className="block rounded-2xl border border-border bg-card p-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">{b.status}</span>
-                <span className="text-[10px] text-muted-foreground">{new Date(b.created_at).toLocaleString()}</span>
+                <span className="text-[10px] text-muted-foreground">{formatDateTime12(new Date(b.created_at))}</span>
               </div>
               <div className="mt-2 space-y-1">
                 <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-emerald-600" /><span className="text-xs">{b.pickup_address}</span></div>
