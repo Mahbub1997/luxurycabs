@@ -58,7 +58,8 @@ function Booking() {
   const [submitting, setSubmitting] = useState(false);
   
 
-  useEffect(() => { setRouteInfo(null); }, [pickup, drop]);
+  // Note: routeInfo is overwritten by the route-fetch effect below; don't
+  // null it here or the map polyline flickers off/on between picks.
 
   useEffect(() => {
     if (!pickup || !drop || tab === "rental") return;
