@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2, KeyRound,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car, Bell, Crown, Clock as ClockIcon, ShieldCheck,
+  Sparkles, Crosshair, Car, Bell, Clock as ClockIcon, ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
