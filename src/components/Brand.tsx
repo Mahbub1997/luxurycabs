@@ -14,7 +14,7 @@ export function CrownCarLogo({ className }: { className?: string }) {
   );
 }
 
-export function BrandHeader({ title = "Luxury Cabs", right }: { title?: string; right?: React.ReactNode }) {
+export function BrandHeader({ title = "Credoom", right }: { title?: string; right?: React.ReactNode }) {
   return (
     <div className="sticky top-0 z-30 flex h-14 items-center justify-between bg-background/95 px-4 backdrop-blur border-b border-border">
       <div className="w-10" />

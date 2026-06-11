@@ -99,7 +99,7 @@ function Complete() {
           <Download className="h-4 w-4" /> Download Invoice
         </button>
         <button
-          onClick={() => navigate({ to: "/home" })}
+          onClick={() => navigate({ to: "/booking" })}
           className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3.5 text-sm font-bold"
         >
           <HomeIcon className="h-4 w-4" /> Back to Home
