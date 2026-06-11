@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
-import { Bell, User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
+import { User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
 import { clearProfile, getProfile, type UserProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/_app/profile")({
@@ -29,7 +29,7 @@ function Profile() {
 
   return (
     <div className="flex flex-col gap-4 pb-6">
-      <BrandHeader right={<Bell className="h-5 w-5" />} />
+      <BrandHeader />
       <div className="mx-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
         <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-foreground/15">
           <User className="h-7 w-7" />
