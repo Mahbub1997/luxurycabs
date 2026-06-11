@@ -14,7 +14,7 @@ export function CrownCarLogo({ className }: { className?: string }) {
   );
 }
 
-export function CredoomWordmark({ className, label = "Credoom" }: { className?: string; label?: string }) {
+export function CredoomWordmark({ className, label = "Luxury Cabs" }: { className?: string; label?: string }) {
   return (
     <div className={cn("flex items-center gap-2 text-primary", className)}>
       <CrownCarLogo className="h-6 w-6" />
