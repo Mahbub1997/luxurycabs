@@ -86,9 +86,9 @@ function Booking() {
   const canBook = (() => {
     if (!pickup || !drop) return false;
     if (tab === "rental") return true;
-    if (overLimit) return false;
     return !!routeInfo && !routeLoading && estimatedFare > 0;
   })();
+  // removed redundant return below
 
   async function handleBook() {
     if (!pickup || !drop || submitting) return;
