@@ -459,17 +459,7 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
       {/* Driver card */}
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          {b.driver_photo ? (
-            <img
-              src={b.driver_photo}
-              alt={b.driver_name ?? "Driver"}
-              className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
-            />
-          ) : (
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary ring-2 ring-primary/30 font-bold text-lg">
-              {(b.driver_name ?? "D").trim().charAt(0).toUpperCase()}
-            </div>
-          )}
+          <DriverPhoto src={b.driver_photo} name={b.driver_name} />
           <div className="flex-1 min-w-0">
             <div className="font-bold leading-tight">{b.driver_name}</div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -618,4 +608,37 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
     </div>
   );
 }
+
+function DriverPhoto({ src, name }: { src?: string | null; name?: string | null }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  useEffect(() => { setLoaded(false); setErrored(false); }, [src]);
+  const initial = (name ?? "D").trim().charAt(0).toUpperCase();
+  const showImg = !!src && !errored;
+  return (
+    <div className="relative h-14 w-14 shrink-0">
+      {showImg && (
+        <img
+          src={src!}
+          alt={name ?? "Driver"}
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          className={cn(
+            "h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 transition-opacity duration-300",
+            loaded ? "opacity-100" : "opacity-0"
+          )}
+        />
+      )}
+      {(!showImg || !loaded) && (
+        <div className={cn(
+          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30 font-bold text-lg",
+          showImg ? "animate-pulse bg-muted text-transparent" : "bg-primary-soft text-primary"
+        )}>
+          {initial}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
