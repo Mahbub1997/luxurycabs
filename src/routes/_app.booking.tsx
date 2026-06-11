@@ -73,13 +73,23 @@ function Booking() {
     [outVehicleId]
   );
 
-  const outDays = useMemo(() => diffDays(scheduledAt, returnAt), [scheduledAt, returnAt]);
+  const outDays = useMemo(() => (returnAt ? diffDays(scheduledAt, returnAt) : 1), [scheduledAt, returnAt]);
 
   const outBreakdown = useMemo(() => {
     if (tab !== "outstation" || !routeInfo) return null;
     const km = routeInfo.distanceKm * 2; // round trip only
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
+
+  // Auto-open vehicle sheet when route becomes ready (once per pickup+drop)
+  useEffect(() => {
+    if (!pickup || !drop || tab === "rental" || !routeInfo) return;
+    if (tab === "outstation" && !returnAt) return;
+    const key = `${pickup.lat},${pickup.lng}->${drop.lat},${drop.lng}:${tab}:${returnAt}`;
+    if (autoOpenedFor === key) return;
+    setAutoOpenedFor(key);
+    setVehicleSheetOpen(true);
+  }, [pickup, drop, tab, routeInfo, returnAt, autoOpenedFor]);
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
