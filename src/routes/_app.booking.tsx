@@ -486,7 +486,7 @@ function Booking() {
             <p className="mt-1 text-center text-xs text-muted-foreground">Selected vehicle and fare estimate</p>
 
             <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary bg-primary-soft/30 p-3">
-              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain" />
+              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain scale-x-[-1]" />
               <div className="min-w-0 flex-1">
                 <div className="text-base font-bold">{tariffLabel}</div>
                 <div className="text-[11px] text-muted-foreground">Best for {tab === "outstation" ? outVehicle.seats : vehicle === "sedan" ? 4 : 7} People · AC</div>
@@ -534,7 +534,7 @@ function Booking() {
                       className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left hover:border-primary"
                     >
                       <div className="grid h-16 w-24 shrink-0 place-items-center">
-                        <img src={v.tier === "sedan" ? sedanImg : suvImg} alt={v.label} className="h-full w-full object-contain" />
+                        <img src={v.tier === "sedan" ? sedanImg : suvImg} alt={v.label} className="h-full w-full object-contain scale-x-[-1]" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold">{v.label}</div>
@@ -609,7 +609,7 @@ function Booking() {
             {/* Selected vehicle + fare */}
             <div className="relative mt-3 rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center gap-3">
-                <img src={carImg} alt={tariffLabel} className="h-14 w-20 object-contain" />
+                <img src={carImg} alt={tariffLabel} className="h-14 w-20 object-contain scale-x-[-1]" />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Selected Vehicle</div>
                   <div className="text-base font-bold">{tariffLabel}</div>
