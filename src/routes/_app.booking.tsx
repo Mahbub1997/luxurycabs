@@ -82,7 +82,19 @@ function Booking() {
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
 
-  // (Vehicle sheet no longer auto-opens — vehicles render inline)
+  // Auto-open vehicle sheet once both locations are picked & route is ready
+  const [autoOpenedKey, setAutoOpenedKey] = useState<string>("");
+  useEffect(() => {
+    if (!pickup || !drop) return;
+    if (tab === "rental") return;
+    if (tab === "outstation" && !returnAt) return;
+    if (!routeInfo || routeLoading) return;
+    const key = `${pickup.lat},${pickup.lng}->${drop.lat},${drop.lng}:${tab}:${returnAt}`;
+    if (autoOpenedKey === key) return;
+    setAutoOpenedKey(key);
+    setSummaryOpen(false);
+    setVehicleSheetOpen(true);
+  }, [pickup, drop, tab, returnAt, routeInfo, routeLoading, autoOpenedKey]);
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
@@ -216,49 +228,45 @@ function Booking() {
         ))}
       </div>
 
-      {/* Map section with overlaid pickup & drop cards */}
-      <div className="relative mx-4">
-        <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-          {pickup && drop && tab !== "rental" ? (
-            <RouteMap
-              pickup={{ lat: pickup.lat, lng: pickup.lng }}
-              drop={{ lat: drop.lat, lng: drop.lng }}
-              polyline={routeInfo?.polyline ?? null}
-              height={pickup && drop ? 420 : 280}
+      {/* Pickup + Drop search cards (tap to open full-screen search) */}
+      <div className="mx-4 space-y-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
+          <div className="min-w-0 flex-1">
+            <PlaceAutocomplete
+              label="Pickup Location"
+              value={pickup}
+              onChange={setPickup}
+              placeholder="Search pickup"
+              autoDetect
             />
-          ) : (
-            <div className="h-[280px] w-full bg-gradient-to-b from-muted to-muted/60" />
-          )}
+          </div>
+          <Crosshair className="h-4 w-4 shrink-0 text-primary" />
         </div>
-
-        {/* Pickup + Drop stacked white cards over the map */}
-        <div className="absolute inset-x-3 top-3 space-y-2">
-          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
-            <div className="min-w-0 flex-1">
-              <PlaceAutocomplete
-                label="Pickup Location"
-                value={pickup}
-                onChange={setPickup}
-                placeholder="Search pickup"
-                autoDetect
-              />
-            </div>
-            <Crosshair className="h-4 w-4 shrink-0 text-primary" />
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
+          <div className="min-w-0 flex-1">
+            <PlaceAutocomplete
+              label="Drop Location"
+              value={drop}
+              onChange={setDrop}
+              placeholder="Where to go?"
+              accent="green"
+            />
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-3 py-2.5 shadow-md backdrop-blur">
-            <div className="min-w-0 flex-1">
-              <PlaceAutocomplete
-                label="Drop Location"
-                value={drop}
-                onChange={setDrop}
-                placeholder="Where to go?"
-                accent="green"
-              />
-            </div>
-            <Crosshair className="h-4 w-4 shrink-0 text-primary" />
-          </div>
+          <Crosshair className="h-4 w-4 shrink-0 text-primary" />
         </div>
       </div>
+
+      {/* Map — only after both locations are picked, auto-fits both */}
+      {pickup && drop && tab !== "rental" && (
+        <div className="mx-4 overflow-hidden rounded-2xl border border-border">
+          <RouteMap
+            pickup={{ lat: pickup.lat, lng: pickup.lng }}
+            drop={{ lat: drop.lat, lng: drop.lng }}
+            polyline={routeInfo?.polyline ?? null}
+            height={260}
+          />
+        </div>
+      )}
 
 
       {/* Outstation banner: round trip only + return date (required) */}
