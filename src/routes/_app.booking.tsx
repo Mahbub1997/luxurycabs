@@ -118,16 +118,19 @@ function Booking() {
     setSummaryOpen(false);
     setVehicleSheetOpen(true);
   }
+  function openSummary() {
+    if (!canPickVehicle) return;
+    setVehicleSheetOpen(false);
+    setSummaryOpen(true);
+  }
 
   function chooseLocalRental(v: VehicleType) {
     setVehicle(v);
     setVehicleSheetOpen(false);
-    setSummaryOpen(true);
   }
   function chooseOutstation(id: string) {
     setOutVehicleId(id);
     setVehicleSheetOpen(false);
-    setSummaryOpen(true);
   }
 
   async function handleBook() {
@@ -201,7 +204,7 @@ function Booking() {
       {!hideChrome && (
         <div data-app-chrome className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
           <CrownCarLogo className="h-6 w-6 text-green-600" />
-          <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
+          <div className="font-display text-lg font-bold tracking-tight text-primary">Credoom</div>
           <button className="absolute right-4 grid h-9 w-9 place-items-center rounded-full border border-border bg-card" aria-label="Notifications">
             <Bell className="h-4 w-4 text-foreground" />
           </button>
@@ -378,6 +381,7 @@ function Booking() {
                   label={v.label}
                   seats={v.seats}
                   fare={bd?.total ?? 0}
+                  selected={outVehicleId === v.id}
                   disabled={!canPickVehicle}
                   onSelect={() => chooseOutstation(v.id)}
                 />
@@ -390,6 +394,7 @@ function Booking() {
                 label="Sedan"
                 seats={4}
                 fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
+                selected={vehicle === "sedan"}
                 disabled={!canPickVehicle}
                 onSelect={() => chooseLocalRental("sedan")}
               />
@@ -398,12 +403,31 @@ function Booking() {
                 label="SUV"
                 seats={7}
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
+                selected={vehicle === "suv"}
                 disabled={!canPickVehicle}
                 onSelect={() => chooseLocalRental("suv")}
               />
             </>
           )}
         </div>
+
+        {canPickVehicle && (
+          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
+                <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
+              </div>
+              <button
+                type="button"
+                onClick={openSummary}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
+              >
+                Book Now <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
 
