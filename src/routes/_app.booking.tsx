@@ -59,10 +59,8 @@ function Booking() {
       .finally(() => { if (!cancelled) setRouteLoading(false); });
     return () => { cancelled = true; };
   }, [pickup, drop, tab]);
-
-  // 15km guard — prompt user to switch instead of auto-switching.
-  const overLimit = tab === "local" && !!routeInfo && routeInfo.distanceKm > LOCAL_LIMIT_KM;
   const effectiveTab: TripType = tab;
+
 
 
   const fares = useMemo(() => {
