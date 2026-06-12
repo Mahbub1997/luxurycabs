@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ClipboardList, Users, IndianRupee, MapPin, LogOut } from "lucide-react";
+import { ClipboardList, Users, LogOut } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,6 @@ function AdminShell() {
   const tabs = [
     { to: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
-    { to: "/admin/fares", label: "Fares", Icon: IndianRupee },
-    { to: "/admin/local-fares", label: "Local Drop", Icon: MapPin },
   ];
 
   return (

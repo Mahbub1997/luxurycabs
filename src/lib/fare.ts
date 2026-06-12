@@ -45,10 +45,19 @@ export function tariffFor(v: VehicleType): VehicleMeta {
   return { ...META[v], ...DEFAULT_RATE[v] };
 }
 
-export function calcLocalFare(v: VehicleType, distanceKm: number, durationMin: number, rates?: RatesMap) {
-  const r = rateFor(v, "local", rates);
-  const raw = r.base + r.perKm * distanceKm + r.perMin * durationMin;
-  return Math.max(Math.round(raw / 10) * 10, r.min);
+export function calcLocalFare(v: VehicleType, distanceKm: number, durationMin: number, _rates?: RatesMap) {
+  // Slab logic: base ₹60 covers up to 20km @ ₹30/km + ₹1/min.
+  // Above 20km: ₹24/km for excess distance (no extra base).
+  // SUV is +30% over sedan.
+  const base = 60;
+  const perKmIn = 30;
+  const perKmOut = 24;
+  const perMin = 1;
+  const inKm = Math.min(distanceKm, 20);
+  const outKm = Math.max(0, distanceKm - 20);
+  let total = base + perKmIn * inKm + perKmOut * outKm + perMin * durationMin;
+  if (v === "suv") total = total * 1.3;
+  return Math.max(Math.round(total / 10) * 10, 150);
 }
 
 export function calcOutstationFare(v: VehicleType, distanceKm: number, _rates?: RatesMap) {

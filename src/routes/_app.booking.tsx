@@ -402,7 +402,7 @@ function Booking() {
                   seats={v.seats}
                   fare={bd?.total ?? 0}
                   selected={outVehicleId === v.id}
-                  disabled={!canPickVehicle}
+                  disabled={false}
                   onSelect={() => chooseOutstation(v.id)}
                 />
               );
@@ -415,7 +415,7 @@ function Booking() {
                 seats={4}
                 fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
                 selected={vehicle === "sedan" && localModel === "sedan"}
-                disabled={!canPickVehicle}
+                disabled={false}
                 onSelect={() => chooseLocalRental("sedan", "sedan")}
               />
               <InlineVehicleRow
@@ -424,7 +424,7 @@ function Booking() {
                 seats={7}
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
                 selected={vehicle === "suv"}
-                disabled={!canPickVehicle}
+                disabled={false}
                 onSelect={() => chooseLocalRental("suv", "suv")}
               />
             </>
@@ -529,9 +529,6 @@ function Booking() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold">{v.label}</div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          ₹{v.perKm}/km · Bata ₹{v.bata}/day
-                        </div>
                         <div className="mt-0.5 inline-flex items-center gap-2 text-[11px] text-muted-foreground">
                           <Users className="h-3 w-3" /> {v.seats}
                           <Snowflake className="h-3 w-3" /> AC
@@ -539,7 +536,7 @@ function Booking() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-extrabold text-primary">{bd ? formatINR(bd.total) : "—"}</div>
-                        <div className="text-[10px] text-muted-foreground">{outDays}d · {bd?.chargedKm ?? 0}km</div>
+                        <div className="text-[10px] text-muted-foreground">Total fare</div>
                       </div>
                     </button>
                   );
@@ -625,7 +622,7 @@ function Booking() {
                   <div className="text-base font-bold">{tariffLabel}</div>
                   {tab === "outstation" && (
                     <div className="text-[11px] text-muted-foreground">
-                      ₹{outVehicle.perKm}/km · Bata ₹{outVehicle.bata}/day · {outDays} day{outDays > 1 ? "s" : ""}
+                      {outDays} day{outDays > 1 ? "s" : ""}
                     </div>
                   )}
                   <button
