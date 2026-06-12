@@ -402,7 +402,7 @@ function Booking() {
                   seats={v.seats}
                   fare={bd?.total ?? 0}
                   selected={outVehicleId === v.id}
-                  disabled={!canPickVehicle}
+                  disabled={false}
                   onSelect={() => chooseOutstation(v.id)}
                 />
               );
