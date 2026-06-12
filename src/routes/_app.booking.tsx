@@ -21,6 +21,8 @@ import {
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { createBooking, pushRecentBooking } from "@/lib/booking-store";
+import { getProfile } from "@/lib/profile";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
@@ -175,6 +177,8 @@ function Booking() {
         duration = routeInfo!.durationMin;
       }
 
+      const profile = getProfile();
+      const { data: authData } = await supabase.auth.getUser();
       const booking = await createBooking({
         trip_type: tab,
         trip_mode: tab === "outstation" ? "round" : null,
@@ -192,7 +196,10 @@ function Booking() {
         duration_min: Math.round(duration),
         fare: estimatedFare,
         route_polyline: tab === "rental" ? null : routeInfo!.polyline,
-      });
+        customer_name: profile?.name ?? authData.user?.user_metadata?.name ?? null,
+        customer_phone: profile?.phone ?? authData.user?.phone ?? null,
+        user_id: authData.user?.id ?? null,
+      } as any);
       pushRecentBooking(booking.id);
       navigate({ to: "/track/$id", params: { id: booking.id } });
     } catch (e) {
