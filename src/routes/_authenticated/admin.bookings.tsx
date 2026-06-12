@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2 } from "lucide-react";
+import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
 import { assignBookingToDriver } from "@/lib/driver.functions";
@@ -19,6 +19,7 @@ function AdminBookings() {
   const [tab, setTab] = useState<Tab>("pending");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   async function load() {
     setLoading(true);
