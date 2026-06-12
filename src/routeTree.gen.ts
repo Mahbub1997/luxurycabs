@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminLocalFaresRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminFaresRouteImport } from './routes/_authenticated/admin.fares'
 import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authenticated/admin.drivers'
 import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
+import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -143,6 +144,12 @@ const AuthenticatedAdminBookingsRoute =
     path: '/bookings',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminApprovalsRoute =
+  AuthenticatedAdminApprovalsRouteImport.update({
+    id: '/approvals',
+    path: '/approvals',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver': typeof DriverIndexRoute
+  '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -207,6 +216,7 @@ export interface FileRoutesById {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/_authenticated/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/admin/approvals'
     | '/admin/bookings'
     | '/admin/drivers'
     | '/admin/fares'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver'
+    | '/admin/approvals'
     | '/admin/bookings'
     | '/admin/drivers'
     | '/admin/fares'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/bookings'
     | '/_authenticated/admin/drivers'
     | '/_authenticated/admin/fares'
@@ -456,10 +469,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBookingsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/approvals': {
+      id: '/_authenticated/admin/approvals'
+      path: '/approvals'
+      fullPath: '/admin/approvals'
+      preLoaderRoute: typeof AuthenticatedAdminApprovalsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
   AuthenticatedAdminDriversRoute: typeof AuthenticatedAdminDriversRoute
   AuthenticatedAdminFaresRoute: typeof AuthenticatedAdminFaresRoute
@@ -467,6 +488,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
   AuthenticatedAdminDriversRoute: AuthenticatedAdminDriversRoute,
   AuthenticatedAdminFaresRoute: AuthenticatedAdminFaresRoute,
