@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Wallet, X, Check, XCircle, FileText, Loader2 } from "lucide-react";
+import { Wallet, X, Check, XCircle, FileText, Loader2, Search } from "lucide-react";
 import { decideWithdrawal, updateDriverStatus, getDriverDocUrls } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ function AdminDrivers() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [walletFor, setWalletFor] = useState<any | null>(null);
   const [docsFor, setDocsFor] = useState<any | null>(null);
+  const [query, setQuery] = useState("");
 
   async function load() {
     let q = supabase.from("drivers").select("*").order("created_at", { ascending: false });
@@ -27,10 +28,29 @@ function AdminDrivers() {
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tab]);
 
+  const qq = query.trim().toLowerCase();
+  const filtered = !qq ? drivers : drivers.filter((d) =>
+    (d.name ?? "").toLowerCase().includes(qq) ||
+    (d.phone ?? "").toLowerCase().includes(qq) ||
+    (d.email ?? "").toLowerCase().includes(qq) ||
+    (d.vehicle_number ?? "").toLowerCase().includes(qq) ||
+    (d.license_number ?? "").toLowerCase().includes(qq)
+  );
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-bold">Drivers ({drivers.length})</h2>
+        <h2 className="text-base font-bold">Drivers ({filtered.length})</h2>
+      </div>
+      <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, phone, email or vehicle number"
+          className="w-full bg-transparent text-sm outline-none"
+        />
+        {query && <button onClick={() => setQuery("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
       </div>
       <div className="mb-3 flex gap-1 overflow-x-auto">
         {TABS.map((t) => (
