@@ -529,9 +529,6 @@ function Booking() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold">{v.label}</div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          ₹{v.perKm}/km · Bata ₹{v.bata}/day
-                        </div>
                         <div className="mt-0.5 inline-flex items-center gap-2 text-[11px] text-muted-foreground">
                           <Users className="h-3 w-3" /> {v.seats}
                           <Snowflake className="h-3 w-3" /> AC
@@ -539,7 +536,7 @@ function Booking() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-extrabold text-primary">{bd ? formatINR(bd.total) : "—"}</div>
-                        <div className="text-[10px] text-muted-foreground">{outDays}d · {bd?.chargedKm ?? 0}km</div>
+                        <div className="text-[10px] text-muted-foreground">Total fare</div>
                       </div>
                     </button>
                   );
