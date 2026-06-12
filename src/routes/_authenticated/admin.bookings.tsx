@@ -44,8 +44,32 @@ function AdminBookings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  const q = query.trim().toLowerCase();
+  const filtered = !q ? rows : rows.filter((b) => {
+    const code = `LC${(b.id as string).replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+    return (
+      (b.id as string).toLowerCase().includes(q) ||
+      code.toLowerCase().includes(q) ||
+      (b.customer_name ?? "").toLowerCase().includes(q) ||
+      (b.customer_phone ?? "").toLowerCase().includes(q) ||
+      (b.driver_name ?? "").toLowerCase().includes(q) ||
+      (b.driver_phone ?? "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div>
+      <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by booking ID, customer name or phone"
+          className="w-full bg-transparent text-sm outline-none"
+        />
+        {query && <button onClick={() => setQuery("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
+      </div>
+
       <div className="mb-3 flex gap-1">
         {TABS.map((t) => (
           <button
@@ -62,12 +86,12 @@ function AdminBookings() {
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {!loading && rows.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground">No bookings.</p>
       )}
 
       <div className="flex flex-col gap-3">
-        {rows.map((b) => (
+        {filtered.map((b) => (
           <BookingCard key={b.id} b={b} />
         ))}
       </div>
