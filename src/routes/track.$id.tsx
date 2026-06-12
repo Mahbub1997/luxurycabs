@@ -131,7 +131,7 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
             </button>
           </div>
         </div>
-        <a href="tel:+918000000000" className="grid h-9 w-9 place-items-center rounded-full border border-border" aria-label="Support">
+        <a href="tel:+919791298406" className="grid h-9 w-9 place-items-center rounded-full border border-border" aria-label="Support">
           <Headphones className="h-4 w-4" />
         </a>
       </div>
@@ -223,7 +223,7 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
       <div className="mx-4 mt-4 grid grid-cols-3 gap-2">
         <ActionBtn icon={<MapPin className="h-4 w-4 text-primary" />} label="Track" onClick={() => {}} disabled />
         <a
-          href="tel:+918000000000"
+          href="tel:+919791298406"
           className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold"
         >
           <Headphones className="h-4 w-4 text-foreground" />

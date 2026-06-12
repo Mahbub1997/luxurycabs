@@ -17,7 +17,7 @@ function Profile() {
   const items = [
     { I: MapPin, label: "Saved Addresses", onClick: () => navigate({ to: "/booking" }) },
     { I: Wallet, label: "Payment Methods", onClick: () => alert("Cash on ride is currently the only supported payment method. More options coming soon.") },
-    { I: Phone, label: "Help & Support", onClick: () => { window.location.href = "tel:+919999999999"; } },
+    { I: Phone, label: "Help & Support (Toll-free)", onClick: () => { window.location.href = "tel:+919791298406"; } },
     { I: Shield, label: "Safety Center", onClick: () => alert("Your safety is our priority.\n\n• Verified drivers\n• Live trip sharing\n• 24/7 support helpline\n• SOS button on every ride") },
   ];
 

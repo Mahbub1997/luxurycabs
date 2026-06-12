@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2 } from "lucide-react";
+import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
 import { assignBookingToDriver } from "@/lib/driver.functions";
@@ -19,6 +19,7 @@ function AdminBookings() {
   const [tab, setTab] = useState<Tab>("pending");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   async function load() {
     setLoading(true);
@@ -43,8 +44,32 @@ function AdminBookings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  const q = query.trim().toLowerCase();
+  const filtered = !q ? rows : rows.filter((b) => {
+    const code = `LC${(b.id as string).replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+    return (
+      (b.id as string).toLowerCase().includes(q) ||
+      code.toLowerCase().includes(q) ||
+      (b.customer_name ?? "").toLowerCase().includes(q) ||
+      (b.customer_phone ?? "").toLowerCase().includes(q) ||
+      (b.driver_name ?? "").toLowerCase().includes(q) ||
+      (b.driver_phone ?? "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div>
+      <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by booking ID, customer name or phone"
+          className="w-full bg-transparent text-sm outline-none"
+        />
+        {query && <button onClick={() => setQuery("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
+      </div>
+
       <div className="mb-3 flex gap-1">
         {TABS.map((t) => (
           <button
@@ -61,12 +86,12 @@ function AdminBookings() {
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {!loading && rows.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground">No bookings.</p>
       )}
 
       <div className="flex flex-col gap-3">
-        {rows.map((b) => (
+        {filtered.map((b) => (
           <BookingCard key={b.id} b={b} />
         ))}
       </div>
@@ -137,6 +162,20 @@ function BookingCard({ b }: { b: any }) {
         <span className="text-[10px] text-muted-foreground">
           {new Date(b.created_at).toLocaleString()}
         </span>
+      </div>
+
+      <div className="mt-2 rounded-lg bg-muted/40 p-2 text-xs">
+        <div className="mb-1 flex items-center gap-1 font-semibold text-foreground">
+          <User className="h-3.5 w-3.5" /> Customer
+        </div>
+        <div className="text-muted-foreground">
+          {b.customer_name || "—"}
+          {b.customer_phone && (
+            <a href={`tel:${b.customer_phone}`} className="ml-2 inline-flex items-center gap-1 text-primary">
+              <Phone className="h-3 w-3" />{b.customer_phone}
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="mt-2 grid gap-1">

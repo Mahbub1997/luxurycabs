@@ -19,6 +19,8 @@ export type Database = {
           assigned_driver_id: string | null
           completed_at: string | null
           created_at: string
+          customer_name: string | null
+          customer_phone: string | null
           distance_km: number
           driver_lat: number | null
           driver_lng: number | null
@@ -46,6 +48,7 @@ export type Database = {
           trip_mode: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
+          user_id: string | null
           vehicle_model: string | null
           vehicle_number: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -54,6 +57,8 @@ export type Database = {
           assigned_driver_id?: string | null
           completed_at?: string | null
           created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
           distance_km?: number
           driver_lat?: number | null
           driver_lng?: number | null
@@ -81,6 +86,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
+          user_id?: string | null
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -89,6 +95,8 @@ export type Database = {
           assigned_driver_id?: string | null
           completed_at?: string | null
           created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
           distance_km?: number
           driver_lat?: number | null
           driver_lng?: number | null
@@ -116,6 +124,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
+          user_id?: string | null
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
