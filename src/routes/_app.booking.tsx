@@ -622,7 +622,7 @@ function Booking() {
                   <div className="text-base font-bold">{tariffLabel}</div>
                   {tab === "outstation" && (
                     <div className="text-[11px] text-muted-foreground">
-                      ₹{outVehicle.perKm}/km · Bata ₹{outVehicle.bata}/day · {outDays} day{outDays > 1 ? "s" : ""}
+                      {outDays} day{outDays > 1 ? "s" : ""}
                     </div>
                   )}
                   <button
