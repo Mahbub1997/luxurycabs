@@ -68,7 +68,7 @@ function AdminDrivers() {
       </div>
 
       <div className="flex flex-col gap-2">
-        {drivers.map((d) => (
+        {filtered.map((d) => (
           <div key={d.id} className="rounded-2xl border border-border bg-card p-3 text-sm shadow-sm">
             <div className="flex items-start justify-between">
               <div>
@@ -131,7 +131,7 @@ function AdminDrivers() {
             </div>
           </div>
         ))}
-        {drivers.length === 0 && <p className="text-sm text-muted-foreground">No drivers in this tab.</p>}
+        {filtered.length === 0 && <p className="text-sm text-muted-foreground">No drivers in this tab.</p>}
       </div>
 
       {walletFor && <WalletModal driver={walletFor} onClose={() => { setWalletFor(null); load(); }} />}
