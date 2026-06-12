@@ -188,7 +188,7 @@ function DriverTrip() {
           <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
             <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
             <span className="font-bold">₹{b.fare}</span>
-            <a href="tel:+91" className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-3.5 w-3.5" /></a>
+            <a href="tel:+919791298406" className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-3.5 w-3.5" /></a>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
