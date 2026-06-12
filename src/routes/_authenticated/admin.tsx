@@ -20,8 +20,6 @@ function AdminShell() {
   const tabs = [
     { to: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
-    { to: "/admin/fares", label: "Fares", Icon: IndianRupee },
-    { to: "/admin/local-fares", label: "Local Drop", Icon: MapPin },
   ];
 
   return (
