@@ -164,6 +164,20 @@ function BookingCard({ b }: { b: any }) {
         </span>
       </div>
 
+      <div className="mt-2 rounded-lg bg-muted/40 p-2 text-xs">
+        <div className="mb-1 flex items-center gap-1 font-semibold text-foreground">
+          <User className="h-3.5 w-3.5" /> Customer
+        </div>
+        <div className="text-muted-foreground">
+          {b.customer_name || "—"}
+          {b.customer_phone && (
+            <a href={`tel:${b.customer_phone}`} className="ml-2 inline-flex items-center gap-1 text-primary">
+              <Phone className="h-3 w-3" />{b.customer_phone}
+            </a>
+          )}
+        </div>
+      </div>
+
       <div className="mt-2 grid gap-1">
         <Row Icon={MapPin} text={b.pickup_address} accent="text-emerald-600" />
         <Row Icon={MapPin} text={b.drop_address} accent="text-rose-600" />
