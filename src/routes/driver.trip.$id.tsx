@@ -41,17 +41,12 @@ function DriverTrip() {
     });
   }, [id]);
 
+  // Drive to PICKUP — simulated movement (driver hasn't physically picked up yet).
   useEffect(() => {
-    if (!b) return;
-    if (phase !== "to_pickup" && phase !== "in_trip") return;
+    if (!b || phase !== "to_pickup") return;
     cancelSimRef.current?.();
-    const origin = phase === "to_pickup"
-      ? { lat: b.driver_lat ?? b.pickup_lat, lng: b.driver_lng ?? b.pickup_lng }
-      : { lat: b.pickup_lat, lng: b.pickup_lng };
-    const dest = phase === "to_pickup"
-      ? { lat: b.pickup_lat, lng: b.pickup_lng }
-      : { lat: b.drop_lat, lng: b.drop_lng };
-
+    const origin = { lat: b.driver_lat ?? b.pickup_lat, lng: b.driver_lng ?? b.pickup_lng };
+    const dest = { lat: b.pickup_lat, lng: b.pickup_lng };
     setPos(origin);
     let cancelled = false;
     (async () => {
@@ -81,22 +76,70 @@ function DriverTrip() {
           onDone: () => {
             beep(500, 1040);
             setTimeout(() => beep(500, 1320), 250);
-            if (phase === "to_pickup") {
-              notify("Reached pickup 📍", "You have arrived at the customer's pickup point.");
-              arrivedAtPickup();
-            } else {
-              notify("Reached drop ✅", "You have arrived at the drop location.");
-              reachedDrop();
-            }
+            notify("Reached pickup 📍", "You have arrived at the customer's pickup point.");
+            arrivedAtPickup();
           },
         });
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     })();
     return () => { cancelled = true; cancelSimRef.current?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, b?.id]);
+
+  // IN TRIP — REAL device GPS, no fake animation. Live-pushes to customer + admin.
+  useEffect(() => {
+    if (!b || phase !== "in_trip") return;
+    cancelSimRef.current?.();
+
+    // Draw the planned pickup→drop polyline once.
+    (async () => {
+      try {
+        const r = await computeRoute({
+          data: { origin: { lat: b.pickup_lat, lng: b.pickup_lng }, destination: { lat: b.drop_lat, lng: b.drop_lng } },
+        });
+        setPoly(r.polyline);
+        setEtaMin(Math.max(1, Math.round(r.durationMin ?? 10)));
+      } catch { /* ignore */ }
+    })();
+
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      toast.error("GPS not available on this device");
+      return;
+    }
+    const dropPt = { lat: b.drop_lat, lng: b.drop_lng };
+    let reached = false;
+    const watchId = navigator.geolocation.watchPosition(
+      (g) => {
+        const p = { lat: g.coords.latitude, lng: g.coords.longitude };
+        setPos(p);
+        const now = Date.now();
+        if (now - dbTickRef.current > 4000) {
+          dbTickRef.current = now;
+          supabase.from("bookings").update({ driver_lat: p.lat, driver_lng: p.lng }).eq("id", b.id).then(() => {});
+        }
+        // ~120m proximity → reached drop
+        const dKm = haversineKm(p, dropPt);
+        if (!reached && dKm < 0.12) {
+          reached = true;
+          beep(500, 1040);
+          setTimeout(() => beep(500, 1320), 250);
+          notify("Reached drop ✅", "You have arrived at the drop location.");
+          reachedDrop();
+        }
+      },
+      (err) => toast.error(err.message || "Unable to read GPS"),
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, b?.id]);
+
+  function haversineKm(a: LatLng, c: LatLng) {
+    const R = 6371, toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(c.lat - a.lat), dLng = toRad(c.lng - a.lng);
+    const h = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat))*Math.cos(toRad(c.lat))*Math.sin(dLng/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
 
   async function arrivedAtPickup() {
     if (!b) return;

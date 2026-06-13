@@ -105,8 +105,8 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
             map: mapRef.current,
             position: driver,
             icon: {
-              path: "M -6 -12 C -6 -14 -4 -15 0 -15 C 4 -15 6 -14 6 -12 L 6 -8 L 7.5 -7 L 7.5 8 L 6 9 L 6 13 C 6 14.5 4.5 15 0 15 C -4.5 15 -6 14.5 -6 13 L -6 9 L -7.5 8 L -7.5 -7 L -6 -8 Z M -4 -10 L 4 -10 L 5 -4 L -5 -4 Z M -4 2 L 4 2 L 5 9 L -5 9 Z",
-              fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.2, scale: 1.1,
+              path: "M -7 -13 C -7 -15 -5 -16 0 -16 C 5 -16 7 -15 7 -13 L 7 -7 L 8.5 -6 L 8.5 11 L 7 12 L 7 15 C 7 16.5 5 17 0 17 C -5 17 -7 16.5 -7 15 L -7 12 L -8.5 11 L -8.5 -6 L -7 -7 Z M -5 -11 L 5 -11 L 6 -4 L -6 -4 Z M -6 1 L 6 1 L 6 3 L -6 3 Z M -5 6 L 5 6 L 6 13 L -6 13 Z",
+              fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5, scale: 1.2,
               anchor: new g.maps.Point(0, 0), rotation: 0,
             },
           });
