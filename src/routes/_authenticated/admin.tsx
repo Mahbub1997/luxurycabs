@@ -19,6 +19,7 @@ function AdminShell() {
 
   const tabs = [
     { to: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
+    { to: "/admin/live", label: "Live", Icon: Activity },
     { to: "/admin/approvals", label: "Approvals", Icon: UserCheck },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
   ];
