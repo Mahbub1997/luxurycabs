@@ -123,6 +123,66 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
     })();
   }, [driver?.lat, driver?.lng]);
 
+  // My current location (blue dot)
+  useEffect(() => {
+    if (!showMyLocation) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let watchId: number | null = null;
+    let cancelled = false;
+    (async () => {
+      try {
+        const g = await loadGoogleMaps();
+        if (cancelled || !mapRef.current) return;
+        const update = (pos: GeolocationPosition) => {
+          if (!mapRef.current) return;
+          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          if (!meMarkerRef.current) {
+            meMarkerRef.current = new g.maps.Marker({
+              map: mapRef.current,
+              position: p,
+              zIndex: 9999,
+              icon: {
+                path: g.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#1a73e8",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 3,
+              },
+            });
+            meAccuracyRef.current = new g.maps.Circle({
+              map: mapRef.current,
+              center: p,
+              radius: Math.max(20, pos.coords.accuracy || 30),
+              fillColor: "#1a73e8",
+              fillOpacity: 0.15,
+              strokeColor: "#1a73e8",
+              strokeOpacity: 0.35,
+              strokeWeight: 1,
+              clickable: false,
+            });
+          } else {
+            meMarkerRef.current.setPosition(p);
+            meAccuracyRef.current?.setCenter(p);
+            meAccuracyRef.current?.setRadius(Math.max(20, pos.coords.accuracy || 30));
+          }
+        };
+        watchId = navigator.geolocation.watchPosition(update, () => {}, {
+          enableHighAccuracy: true, maximumAge: 5000, timeout: 15000,
+        });
+      } catch { /* ignore */ }
+    })();
+    return () => {
+      cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      meMarkerRef.current?.setMap(null);
+      meMarkerRef.current = null;
+      meAccuracyRef.current?.setMap(null);
+      meAccuracyRef.current = null;
+    };
+  }, [showMyLocation, status]);
+
+
   return (
     <div
       className="relative w-full rounded-2xl overflow-hidden border border-border bg-muted"
