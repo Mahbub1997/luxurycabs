@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
 
