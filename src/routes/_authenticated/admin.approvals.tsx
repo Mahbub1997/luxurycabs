@@ -18,20 +18,29 @@ export const Route = createFileRoute("/_authenticated/admin/approvals")({
 function AdminApprovals() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [isSuper, setIsSuper] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     setLoading(true);
-    const [d, w] = await Promise.all([
+    const meP = checkIsAdmin().catch(() => ({ isSuperAdmin: false }));
+    const [d, w, me] = await Promise.all([
       supabase.from("drivers").select("*").eq("status", "pending").order("created_at", { ascending: false }),
       supabase
         .from("withdrawal_requests")
         .select("*, drivers(name, phone, wallet_balance)")
         .eq("status", "pending")
         .order("created_at", { ascending: false }),
+      meP,
     ]);
     setDrivers(d.data ?? []);
     setWithdrawals(w.data ?? []);
+    const sup = !!(me as any).isSuperAdmin;
+    setIsSuper(sup);
+    if (sup) {
+      try { setAdmins(await listPendingAdmins()); } catch { setAdmins([]); }
+    }
     setLoading(false);
   }
 
