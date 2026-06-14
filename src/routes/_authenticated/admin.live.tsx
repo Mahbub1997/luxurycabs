@@ -21,9 +21,11 @@ function AdminLive() {
       .from("bookings")
       .select("*")
       .in("status", ["driver_assigned", "driver_arrived", "in_progress"])
+      .not("driver_id", "is", null)
       .order("created_at", { ascending: false });
     setRows(data ?? []);
     setLoading(false);
+
 
     // Active users: distinct users with bookings in the last 24h
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

@@ -20,11 +20,13 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const driverHeadingRef = useRef<number>(0);
+  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
-  const meAccuracyRef = useRef<google.maps.Circle | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
   const [errorMsg, setErrorMsg] = useState<string>("");
+
 
   // Init map + base markers ONLY when endpoints change (not on polyline change).
   useEffect(() => {
@@ -98,24 +100,51 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
     })();
   }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
 
-  // Driver marker
+  // Driver marker (rotates to face direction of movement)
   useEffect(() => {
     (async () => {
       try {
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
+
+        // compute heading from previous position
+        const prev = lastDriverRef.current;
+        if (prev && (prev.lat !== driver.lat || prev.lng !== driver.lng)) {
+          const dKm = Math.hypot(prev.lat - driver.lat, prev.lng - driver.lng);
+          if (dKm > 0.00002) {
+            const heading = g.maps.geometry?.spherical?.computeHeading
+              ? g.maps.geometry.spherical.computeHeading(
+                  new g.maps.LatLng(prev.lat, prev.lng),
+                  new g.maps.LatLng(driver.lat, driver.lng)
+                )
+              : (Math.atan2(driver.lng - prev.lng, driver.lat - prev.lat) * 180) / Math.PI;
+            driverHeadingRef.current = heading;
+          }
+        }
+        lastDriverRef.current = { lat: driver.lat, lng: driver.lng };
+
+        const carIcon: google.maps.Symbol = {
+          // top-down car shape pointing UP (north). Rotation rotates around anchor.
+          path: "M 0 -16 C 4 -16 6 -14 6 -10 L 6 -2 L 7 0 L 7 12 L 6 14 L 6 16 C 6 17 4 17.5 0 17.5 C -4 17.5 -6 17 -6 16 L -6 14 L -7 12 L -7 0 L -6 -2 L -6 -10 C -6 -14 -4 -16 0 -16 Z M -4 -10 L 4 -10 L 5 -3 L -5 -3 Z M -5 4 L 5 4 L 5 11 L -5 11 Z",
+          fillColor: "#0f3a22",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 1.5,
+          scale: 1.2,
+          anchor: new g.maps.Point(0, 0),
+          rotation: driverHeadingRef.current,
+        };
+
         if (!driverMarkerRef.current) {
           driverMarkerRef.current = new g.maps.Marker({
             map: mapRef.current,
             position: driver,
-            icon: {
-              path: "M -7 -13 C -7 -15 -5 -16 0 -16 C 5 -16 7 -15 7 -13 L 7 -7 L 8.5 -6 L 8.5 11 L 7 12 L 7 15 C 7 16.5 5 17 0 17 C -5 17 -7 16.5 -7 15 L -7 12 L -8.5 11 L -8.5 -6 L -7 -7 Z M -5 -11 L 5 -11 L 6 -4 L -6 -4 Z M -6 1 L 6 1 L 6 3 L -6 3 Z M -5 6 L 5 6 L 6 13 L -6 13 Z",
-              fillColor: "#0f3a22", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 1.5, scale: 1.2,
-              anchor: new g.maps.Point(0, 0), rotation: 0,
-            },
+            icon: carIcon,
+            zIndex: 5000,
           });
         } else {
           driverMarkerRef.current.setPosition(driver);
+          driverMarkerRef.current.setIcon(carIcon);
         }
       } catch {
         // map load error already surfaced by main effect
@@ -123,7 +152,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
     })();
   }, [driver?.lat, driver?.lng]);
 
-  // My current location (blue dot)
+  // My current location (crosshair / aim icon)
   useEffect(() => {
     if (!showMyLocation) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -133,6 +162,17 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       try {
         const g = await loadGoogleMaps();
         if (cancelled || !mapRef.current) return;
+        const aimIcon: google.maps.Symbol = {
+          // Crosshair / aim: outer ring + cross lines + center dot
+          path: "M 0 -12 L 0 -6 M 0 6 L 0 12 M -12 0 L -6 0 M 6 0 L 12 0 M 0 0 m -10 0 a 10 10 0 1 0 20 0 a 10 10 0 1 0 -20 0 M 0 0 m -2 0 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0",
+          strokeColor: "#0f3a22",
+          strokeWeight: 2.2,
+          strokeOpacity: 1,
+          fillColor: "#0f3a22",
+          fillOpacity: 1,
+          scale: 1,
+          anchor: new g.maps.Point(0, 0),
+        };
         const update = (pos: GeolocationPosition) => {
           if (!mapRef.current) return;
           const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -141,30 +181,10 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
               map: mapRef.current,
               position: p,
               zIndex: 9999,
-              icon: {
-                path: g.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: "#1a73e8",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 3,
-              },
-            });
-            meAccuracyRef.current = new g.maps.Circle({
-              map: mapRef.current,
-              center: p,
-              radius: Math.max(20, pos.coords.accuracy || 30),
-              fillColor: "#1a73e8",
-              fillOpacity: 0.15,
-              strokeColor: "#1a73e8",
-              strokeOpacity: 0.35,
-              strokeWeight: 1,
-              clickable: false,
+              icon: aimIcon,
             });
           } else {
             meMarkerRef.current.setPosition(p);
-            meAccuracyRef.current?.setCenter(p);
-            meAccuracyRef.current?.setRadius(Math.max(20, pos.coords.accuracy || 30));
           }
         };
         watchId = navigator.geolocation.watchPosition(update, () => {}, {
@@ -177,10 +197,9 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       meMarkerRef.current?.setMap(null);
       meMarkerRef.current = null;
-      meAccuracyRef.current?.setMap(null);
-      meAccuracyRef.current = null;
     };
   }, [showMyLocation, status]);
+
 
 
   return (
