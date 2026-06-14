@@ -1,8 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { decideWithdrawal, updateDriverStatus } from "@/lib/admin.functions";
-import { Check, XCircle, UserCheck, Wallet, Loader2 } from "lucide-react";
+import {
+  decideWithdrawal,
+  updateDriverStatus,
+  listPendingAdmins,
+  decideAdmin,
+  checkIsAdmin,
+} from "@/lib/admin.functions";
+import { Check, XCircle, UserCheck, Wallet, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/approvals")({
