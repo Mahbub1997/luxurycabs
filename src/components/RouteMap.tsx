@@ -20,11 +20,13 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const driverHeadingRef = useRef<number>(0);
+  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
-  const meAccuracyRef = useRef<google.maps.Circle | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
   const [errorMsg, setErrorMsg] = useState<string>("");
+
 
   // Init map + base markers ONLY when endpoints change (not on polyline change).
   useEffect(() => {
