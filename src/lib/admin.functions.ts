@@ -2,34 +2,92 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+/** Fixed email used for the main "luxury cabs" account. */
+export const MAIN_ADMIN_EMAIL = "luxurycabs@admin.local";
+const MAIN_ADMIN_PASSWORD = "5678";
+
+async function assertSuperAdmin(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "super_admin")
+    .eq("approved", true)
+    .maybeSingle();
+  if (!data) throw new Error("Super admin only");
+}
+
 async function assertAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("user_roles")
-    .select("role")
+    .select("role, approved")
     .eq("user_id", userId)
-    .eq("role", "admin")
+    .in("role", ["admin", "super_admin"])
+    .eq("approved", true)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Not an admin");
+  if (!data) throw new Error("Not an approved admin");
 }
 
-/** Bootstrap: claim admin role if there is no admin yet. Caller must be authenticated. */
-export const claimFirstAdmin = createServerFn({ method: "POST" })
+/** Bootstrap the main admin (luxury cabs / 5678). Idempotent. Public — guarded by password. */
+export const ensureMainAdmin = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ password: z.string().min(1) }).parse(d))
+  .handler(async ({ data }) => {
+    if (data.password !== MAIN_ADMIN_PASSWORD) {
+      throw new Error("Invalid main admin password");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    let user = list?.users.find((u) => u.email?.toLowerCase() === MAIN_ADMIN_EMAIL);
+    if (!user) {
+      const created = await supabaseAdmin.auth.admin.createUser({
+        email: MAIN_ADMIN_EMAIL,
+        password: MAIN_ADMIN_PASSWORD,
+        email_confirm: true,
+        user_metadata: { name: "Luxury Cabs", role: "super_admin" },
+      });
+      if (created.error) throw new Error(created.error.message);
+      user = created.data.user!;
+    }
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user!.id)
+      .eq("role", "super_admin")
+      .maybeSingle();
+    if (!roleRow) {
+      await supabaseAdmin.from("user_roles").insert({
+        user_id: user!.id,
+        role: "super_admin",
+        approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: user!.id,
+      });
+    }
+    return { ok: true, email: MAIN_ADMIN_EMAIL };
+  });
+
+/** New admin signup creates a PENDING admin row awaiting super-admin approval. */
+export const requestAdminAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { count, error: cErr } = await supabaseAdmin
+    const { data: existing } = await supabaseAdmin
       .from("user_roles")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
-    if (cErr) throw new Error(cErr.message);
-    if ((count ?? 0) > 0) throw new Error("An admin already exists");
-    const { error } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: context.userId, role: "admin" });
+      .select("id, approved, role")
+      .eq("user_id", context.userId)
+      .in("role", ["admin", "super_admin"])
+      .maybeSingle();
+    if (existing) return { ok: true, approved: !!existing.approved };
+    const { error } = await supabaseAdmin.from("user_roles").insert({
+      user_id: context.userId,
+      role: "admin",
+      approved: false,
+    });
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, approved: false };
   });
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
@@ -38,15 +96,62 @@ export const checkIsAdmin = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("user_roles")
-      .select("role")
+      .select("role, approved")
       .eq("user_id", context.userId)
-      .eq("role", "admin")
+      .in("role", ["admin", "super_admin"])
       .maybeSingle();
-    const { count } = await supabaseAdmin
+    return {
+      isAdmin: !!data && !!data.approved,
+      isSuperAdmin: data?.role === "super_admin" && !!data.approved,
+      pending: !!data && !data.approved,
+    };
+  });
+
+export const listPendingAdmins = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
       .from("user_roles")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
-    return { isAdmin: !!data, anyAdmin: (count ?? 0) > 0 };
+      .select("id, user_id, requested_at")
+      .eq("role", "admin")
+      .eq("approved", false)
+      .order("requested_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r) => r.user_id);
+    if (ids.length === 0) return [];
+    const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const byId = new Map((list?.users ?? []).map((u) => [u.id, u]));
+    return (rows ?? []).map((r) => ({
+      id: r.id,
+      user_id: r.user_id,
+      requested_at: r.requested_at,
+      email: byId.get(r.user_id)?.email ?? "—",
+    }));
+  });
+
+export const decideAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ role_id: z.string().uuid(), approve: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.approve) {
+      const { error } = await supabaseAdmin
+        .from("user_roles")
+        .update({
+          approved: true,
+          approved_at: new Date().toISOString(),
+          approved_by: context.userId,
+        })
+        .eq("id", data.role_id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("user_roles").delete().eq("id", data.role_id);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
   });
 
 /** Admin creates a driver account (auth user + drivers row + driver role). */

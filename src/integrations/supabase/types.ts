@@ -294,20 +294,32 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          approved: boolean
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           id: string
+          requested_at: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           id?: string
+          requested_at?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           id?: string
+          requested_at?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -419,7 +431,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "driver" | "customer"
+      app_role: "admin" | "driver" | "customer" | "super_admin"
       booking_status:
         | "pending"
         | "driver_assigned"
@@ -564,7 +576,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "driver", "customer"],
+      app_role: ["admin", "driver", "customer", "super_admin"],
       booking_status: [
         "pending",
         "driver_assigned",

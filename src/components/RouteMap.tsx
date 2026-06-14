@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
 
@@ -202,12 +203,35 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
 
 
 
+  function recenterToMe() {
+    if (typeof navigator === "undefined" || !navigator.geolocation || !mapRef.current) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        mapRef.current!.panTo(p);
+        mapRef.current!.setZoom(Math.max(mapRef.current!.getZoom() ?? 14, 16));
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   return (
     <div
       className="relative w-full rounded-2xl overflow-hidden border border-border bg-muted"
       style={{ height }}
     >
       <div ref={ref} className="absolute inset-0" />
+      {showMyLocation && status === "ready" && (
+        <button
+          type="button"
+          onClick={recenterToMe}
+          aria-label="Center on my location"
+          className="absolute bottom-3 right-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary shadow-lg active:scale-95"
+        >
+          <LocateFixed className="h-5 w-5" />
+        </button>
+      )}
       {status === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/80 animate-pulse">
           <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
