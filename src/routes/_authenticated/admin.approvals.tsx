@@ -77,11 +77,47 @@ function AdminApprovals() {
       load();
     } catch (e: any) { toast.error(e.message); }
   }
+  async function decideAdminReq(role_id: string, approve: boolean) {
+    try {
+      await decideAdmin({ data: { role_id, approve } });
+      toast.success(approve ? "Admin approved" : "Admin rejected");
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  }
 
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin" /></div>;
 
   return (
     <div className="flex flex-col gap-6">
+      {isSuper && (
+        <section>
+          <h2 className="mb-2 flex items-center gap-2 text-base font-bold">
+            <Shield className="h-4 w-4 text-primary" /> Admin Approvals ({admins.length})
+          </h2>
+          {admins.length === 0 && <p className="text-sm text-muted-foreground">No pending admin requests.</p>}
+          <div className="flex flex-col gap-2">
+            {admins.map((a) => (
+              <div key={a.id} className="rounded-2xl border border-border bg-card p-3 text-sm shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-bold">{a.email}</div>
+                    <div className="text-[11px] text-muted-foreground">Requested {new Date(a.requested_at).toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => decideAdminReq(a.id, true)} className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-bold text-white">
+                    <Check className="inline h-3 w-3 mr-1" />Approve
+                  </button>
+                  <button onClick={() => decideAdminReq(a.id, false)} className="flex-1 rounded-lg bg-rose-600 px-2 py-1.5 text-xs font-bold text-white">
+                    <XCircle className="inline h-3 w-3 mr-1" />Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 className="mb-2 flex items-center gap-2 text-base font-bold">
           <UserCheck className="h-4 w-4 text-primary" /> Driver Approvals ({drivers.length})
