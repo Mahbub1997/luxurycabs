@@ -98,8 +98,9 @@ function AdminLogin() {
         <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h1 className="text-lg font-bold">{mode === "login" ? "Admin sign in" : "Request admin access"}</h1>
           <p className="text-[11px] text-muted-foreground">
-            Main admin: <b>luxury cabs</b> · password <b>5678</b>.<br />
-            Additional admins must be approved by the main admin.
+            {mode === "login"
+              ? "Sign in with your admin credentials."
+              : "New admins must be approved by the main admin."}
           </p>
           <input
             required
