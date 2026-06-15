@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { LogOut, Wallet, ClipboardList, Power, MapPin, Clock, Car, Loader2 } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
@@ -12,18 +12,44 @@ export const Route = createFileRoute("/driver/")({
   component: DriverHome,
 });
 
-function playBeep() {
+/** Looping ringtone for incoming ride. Two-tone beep every ~1.2s. */
+function startRingtone(): () => void {
+  let stopped = false;
+  let ctx: AudioContext | null = null;
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  } catch { return () => {}; }
+
+  function tone(freq: number, t0: number, dur = 0.35) {
+    if (!ctx) return;
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.type = "sine"; o.frequency.value = 880;
-    g.gain.setValueAtTime(0.001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
-    o.start(); o.stop(ctx.currentTime + 1.5);
-  } catch {}
+    o.type = "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  }
+
+  function ring() {
+    if (stopped || !ctx) return;
+    const t = ctx.currentTime;
+    tone(880, t);
+    tone(660, t + 0.4);
+    try { if ("vibrate" in navigator) (navigator as any).vibrate([300, 100, 300]); } catch {}
+  }
+  ring();
+  const id = window.setInterval(ring, 1200);
+
+  return () => {
+    stopped = true;
+    clearInterval(id);
+    try { ctx?.close(); } catch {}
+    try { if ("vibrate" in navigator) (navigator as any).vibrate(0); } catch {}
+  };
 }
 
 function DriverHome() {
@@ -47,7 +73,6 @@ function DriverHome() {
     })();
   }, [navigate]);
 
-  // Listen for incoming bookings assigned to this driver.
   useEffect(() => {
     if (!driver?.id) return;
     const ch = supabase
@@ -59,13 +84,10 @@ function DriverHome() {
           if (row.status === "driver_assigned" && !seenRef.current.has(row.id)) {
             seenRef.current.add(row.id);
             setIncoming(row);
-            playBeep();
-            try { if ("vibrate" in navigator) (navigator as any).vibrate([300, 100, 300]); } catch {}
           }
         })
       .subscribe();
 
-    // Also fetch any existing assignments on mount.
     (async () => {
       const { data } = await supabase.from("bookings").select("*").eq("assigned_driver_id", driver.id).in("status", ["driver_assigned"]).order("created_at", { ascending: false }).limit(1);
       if (data && data[0]) { setIncoming(data[0]); }
@@ -160,8 +182,9 @@ function DriverHome() {
       {incoming && <IncomingModal booking={incoming} onAccept={async () => {
         try {
           await acceptRide({ data: { booking_id: incoming.id } });
+          const id = incoming.id;
           setIncoming(null);
-          navigate({ to: "/driver/trip/$id", params: { id: incoming.id } });
+          navigate({ to: "/driver/trip/$id", params: { id } });
         } catch (e: any) { toast.error(e.message); }
       }} onReject={async () => {
         try {
@@ -184,12 +207,53 @@ function NavCard({ to, Icon, label }: { to: string; Icon: any; label: string }) 
 }
 
 function IncomingModal({ booking, onAccept, onReject }: { booking: any; onAccept: () => void; onReject: () => void }) {
+  const [remaining, setRemaining] = useState(30);
+  const stopRef = useRef<(() => void) | null>(null);
+  const rejectedRef = useRef(false);
+
+  useEffect(() => {
+    stopRef.current = startRingtone();
+    const interval = window.setInterval(() => {
+      setRemaining((r) => {
+        if (r <= 1) {
+          window.clearInterval(interval);
+          if (!rejectedRef.current) {
+            rejectedRef.current = true;
+            stopRef.current?.();
+            onReject();
+          }
+          return 0;
+        }
+        return r - 1;
+      });
+    }, 1000);
+    return () => {
+      window.clearInterval(interval);
+      stopRef.current?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleAccept = () => {
+    rejectedRef.current = true;
+    stopRef.current?.();
+    onAccept();
+  };
+  const handleReject = () => {
+    rejectedRef.current = true;
+    stopRef.current?.();
+    onReject();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
       <div className="w-full max-w-md rounded-t-3xl bg-card p-5 shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom">
-        <div className="flex items-center gap-2 text-primary">
-          <Car className="h-5 w-5 animate-pulse" />
-          <span className="font-bold uppercase tracking-wide">New Ride Request</span>
+        <div className="flex items-center justify-between text-primary">
+          <div className="flex items-center gap-2">
+            <Car className="h-5 w-5 animate-pulse" />
+            <span className="font-bold uppercase tracking-wide">New Ride Request</span>
+          </div>
+          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">{remaining}s</span>
         </div>
         <div className="mt-3 space-y-2 rounded-xl bg-muted/40 p-3 text-sm">
           <div className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 text-emerald-600" /><div><div className="text-[10px] uppercase text-muted-foreground">Pickup</div><div className="font-semibold">{booking.pickup_address}</div></div></div>
@@ -200,8 +264,8 @@ function IncomingModal({ booking, onAccept, onReject }: { booking: any; onAccept
           <span className="font-bold text-primary">₹{booking.fare}</span>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button onClick={onReject} className="rounded-xl bg-rose-600 py-3 text-sm font-bold text-white">Reject</button>
-          <button onClick={onAccept} className="rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white">Accept</button>
+          <button onClick={handleReject} className="rounded-xl bg-rose-600 py-3 text-sm font-bold text-white">Reject</button>
+          <button onClick={handleAccept} className="rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white">Accept</button>
         </div>
       </div>
     </div>

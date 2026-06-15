@@ -176,7 +176,11 @@ export const assignBookingToDriver = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const isAdmin = await supabaseAdmin.from("user_roles")
-      .select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+      .select("role, approved")
+      .eq("user_id", context.userId)
+      .in("role", ["admin", "super_admin"])
+      .eq("approved", true)
+      .maybeSingle();
     if (!isAdmin.data) throw new Error("Not admin");
     const { data: drv, error: dErr } = await supabaseAdmin
       .from("drivers")

@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, User as UserIcon, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
-import { getProfile, saveProfile } from "@/lib/profile";
+import { Phone, User as UserIcon, Mail, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { saveProfile } from "@/lib/profile";
+import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
 import { CredoomWordmark } from "@/components/Brand";
 import { toast } from "sonner";
@@ -15,52 +16,79 @@ export const Route = createFileRoute("/auth")({
 function Auth() {
   const navigate = useNavigate();
   const [step, setStep] = useState<"details" | "otp">("details");
-  const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const p = getProfile();
-    if (p) navigate({ to: "/booking", replace: true });
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) navigate({ to: "/booking", replace: true });
+    })();
   }, [navigate]);
 
-  function sendOtp(e: React.FormEvent) {
+  async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
-    const clean = phone.replace(/\D/g, "");
-    if (clean.length < 10 || !name.trim()) return;
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(code);
-    setStep("otp");
-    toast.success(`OTP sent to +91 ${clean}`);
-  }
-
-  function verifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (otp.length !== 4) return;
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (!name.trim() || cleanPhone.length < 10 || !email.trim()) return;
     setBusy(true);
-    if (otp !== generatedOtp) {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: { shouldCreateUser: true, data: { name: name.trim(), phone: cleanPhone } },
+      });
+      if (error) throw error;
+      setStep("otp");
+      toast.success(`OTP sent to ${email}`);
+    } catch (err: any) {
+      toast.error(err.message || "Could not send OTP");
+    } finally {
       setBusy(false);
-      toast.error("Invalid OTP");
-      return;
     }
-    saveProfile({
-      name: name.trim(),
-      phone: phone.replace(/\D/g, ""),
-      createdAt: new Date().toISOString(),
+  }
+
+  async function verifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (otp.length < 6) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp.trim(),
+        type: "email",
+      });
+      if (error) throw error;
+      const uid = data.user?.id;
+      const cleanPhone = phone.replace(/\D/g, "");
+      if (uid) {
+        await supabase.from("profiles").upsert(
+          { user_id: uid, name: name.trim(), phone: cleanPhone },
+          { onConflict: "user_id" }
+        );
+      }
+      saveProfile({ name: name.trim(), phone: cleanPhone, createdAt: new Date().toISOString() });
+      toast.success("Signed in");
+      navigate({ to: "/booking", replace: true });
+    } catch (err: any) {
+      toast.error(err.message || "Invalid OTP");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resend() {
+    if (!email.trim()) return;
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: true, data: { name: name.trim(), phone: phone.replace(/\D/g, "") } },
     });
-    setTimeout(() => navigate({ to: "/booking", replace: true }), 200);
+    if (error) toast.error(error.message);
+    else { setOtp(""); toast.success("OTP resent"); }
   }
 
-  function resend() {
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(code);
-    setOtp("");
-    toast.success("OTP resent");
-  }
-
-  const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length >= 10;
+  const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length >= 10 && /\S+@\S+\.\S+/.test(email);
 
   return (
     <div className="app-shell relative flex flex-col bg-gradient-to-b from-primary-soft/40 to-background px-6">
@@ -81,7 +109,7 @@ function Auth() {
         >
           <div className="text-center">
             <h1 className="text-xl font-bold text-primary">Please login to continue</h1>
-            <p className="mt-1 text-xs text-muted-foreground">Enter your name and mobile to receive an OTP.</p>
+            <p className="mt-1 text-xs text-muted-foreground">We'll send a one-time code to your email.</p>
           </div>
 
           <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
@@ -106,11 +134,22 @@ function Auth() {
             />
           </label>
 
+          <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
+            <Mail className="h-4 w-4 text-primary" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email for OTP"
+              className="flex-1 bg-transparent text-sm outline-none"
+            />
+          </label>
+
           <button
-            disabled={!ready}
+            disabled={!ready || busy}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
-            Send OTP <ArrowRight className="h-4 w-4" />
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Send OTP <ArrowRight className="h-4 w-4" /></>}
           </button>
         </form>
       ) : (
@@ -120,29 +159,26 @@ function Auth() {
         >
           <div className="text-center">
             <ShieldCheck className="mx-auto h-8 w-8 text-primary" />
-            <h1 className="mt-2 text-xl font-bold text-primary">Verify mobile</h1>
+            <h1 className="mt-2 text-xl font-bold text-primary">Verify your email</h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              OTP sent to +91 {phone}.{" "}
-              <span className="rounded bg-primary-soft px-1.5 py-0.5 font-mono font-bold text-primary">
-                {generatedOtp}
-              </span>
+              OTP sent to <b>{email}</b>. Check inbox & spam.
             </p>
           </div>
           <input
             inputMode="numeric"
             value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder="4-digit OTP"
-            className="rounded-xl border border-border bg-background px-3 py-3 text-center text-lg tracking-[0.6em] outline-none"
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="6-digit OTP"
+            className="rounded-xl border border-border bg-background px-3 py-3 text-center text-lg tracking-[0.5em] outline-none"
           />
           <button
-            disabled={otp.length !== 4 || busy}
+            disabled={otp.length < 6 || busy}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Verify & continue <ArrowRight className="h-4 w-4" /></>}
           </button>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <button type="button" onClick={() => setStep("details")} className="underline">Change number</button>
+            <button type="button" onClick={() => setStep("details")} className="underline">Change details</button>
             <button type="button" onClick={resend} className="underline">Resend OTP</button>
           </div>
         </form>
