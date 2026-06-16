@@ -29,8 +29,8 @@ function DriverTrip() {
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
-  const cancelSimRef = useRef<(() => void) | null>(null);
   const dbTickRef = useRef<number>(0);
+  const arrivedRef = useRef(false);
 
   useEffect(() => { ensureNotifyPermission(); }, []);
 
@@ -41,48 +41,49 @@ function DriverTrip() {
     });
   }, [id]);
 
-  // Drive to PICKUP — simulated movement (driver hasn't physically picked up yet).
+  // Drive to PICKUP — REAL device GPS. Live-pushes to customer + admin.
   useEffect(() => {
     if (!b || phase !== "to_pickup") return;
-    cancelSimRef.current?.();
-    const origin = { lat: b.driver_lat ?? b.pickup_lat, lng: b.driver_lng ?? b.pickup_lng };
-    const dest = { lat: b.pickup_lat, lng: b.pickup_lng };
-    setPos(origin);
-    let cancelled = false;
+    arrivedRef.current = false;
+
+    // Draw planned driver→pickup route once.
+    const origin0 = { lat: b.driver_lat ?? b.pickup_lat, lng: b.driver_lng ?? b.pickup_lng };
+    const pickupPt = { lat: b.pickup_lat, lng: b.pickup_lng };
+    setPos(origin0);
     (async () => {
       try {
-        const r = await computeRoute({ data: { origin, destination: dest } });
-        if (cancelled) return;
+        const r = await computeRoute({ data: { origin: origin0, destination: pickupPt } });
         setPoly(r.polyline);
-        const totalMin = Math.max(1, Math.round(r.durationMin ?? 10));
-        setEtaMin(totalMin);
-        const totalMs = Math.min(5 * 60 * 1000, Math.max(30 * 1000, totalMin * 20_000));
-        const startedAt = Date.now();
-        cancelSimRef.current = simulateDrive({
-          polyline: r.polyline,
-          totalMs,
-          intervalMs: 1500,
-          onTick: (p) => {
-            setPos(p);
-            const remainingMs = totalMs - (Date.now() - startedAt);
-            const remainingMin = Math.max(0, Math.round((remainingMs / totalMs) * totalMin));
-            setEtaMin(remainingMin);
-            const now = Date.now();
-            if (now - dbTickRef.current > 8000) {
-              dbTickRef.current = now;
-              supabase.from("bookings").update({ driver_lat: p.lat, driver_lng: p.lng }).eq("id", b.id).then(() => {});
-            }
-          },
-          onDone: () => {
-            beep(500, 1040);
-            setTimeout(() => beep(500, 1320), 250);
-            notify("Reached pickup 📍", "You have arrived at the customer's pickup point.");
-            arrivedAtPickup();
-          },
-        });
+        setEtaMin(Math.max(1, Math.round(r.durationMin ?? 10)));
       } catch { /* ignore */ }
     })();
-    return () => { cancelled = true; cancelSimRef.current?.(); };
+
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      toast.error("GPS not available on this device");
+      return;
+    }
+    const watchId = navigator.geolocation.watchPosition(
+      (g) => {
+        const p = { lat: g.coords.latitude, lng: g.coords.longitude };
+        setPos(p);
+        const now = Date.now();
+        if (now - dbTickRef.current > 4000) {
+          dbTickRef.current = now;
+          supabase.from("bookings").update({ driver_lat: p.lat, driver_lng: p.lng }).eq("id", b.id).then(() => {});
+        }
+        const dKm = haversineKm(p, pickupPt);
+        if (!arrivedRef.current && dKm < 0.12) {
+          arrivedRef.current = true;
+          beep(500, 1040);
+          setTimeout(() => beep(500, 1320), 250);
+          notify("Reached pickup 📍", "You have arrived at the customer's pickup point.");
+          arrivedAtPickup();
+        }
+      },
+      (err) => toast.error(err.message || "Unable to read GPS"),
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, b?.id]);
 
