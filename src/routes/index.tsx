@@ -21,11 +21,16 @@ const BRAND = "LUXURY CABS";
 function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
-    const t = setTimeout(() => {
+    let cancelled = false;
+    const t = setTimeout(async () => {
       const p = getProfile();
-      navigate({ to: p ? "/booking" : "/auth", replace: true });
+      if (!p) { if (!cancelled) navigate({ to: "/auth", replace: true }); return; }
+      const activeId = await findActiveBookingId();
+      if (cancelled) return;
+      if (activeId) navigate({ to: "/track/$id", params: { id: activeId }, replace: true });
+      else navigate({ to: "/booking", replace: true });
     }, 5000);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [navigate]);
 
   return (
