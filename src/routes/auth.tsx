@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 // Internal: one mobile number ⇒ one synthetic email ⇒ exactly one account.
-const emailFor = (phone: string) => `${phone}@customer.luxurycabs.local`;
+const emailFor = (phone: string) => `cust${phone}@luxurycabs.app`;
 // Fixed app-wide password derived from phone (no user-facing secret).
 const passwordFor = (phone: string) => `LX-${phone}-CUST`;
 
