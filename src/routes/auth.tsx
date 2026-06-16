@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, User as UserIcon, ArrowRight, Loader2, HelpCircle } from "lucide-react";
+import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
