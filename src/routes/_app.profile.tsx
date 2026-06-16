@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
 import { User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
 import { clearProfile, getProfile, type UserProfile } from "@/lib/profile";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — Luxury Cabs" }] }),
@@ -21,9 +22,10 @@ function Profile() {
     { I: Shield, label: "Safety Center", onClick: () => alert("Your safety is our priority.\n\n• Verified drivers\n• Live trip sharing\n• 24/7 support helpline\n• SOS button on every ride") },
   ];
 
-  function logout() {
+  async function logout() {
     if (!confirm("Log out of Luxury Cabs?")) return;
     clearProfile();
+    try { await supabase.auth.signOut(); } catch {}
     navigate({ to: "/auth", replace: true });
   }
 
