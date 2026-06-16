@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck,
+  Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck, X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
@@ -116,146 +116,151 @@ function AwaitingDriver({ b, onBack }: { b: Booking; onBack: () => void }) {
   }
 
   return (
-    <div className="app-shell flex flex-col bg-background pb-10">
-      <div className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-3 py-3 backdrop-blur">
-        <button onClick={onBack} className="rounded-full p-2 hover:bg-muted">
-          <ArrowLeft className="h-5 w-5" />
+    <div className="app-shell flex flex-col bg-muted/30 pb-10">
+      {/* Header */}
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-primary-soft/60 px-4 py-4 backdrop-blur">
+        <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full hover:bg-background/60" aria-label="Close">
+          <X className="h-5 w-5" />
         </button>
-        <div className="flex-1">
-          <div className="font-display text-lg font-bold leading-none">My Booking</div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Booking ID: <span className="font-semibold text-foreground">{code}</span></span>
-            <button onClick={copyCode} className="inline-flex items-center gap-1 text-primary">
-              <Copy className="h-3 w-3" />
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-        </div>
-        <a href="tel:+919791298406" className="grid h-9 w-9 place-items-center rounded-full border border-border" aria-label="Support">
-          <Headphones className="h-4 w-4" />
+        <h1 className="flex-1 text-center text-lg font-bold">Booking Confirmed</h1>
+        <a
+          href="tel:+919791298406"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-background px-3 py-1.5 text-xs font-semibold text-primary"
+        >
+          <Headphones className="h-4 w-4" /> Support
         </a>
       </div>
 
-      {/* Confirmed banner */}
-      <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft p-4">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
-          <CheckCircle2 className="h-5 w-5" />
+      {/* Success card */}
+      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card px-4 pb-5 pt-6 text-center">
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 220, damping: 18 }}
+          className="relative mx-auto grid h-20 w-20 place-items-center rounded-full bg-primary-soft"
+        >
+          <span className="absolute inset-2 rounded-full bg-primary/20" />
+          <span className="relative grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg">
+            <CheckCircle2 className="h-7 w-7" />
+          </span>
+        </motion.div>
+        <div className="mt-4 text-xl font-extrabold text-primary">Your booking is confirmed!</div>
+        <div className="mt-1 text-sm text-foreground/70">
+          We are finding you the best driver.<br />Please wait while we match you.
         </div>
-        <div className="flex-1">
-          <div className="font-bold text-primary">Booking Confirmed</div>
-          <div className="text-xs text-foreground/70">Driver details will be shared shortly.</div>
+
+        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-border bg-background p-3 text-left">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+            <ClockIcon className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-bold">Searching for driver…</div>
+            <div className="text-[11px] text-muted-foreground">This usually takes less than a minute.</div>
+          </div>
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="h-2 w-2 rounded-full bg-primary"
+                animate={{ opacity: [0.25, 1, 0.25] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Trip details */}
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-bold">
-          <MapPin className="h-4 w-4 text-primary" /> Trip Details
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="text-base font-bold">Trip Details</div>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <div className="flex items-start gap-2">
-              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
-              <div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Pickup</div>
-                <div className="text-sm font-semibold">{b.pickup_address}</div>
-              </div>
-            </div>
-            <div className="my-2 ml-1 h-4 w-px border-l-2 border-dashed border-muted-foreground/40" />
-            <div className="flex items-start gap-2">
-              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-              <div>
-                <div className="text-[11px] font-semibold text-muted-foreground">Drop</div>
-                <div className="text-sm font-semibold">{b.drop_address}</div>
+        <div className="flex">
+          <div className="mr-3 flex flex-col items-center pt-1">
+            <span className="h-3.5 w-3.5 rounded-full border-2 border-primary" />
+            <span className="my-1 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
+            <MapPin className="h-4 w-4 text-rose-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">{b.pickup_address}</div>
+            <div className="mt-6 flex items-start justify-between gap-2">
+              <div className="min-w-0 text-sm font-medium">{b.drop_address}</div>
+              <div className="text-right text-xs text-muted-foreground shrink-0">
+                <div className="font-bold text-foreground">{Number(b.distance_km).toFixed(1)} km</div>
+                <div>{formatDuration(b.duration_min)}</div>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <Stat label="Date" value={scheduled.toLocaleDateString()} />
-            <Stat label="Time" value={formatTime12(scheduled)} />
-            <Stat label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
-            <Stat label="ETA" value={formatDuration(b.duration_min)} />
-          </div>
         </div>
-      </div>
 
-      {/* Ride details */}
-      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-bold">
-          <Sparkles className="h-4 w-4 text-primary" /> Ride Details
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-background">
-            <img src={carImg} alt={tariff.label} className="h-full w-full object-contain" />
-          </div>
-          <div className="flex-1">
-            <div className="font-bold">{tariff.label}</div>
-            <div className="text-xs text-muted-foreground">{tariff.seats} Seats · AC</div>
-            <div className="text-[11px] text-muted-foreground">Best for {tariff.seats} People</div>
+        {/* Vehicle + fare row */}
+        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+          <img src={carImg} alt={tariff.label} className="h-14 w-20 object-contain scale-x-[-1]" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] text-muted-foreground">Selected Vehicle</div>
+            <div className="text-base font-bold">{tariff.label}</div>
           </div>
           <div className="text-right">
-            <div className="text-[11px] text-muted-foreground">Fare (Est.)</div>
-            <div className="text-lg font-bold">{formatINR(Number(b.fare))}</div>
-            <div className="text-[11px] capitalize text-muted-foreground">{b.payment_method}</div>
+            <div className="text-[11px] text-muted-foreground">Total Fare</div>
+            <div className="text-lg font-extrabold text-primary">{formatINR(Number(b.fare))}</div>
+            <div className="text-[10px] text-muted-foreground">Inclusive of all taxes</div>
           </div>
         </div>
       </div>
 
-      {/* Driver not assigned panel */}
-      <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-        <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-700">
-          <UserRound className="h-6 w-6" />
+      {/* Trust strip */}
+      <div className="mx-4 mt-3 grid grid-cols-4 gap-1 rounded-2xl bg-primary-soft px-2 py-3 text-center text-[10px] font-semibold text-primary">
+        <div className="flex flex-col items-center gap-1"><ShieldCheck className="h-4 w-4" />No surge<br/>pricing</div>
+        <div className="flex flex-col items-center gap-1"><ShieldCheck className="h-4 w-4" />Free<br/>cancellation</div>
+        <div className="flex flex-col items-center gap-1"><ShieldCheck className="h-4 w-4" />Secure<br/>rides</div>
+        <div className="flex flex-col items-center gap-1"><Headphones className="h-4 w-4" />24x7<br/>support</div>
+      </div>
+
+      {/* Notify panel */}
+      <div className="mx-4 mt-3 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
+          <UserRound className="h-5 w-5" />
         </div>
         <div className="flex-1">
-          <div className="font-bold text-amber-900">Driver Not Assigned Yet</div>
-          <div className="text-xs text-amber-800/80">
-            We're finding the nearest driver — this usually takes 10–20 minutes.
-          </div>
+          <div className="text-sm font-bold text-amber-900">We'll notify you once a driver is assigned.</div>
+          <div className="text-xs text-amber-800/80">You can track the driver and vehicle details here.</div>
         </div>
-        <motion.span
-          className="h-2.5 w-2.5 rounded-full bg-amber-500"
-          animate={{ opacity: [1, 0.2, 1] }}
-          transition={{ duration: 1.4, repeat: Infinity }}
-        />
       </div>
 
-      {/* Actions */}
-      <div className="mx-4 mt-4 grid grid-cols-3 gap-2">
-        <ActionBtn icon={<MapPin className="h-4 w-4 text-primary" />} label="Track" onClick={() => {}} disabled />
+      {/* Bottom actions */}
+      <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
         <a
           href="tel:+919791298406"
-          className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold"
+          className="flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary"
         >
-          <Headphones className="h-4 w-4 text-foreground" />
-          Support
+          <Phone className="h-4 w-4" /> Contact Support
         </a>
         <button
-          onClick={cancelBooking}
-          className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold text-destructive"
+          onClick={shareTrip}
+          className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
         >
-          <XCircle className="h-4 w-4" />
-          Cancel
+          <Share2 className="h-4 w-4" /> Share Trip
         </button>
       </div>
 
-      {/* Share trip */}
       <button
-        onClick={shareTrip}
-        className="mx-4 mt-3 flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
+        onClick={cancelBooking}
+        className="mx-4 mt-3 flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background py-3 text-sm font-semibold text-destructive"
       >
-        <div className="grid h-8 w-8 place-items-center rounded-full bg-primary-soft text-primary">
-          <Shield className="h-4 w-4" />
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">Share Trip</div>
-          <div className="text-xs text-muted-foreground">Send trip details to family/friends on WhatsApp.</div>
-        </div>
-        <Share2 className="h-4 w-4 text-primary" />
+        <XCircle className="h-4 w-4" /> Cancel Booking
       </button>
 
+      <div className="mx-4 mt-3 flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Booking ID</span>
+        <span className="font-semibold">{code}</span>
+        <button onClick={copyCode} className="inline-flex items-center gap-1 text-primary">
+          <Copy className="h-3 w-3" />{copied ? "Copied" : "Copy"}
+        </button>
+      </div>
     </div>
   );
 }
+
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
