@@ -28,6 +28,50 @@ export function bookingCode(id: string): string {
   return `LC${hex}`;
 }
 
+export const ACTIVE_BOOKING_STATUSES = [
+  "pending",
+  "driver_assigned",
+  "driver_arrived",
+  "in_progress",
+] as const;
+
+/**
+ * Find the latest active (in-progress) booking for the current user, identified
+ * by Supabase auth user_id when signed in, otherwise by the local profile phone.
+ * Returns the booking id or null.
+ */
+export async function findActiveBookingId(): Promise<string | null> {
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id ?? null;
+    let phone: string | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("luxury_user_profile");
+        if (raw) phone = JSON.parse(raw)?.phone ?? null;
+      } catch {}
+    }
+    if (!userId && !phone) return null;
+
+    let q = supabase
+      .from("bookings")
+      .select("id")
+      .in("status", [...ACTIVE_BOOKING_STATUSES])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (userId && phone) q = q.or(`user_id.eq.${userId},customer_phone.eq.${phone}`);
+    else if (userId) q = q.eq("user_id", userId);
+    else if (phone) q = q.eq("customer_phone", phone);
+
+    const { data, error } = await q.maybeSingle();
+    if (error) return null;
+    return data?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const RECENT_KEY = "luxury_recent_booking_ids";
 export function pushRecentBooking(id: string) {
   if (typeof window === "undefined") return;

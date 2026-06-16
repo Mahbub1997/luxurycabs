@@ -20,7 +20,7 @@ import {
 } from "@/lib/fare";
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { createBooking, pushRecentBooking } from "@/lib/booking-store";
+import { createBooking, pushRecentBooking, findActiveBookingId } from "@/lib/booking-store";
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,19 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // If user already has an active trip (app was closed and reopened, or they
+  // navigated back here), bounce them to the live tracking screen.
+  useEffect(() => {
+    let cancelled = false;
+    findActiveBookingId().then((activeId) => {
+      if (!cancelled && activeId) {
+        navigate({ to: "/track/$id", params: { id: activeId }, replace: true });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [navigate]);
+
   
 
   // Note: routeInfo is overwritten by the route-fetch effect below; don't
