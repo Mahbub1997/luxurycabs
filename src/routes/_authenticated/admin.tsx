@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { ClipboardList, Users, LogOut, UserCheck, Activity, Map as MapIcon } from "lucide-react";
+import { ClipboardList, Users, LogOut, UserCheck, Activity, Map as MapIcon, UserCircle2 } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,9 @@ function AdminShell() {
     { to: "/admin/drivers-map", label: "Live Map", Icon: MapIcon },
     { to: "/admin/approvals", label: "Approvals", Icon: UserCheck },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
+    { to: "/admin/customers", label: "Customers", Icon: UserCircle2 },
   ];
+
 
   return (
     <div className="min-h-screen bg-background">
