@@ -20,7 +20,7 @@ import {
 } from "@/lib/fare";
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { createBooking, pushRecentBooking, findActiveBookingId } from "@/lib/booking-store";
+import { createBooking, pushRecentBooking, findActiveBookingId, isActiveBookingMinimized, clearMinimizedActiveBooking } from "@/lib/booking-store";
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,7 @@ function Booking() {
   useEffect(() => {
     let cancelled = false;
     findActiveBookingId().then((activeId) => {
-      if (!cancelled && activeId) {
+      if (!cancelled && activeId && !isActiveBookingMinimized(activeId)) {
         navigate({ to: "/track/$id", params: { id: activeId }, replace: true });
       }
     });
@@ -204,6 +204,7 @@ function Booking() {
         user_id: authData.user?.id ?? null,
       } as any);
       pushRecentBooking(booking.id);
+      clearMinimizedActiveBooking();
       navigate({ to: "/track/$id", params: { id: booking.id } });
     } catch (e) {
       console.error(e);

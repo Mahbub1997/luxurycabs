@@ -43,11 +43,13 @@ function Bookings() {
         <div className="mx-4 mt-2 space-y-2">
           {items.map((b) => {
             const target = b.status === "completed" ? ({ to: "/complete/$id", params: { id: b.id } } as const) : ({ to: "/track/$id", params: { id: b.id } } as const);
+            const statusLabel = b.status === "cancelled" ? "BOOKING CANCELLED" : b.status.replace(/_/g, " ").toUpperCase();
             return (
               <Link key={b.id} {...target} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-semibold">{b.drop_address}</div>
                   <div className="truncate text-xs text-muted-foreground">{b.trip_type.toUpperCase()} · {b.vehicle_type.toUpperCase()} · {formatINR(Number(b.fare))}</div>
+                  <div className={b.status === "cancelled" ? "mt-1 text-[11px] font-bold text-destructive" : "mt-1 text-[11px] font-bold text-primary"}>{statusLabel}</div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>

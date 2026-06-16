@@ -73,6 +73,7 @@ export async function findActiveBookingId(): Promise<string | null> {
 }
 
 const RECENT_KEY = "luxury_recent_booking_ids";
+const MINIMIZED_ACTIVE_KEY = "luxury_minimized_active_booking";
 export function pushRecentBooking(id: string) {
   if (typeof window === "undefined") return;
   const arr: string[] = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
@@ -82,4 +83,21 @@ export function pushRecentBooking(id: string) {
 export function getRecentBookingIds(): string[] {
   if (typeof window === "undefined") return [];
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]"); } catch { return []; }
+}
+
+export function minimizeActiveBooking(id: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(MINIMIZED_ACTIVE_KEY, id);
+}
+
+export function clearMinimizedActiveBooking(id?: string) {
+  if (typeof window === "undefined") return;
+  if (!id || sessionStorage.getItem(MINIMIZED_ACTIVE_KEY) === id) {
+    sessionStorage.removeItem(MINIMIZED_ACTIVE_KEY);
+  }
+}
+
+export function isActiveBookingMinimized(id: string): boolean {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(MINIMIZED_ACTIVE_KEY) === id;
 }
