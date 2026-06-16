@@ -98,6 +98,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
 
   function scheduleReverse(p: { lat: number; lng: number }) {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    setLoading(true);
     debounceRef.current = window.setTimeout(() => {
       void reverse(p);
     }, 400);
@@ -153,7 +154,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
           </span>
         </div>
         <button
-          disabled={!center || showFetching}
+          disabled={!center || showFetching || !address}
           onClick={() => center && onPick({ lat: center.lat, lng: center.lng, address })}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
