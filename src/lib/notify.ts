@@ -1,4 +1,35 @@
-// Browser notification + beep helper for booking lifecycle events.
+import { toast } from "sonner";
+
+// Browser notification + in-app alert helper for booking lifecycle events.
+
+export type AppAlert = {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+};
+
+const ALERTS_KEY = "luxury_alerts";
+
+function saveAlert(title: string, body: string) {
+  if (typeof window === "undefined") return;
+  const item: AppAlert = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    title,
+    body,
+    createdAt: new Date().toISOString(),
+  };
+  try {
+    const existing = JSON.parse(localStorage.getItem(ALERTS_KEY) ?? "[]") as AppAlert[];
+    localStorage.setItem(ALERTS_KEY, JSON.stringify([item, ...existing].slice(0, 50)));
+    window.dispatchEvent(new CustomEvent("luxury-alerts-updated"));
+  } catch {}
+}
+
+export function getAlerts(): AppAlert[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(ALERTS_KEY) ?? "[]") as AppAlert[]; } catch { return []; }
+}
 
 export async function ensureNotifyPermission(): Promise<boolean> {
   if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -32,6 +63,8 @@ export function beep(durationMs = 350, freq = 880) {
 }
 
 export async function notify(title: string, body: string, icon?: string) {
+  saveAlert(title, body);
+  toast(title, { description: body });
   beep();
   const ok = await ensureNotifyPermission();
   if (!ok) return;

@@ -6,7 +6,7 @@ import {
   Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck, X,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { getBooking, updateBooking, bookingCode, type Booking } from "@/lib/booking-store";
+import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
@@ -33,9 +33,17 @@ function Track() {
   const navigate = useNavigate();
   const [b, setB] = useState<Booking | null>(null);
   const prevRef = useRef<{ driverId: string | null; status: string | null }>({ driverId: null, status: null });
+  const exitToHome = () => {
+    if (b && b.status !== "cancelled" && b.status !== "completed") {
+      minimizeActiveBooking(b.id);
+      window.dispatchEvent(new CustomEvent("luxury-booking-minimized"));
+    }
+    navigate({ to: "/booking" });
+  };
 
   // Ask for notification permission once.
   useEffect(() => { ensureNotifyPermission(); }, []);
+  useEffect(() => { clearMinimizedActiveBooking(id); }, [id]);
 
   // Load + subscribe to realtime updates so admin assignment flips the UI.
   useEffect(() => {
@@ -75,11 +83,15 @@ function Track() {
     return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  if (b.status === "cancelled") {
+    return <CancelledBooking b={b} onHome={() => navigate({ to: "/booking", replace: true })} />;
+  }
+
   // Branch: until admin assigns a driver, show "Booking Confirmed" status page.
   if (!b.driver_name) {
-    return <AwaitingDriver b={b} onBack={() => navigate({ to: "/booking" })} />;
+    return <AwaitingDriver b={b} onBack={exitToHome} onCancelled={setB} />;
   }
-  return <LiveTracking b={b} onBack={() => navigate({ to: "/booking" })} />;
+  return <LiveTracking b={b} onBack={exitToHome} onCancelled={setB} />;
 }
 
 

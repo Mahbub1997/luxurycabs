@@ -17,6 +17,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
   const debounceRef = useRef<number | null>(null);
   const reqIdRef = useRef(0);
   const movingRef = useRef(false);
+  const mapReadyRef = useRef(false);
   const lastFetchedRef = useRef<{ lat: number; lng: number } | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState<string>("");
@@ -49,12 +50,11 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
       });
       mapRef.current = map;
       setCenter(start);
-      // Initial fetch
-      scheduleReverse(start);
 
       // Detect user-initiated movement (drag or zoom). Mark as moving;
       // idle will fire when movement stops.
       const onUserMove = () => {
+        if (!mapReadyRef.current) return;
         if (movingRef.current) return;
         movingRef.current = true;
         setMoving(true);
@@ -67,17 +67,21 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
       map.addListener("dragstart", onUserMove);
       map.addListener("zoom_changed", onUserMove);
 
-      // Idle fires once when the map fully settles
+      // Idle fires when the camera fully settles. We fetch once after idle,
+      // never while the user is moving the map.
       map.addListener("idle", () => {
         const c = map.getCenter();
         if (!c) return;
         const p = { lat: c.lat(), lng: c.lng() };
         setCenter(p);
+        mapReadyRef.current = true;
+        const shouldFetch = movingRef.current || !lastFetchedRef.current;
         movingRef.current = false;
         setMoving(false);
-        // Skip refetch if center hasn't actually changed
+        if (!shouldFetch) return;
+        // Skip refetch if center hasn't actually changed enough.
         const last = lastFetchedRef.current;
-        if (last && Math.abs(last.lat - p.lat) < 1e-6 && Math.abs(last.lng - p.lng) < 1e-6) {
+        if (last && Math.abs(last.lat - p.lat) < 0.00003 && Math.abs(last.lng - p.lng) < 0.00003) {
           return;
         }
         scheduleReverse(p);
@@ -86,6 +90,9 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
     return () => {
       cancelled = true;
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      reqIdRef.current += 1;
+      movingRef.current = false;
+      mapReadyRef.current = false;
     };
   }, [open]);
 
@@ -98,6 +105,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
 
   async function reverse(p: { lat: number; lng: number }) {
     const myId = ++reqIdRef.current;
+    setAddress("");
     setLoading(true);
     try {
       const r = await reverseGeocode({ data: p });
@@ -110,7 +118,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
       lastFetchedRef.current = p;
     } finally {
       // Always clear the spinner so it never gets stuck
-      setLoading(false);
+      if (myId === reqIdRef.current) setLoading(false);
     }
   }
 
