@@ -36,6 +36,13 @@ function approxMeters(a: { lat: number; lng: number }, b: { lat: number; lng: nu
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop: number) {
+  const nearest = Math.min(distanceToPickup, distanceToDrop);
+  if (nearest < 200) return Math.min(Math.max(currentZoom, 15), 17);
+  if (nearest < 1000) return Math.min(Math.max(currentZoom, 14), 16);
+  return Math.min(currentZoom, 13);
+}
+
 export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -57,6 +64,10 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       try {
         const g = await loadGoogleMaps();
         if (cancelled || !ref.current) return;
+        driverMarkerRef.current?.setMap(null);
+        driverMarkerRef.current = null;
+        meMarkerRef.current?.setMap(null);
+        meMarkerRef.current = null;
         const map = new g.maps.Map(ref.current, {
           center: pickup,
           zoom: 13,
@@ -100,6 +111,10 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       cancelled = true;
       polylineRef.current?.setMap(null);
       polylineRef.current = null;
+      driverMarkerRef.current?.setMap(null);
+      driverMarkerRef.current = null;
+      meMarkerRef.current?.setMap(null);
+      meMarkerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup.lat, pickup.lng, drop.lat, drop.lng, fitKey]);
