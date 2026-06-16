@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import splashAsset from "@/assets/luxury-cabs-splash.png.asset.json";
 import { getProfile } from "@/lib/profile";
+import { findActiveBookingId } from "@/lib/booking-store";
 import { AppDrawer } from "@/components/AppDrawer";
 
 export const Route = createFileRoute("/")({
