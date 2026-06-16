@@ -20,7 +20,7 @@ import {
 } from "@/lib/fare";
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { createBooking, pushRecentBooking } from "@/lib/booking-store";
+import { createBooking, pushRecentBooking, findActiveBookingId } from "@/lib/booking-store";
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
