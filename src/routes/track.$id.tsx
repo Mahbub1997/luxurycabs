@@ -299,7 +299,7 @@ function ActionBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; 
 
 // ---------- Live tracking (driver assigned) ----------
 
-function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
+function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => void; onCancelled: (b: Booking) => void }) {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<LatLng | null>(
     b.driver_lat && b.driver_lng ? { lat: b.driver_lat, lng: b.driver_lng } : null
@@ -395,8 +395,10 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
 
   async function cancelRide() {
     if (!confirm("Cancel this ride?")) return;
-    await updateBooking(b.id, { status: "cancelled" }).catch(() => {});
-    navigate({ to: "/booking" });
+    const next = await updateBooking(b.id, { status: "cancelled" });
+    clearMinimizedActiveBooking(b.id);
+    notify("Booking cancelled", "Your ride has been cancelled.");
+    onCancelled(next);
   }
   function shareTrip() {
     const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
