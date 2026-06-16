@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
-import { User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone } from "lucide-react";
-import { clearProfile, getProfile, type UserProfile } from "@/lib/profile";
+import { User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone, Pencil, Save } from "lucide-react";
+import { clearProfile, getProfile, saveProfile, type UserProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — Luxury Cabs" }] }),
@@ -13,7 +14,23 @@ export const Route = createFileRoute("/_app/profile")({
 function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   useEffect(() => { setProfile(getProfile()); }, []);
+
+  useEffect(() => {
+    setName(profile?.name ?? "");
+    setPhone(profile?.phone ?? "");
+  }, [profile]);
+
+  function saveEdits() {
+    const next = { name: name.trim() || "Guest Rider", phone: phone.replace(/\D/g, "").slice(-10), createdAt: profile?.createdAt ?? new Date().toISOString() };
+    saveProfile(next);
+    setProfile(next);
+    setEditing(false);
+    toast.success("Profile updated");
+  }
 
   const items = [
     { I: MapPin, label: "Saved Addresses", onClick: () => navigate({ to: "/booking" }) },
@@ -36,11 +53,26 @@ function Profile() {
         <div className="grid h-14 w-14 place-items-center rounded-full bg-primary-foreground/15">
           <User className="h-7 w-7" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="font-display text-lg font-bold">{profile?.name ?? "Guest Rider"}</div>
           <div className="text-xs opacity-80">{profile?.phone ? `+91 ${profile.phone}` : "Not signed in"}</div>
         </div>
+        <button onClick={() => setEditing(true)} className="grid h-9 w-9 place-items-center rounded-full bg-primary-foreground/15" aria-label="Edit profile">
+          <Pencil className="h-4 w-4" />
+        </button>
       </div>
+
+      {editing && (
+        <div className="mx-4 rounded-2xl border border-border bg-card p-4">
+          <div className="text-sm font-bold">Edit Profile</div>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" inputMode="tel" className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-primary" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button onClick={() => setEditing(false)} className="rounded-xl border border-border py-3 text-sm font-semibold">Cancel</button>
+            <button onClick={saveEdits} className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"><Save className="h-4 w-4" /> Save</button>
+          </div>
+        </div>
+      )}
 
       <div className="mx-4 divide-y divide-border rounded-2xl border border-border bg-card">
         {items.map(({ I, label, onClick }) => (
