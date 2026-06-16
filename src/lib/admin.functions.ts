@@ -369,3 +369,53 @@ export const listApprovedDrivers = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
+/** List all customer accounts (synth email = {phone}@customer.luxurycabs.local). */
+export const listCustomers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, name, phone, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+/** Reset a customer's 4-digit PIN. Admin-only. */
+export const resetCustomerPin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      user_id: z.string().uuid(),
+      new_pin: z.string().regex(/^\d{4}$/, "PIN must be 4 digits"),
+    }).parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      password: `${data.new_pin}-CUST`,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Look up a customer's phone by their registered name (for "forgot mobile"). Admin-only. */
+export const lookupCustomerByName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ name: z.string().min(1).max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, name, phone")
+      .ilike("name", `%${data.name}%`)
+      .limit(20);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+

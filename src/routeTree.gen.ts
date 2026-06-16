@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminLiveRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminFaresRouteImport } from './routes/_authenticated/admin.fares'
 import { Route as AuthenticatedAdminDriversMapRouteImport } from './routes/_authenticated/admin.drivers-map'
 import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authenticated/admin.drivers'
+import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
 import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 
@@ -151,6 +152,12 @@ const AuthenticatedAdminDriversRoute =
     path: '/drivers',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCustomersRoute =
+  AuthenticatedAdminCustomersRouteImport.update({
+    id: '/customers',
+    path: '/customers',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBookingsRoute =
   AuthenticatedAdminBookingsRouteImport.update({
     id: '/bookings',
@@ -182,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/driver/': typeof DriverIndexRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -207,6 +215,7 @@ export interface FileRoutesByTo {
   '/driver': typeof DriverIndexRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/driver/': typeof DriverIndexRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
+  '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/_authenticated/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/_authenticated/admin/fares': typeof AuthenticatedAdminFaresRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/driver/'
     | '/admin/approvals'
     | '/admin/bookings'
+    | '/admin/customers'
     | '/admin/drivers'
     | '/admin/drivers-map'
     | '/admin/fares'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/admin/approvals'
     | '/admin/bookings'
+    | '/admin/customers'
     | '/admin/drivers'
     | '/admin/drivers-map'
     | '/admin/fares'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/driver/'
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/bookings'
+    | '/_authenticated/admin/customers'
     | '/_authenticated/admin/drivers'
     | '/_authenticated/admin/drivers-map'
     | '/_authenticated/admin/fares'
@@ -501,6 +514,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDriversRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/customers': {
+      id: '/_authenticated/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AuthenticatedAdminCustomersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/bookings': {
       id: '/_authenticated/admin/bookings'
       path: '/bookings'
@@ -521,6 +541,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
+  AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminDriversRoute: typeof AuthenticatedAdminDriversRoute
   AuthenticatedAdminDriversMapRoute: typeof AuthenticatedAdminDriversMapRoute
   AuthenticatedAdminFaresRoute: typeof AuthenticatedAdminFaresRoute
@@ -531,6 +552,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
+  AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
   AuthenticatedAdminDriversRoute: AuthenticatedAdminDriversRoute,
   AuthenticatedAdminDriversMapRoute: AuthenticatedAdminDriversMapRoute,
   AuthenticatedAdminFaresRoute: AuthenticatedAdminFaresRoute,
