@@ -285,6 +285,7 @@ function Booking() {
             drop={{ lat: drop.lat, lng: drop.lng }}
             polyline={routeInfo?.polyline ?? null}
             height={160}
+            showMyLocation={false}
           />
         </div>
       )}
