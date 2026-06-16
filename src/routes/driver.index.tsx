@@ -98,6 +98,28 @@ function DriverHome() {
     return () => { supabase.removeChannel(ch); };
   }, [driver?.id, navigate]);
 
+  // Continuous GPS broadcast while online
+  useEffect(() => {
+    if (!driver?.id || !driver.is_online) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let lastSent = 0;
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const now = Date.now();
+        if (now - lastSent < 4000) return; // throttle to once / 4s
+        lastSent = now;
+        await supabase.from("drivers").update({
+          current_lat: pos.coords.latitude,
+          current_lng: pos.coords.longitude,
+          location_updated_at: new Date().toISOString(),
+        }).eq("id", driver.id);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [driver?.id, driver?.is_online]);
+
   async function toggleOnline() {
     if (!driver) return;
     const next = !driver.is_online;
