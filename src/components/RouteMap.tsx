@@ -51,7 +51,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
 
         new g.maps.Marker({
           position: pickup, map,
-          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 5, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1.5 },
+          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 4, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1 },
         });
         new g.maps.Marker({
           position: drop, map,

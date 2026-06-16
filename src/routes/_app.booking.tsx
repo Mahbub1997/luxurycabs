@@ -285,6 +285,7 @@ function Booking() {
             drop={{ lat: drop.lat, lng: drop.lng }}
             polyline={routeInfo?.polyline ?? null}
             height={160}
+            showMyLocation={false}
           />
         </div>
       )}
@@ -535,8 +536,8 @@ function Booking() {
 
       {/* Trip Summary Sheet — full screen */}
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
-        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-[100dvh] max-h-[100dvh] w-full overflow-y-auto bg-muted/30">
-          <div className="sticky top-0 z-10 flex items-center gap-3 bg-primary-soft/60 px-4 py-4 backdrop-blur"
+        <SheetContent side="bottom" className="rounded-none border-0 p-0 h-[100dvh] max-h-[100dvh] w-full overflow-y-auto bg-background">
+          <div className="sticky top-0 z-10 flex items-center gap-3 bg-background border-b border-border px-4 py-4"
             style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
             <button
               type="button"
