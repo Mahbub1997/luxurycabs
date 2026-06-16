@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, User as UserIcon, Mail, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Phone, User as UserIcon, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
@@ -18,7 +18,6 @@ function Auth() {
   const [step, setStep] = useState<"details" | "otp">("details");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -29,21 +28,23 @@ function Auth() {
     })();
   }, [navigate]);
 
+  const fullPhone = () => `+91${phone.replace(/\D/g, "")}`;
+
   async function sendOtp(e: React.FormEvent) {
     e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, "");
-    if (!name.trim() || cleanPhone.length < 10 || !email.trim()) return;
+    if (!name.trim() || cleanPhone.length !== 10) return;
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: { shouldCreateUser: true, data: { name: name.trim(), phone: cleanPhone } },
+        phone: fullPhone(),
+        options: { channel: "sms", data: { name: name.trim(), phone: cleanPhone } },
       });
       if (error) throw error;
       setStep("otp");
-      toast.success(`OTP sent to ${email}`);
+      toast.success(`OTP sent to +91 ${cleanPhone}`);
     } catch (err: any) {
-      toast.error(err.message || "Could not send OTP");
+      toast.error(err.message || "Could not send OTP. SMS provider may not be configured.");
     } finally {
       setBusy(false);
     }
@@ -51,17 +52,17 @@ function Auth() {
 
   async function verifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (otp.length < 6) return;
+    if (otp.length < 4) return;
     setBusy(true);
     try {
+      const cleanPhone = phone.replace(/\D/g, "");
       const { data, error } = await supabase.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
+        phone: fullPhone(),
         token: otp.trim(),
-        type: "email",
+        type: "sms",
       });
       if (error) throw error;
       const uid = data.user?.id;
-      const cleanPhone = phone.replace(/\D/g, "");
       if (uid) {
         await supabase.from("profiles").upsert(
           { user_id: uid, name: name.trim(), phone: cleanPhone },
@@ -79,16 +80,17 @@ function Auth() {
   }
 
   async function resend() {
-    if (!email.trim()) return;
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (cleanPhone.length !== 10) return;
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { shouldCreateUser: true, data: { name: name.trim(), phone: phone.replace(/\D/g, "") } },
+      phone: fullPhone(),
+      options: { channel: "sms", data: { name: name.trim(), phone: cleanPhone } },
     });
     if (error) toast.error(error.message);
     else { setOtp(""); toast.success("OTP resent"); }
   }
 
-  const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length >= 10 && /\S+@\S+\.\S+/.test(email);
+  const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length === 10;
 
   return (
     <div className="app-shell relative flex flex-col bg-gradient-to-b from-primary-soft/40 to-background px-6">
@@ -109,7 +111,7 @@ function Auth() {
         >
           <div className="text-center">
             <h1 className="text-xl font-bold text-primary">Please login to continue</h1>
-            <p className="mt-1 text-xs text-muted-foreground">We'll send a one-time code to your email.</p>
+            <p className="mt-1 text-xs text-muted-foreground">We'll send a one-time code by SMS.</p>
           </div>
 
           <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
@@ -134,17 +136,6 @@ function Auth() {
             />
           </label>
 
-          <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
-            <Mail className="h-4 w-4 text-primary" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email for OTP"
-              className="flex-1 bg-transparent text-sm outline-none"
-            />
-          </label>
-
           <button
             disabled={!ready || busy}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
@@ -159,20 +150,20 @@ function Auth() {
         >
           <div className="text-center">
             <ShieldCheck className="mx-auto h-8 w-8 text-primary" />
-            <h1 className="mt-2 text-xl font-bold text-primary">Verify your email</h1>
+            <h1 className="mt-2 text-xl font-bold text-primary">Verify your mobile</h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              OTP sent to <b>{email}</b>. Check inbox & spam.
+              OTP sent to <b>+91 {phone}</b>
             </p>
           </div>
           <input
             inputMode="numeric"
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="6-digit OTP"
+            placeholder="Enter OTP"
             className="rounded-xl border border-border bg-background px-3 py-3 text-center text-lg tracking-[0.5em] outline-none"
           />
           <button
-            disabled={otp.length < 6 || busy}
+            disabled={otp.length < 4 || busy}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Verify & continue <ArrowRight className="h-4 w-4" /></>}

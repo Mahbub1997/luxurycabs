@@ -74,6 +74,10 @@ export function PlaceAutocomplete({
           input: query,
           sessionToken: tokenRef.current,
           includedRegionCodes: ["in"],
+          // Restrict to South India: Tamil Nadu, Karnataka, Andhra Pradesh, Kerala
+          locationRestriction: {
+            south: 8.0, west: 74.0, north: 16.2, east: 81.0,
+          },
         });
         if (!cancelled) setSuggestions(suggestions);
       } catch (e) { console.error(e); }
