@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, User as UserIcon, ArrowRight, Loader2, HelpCircle } from "lucide-react";
+import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 // Internal: one mobile number ⇒ one synthetic email ⇒ exactly one account.
-const emailFor = (phone: string) => `${phone}@customer.luxurycabs.local`;
+const emailFor = (phone: string) => `cust${phone}@luxurycabs.app`;
 // Fixed app-wide password derived from phone (no user-facing secret).
 const passwordFor = (phone: string) => `LX-${phone}-CUST`;
 
@@ -23,7 +23,7 @@ function Auth() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
+  
 
   useEffect(() => {
     (async () => {
@@ -128,22 +128,8 @@ function Auth() {
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Login <ArrowRight className="h-4 w-4" /></>}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setShowForgot((v) => !v)}
-          className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" /> Forgot your registered name / number?
-        </button>
-
-        {showForgot && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3 text-[11px] text-muted-foreground">
-            Contact our support team to recover your registered details. Share your full name
-            and any previous booking ID for verification.
-            <div className="mt-1 font-semibold text-foreground">📞 Support: +91 95661 23456</div>
-          </div>
-        )}
       </form>
+
 
       <p className="mt-auto py-6 text-center text-[10px] text-muted-foreground">
         By continuing you agree to our Terms & Privacy Policy.
