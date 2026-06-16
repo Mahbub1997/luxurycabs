@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { RouteMap } from "@/components/RouteMap";
-import { simulateDrive, type LatLng } from "@/lib/maps/sim";
+type LatLng = { lat: number; lng: number };
 import { beep, ensureNotifyPermission, notify } from "@/lib/notify";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
