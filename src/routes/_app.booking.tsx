@@ -57,8 +57,6 @@ function Booking() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [farePopupOpen, setFarePopupOpen] = useState(false);
-  const [farePopupShownFor, setFarePopupShownFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   
 
