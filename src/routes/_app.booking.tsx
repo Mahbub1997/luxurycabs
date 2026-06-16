@@ -506,7 +506,7 @@ function Booking() {
               onClick={() => { setFarePopupOpen(false); setSummaryOpen(true); }}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
             >
-              Book Now <ArrowRight className="h-4 w-4" />
+              Review & Book <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </SheetContent>
