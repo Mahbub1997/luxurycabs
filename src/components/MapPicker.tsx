@@ -16,6 +16,8 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const debounceRef = useRef<number | null>(null);
   const reqIdRef = useRef(0);
+  const movingRef = useRef(false);
+  const lastFetchedRef = useRef<{ lat: number; lng: number } | null>(null);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [address, setAddress] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -47,28 +49,37 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
       });
       mapRef.current = map;
       setCenter(start);
+      // Initial fetch
       scheduleReverse(start);
 
-      // While the user is interacting, don't fetch and don't show stale address
-      const onMoveStart = () => {
+      // Detect user-initiated movement (drag or zoom). Mark as moving;
+      // idle will fire when movement stops.
+      const onUserMove = () => {
+        if (movingRef.current) return;
+        movingRef.current = true;
         setMoving(true);
         if (debounceRef.current) {
           window.clearTimeout(debounceRef.current);
           debounceRef.current = null;
         }
-        // Invalidate any in-flight request
-        reqIdRef.current += 1;
+        reqIdRef.current += 1; // cancel any in-flight request
       };
-      map.addListener("dragstart", onMoveStart);
-      map.addListener("zoom_changed", onMoveStart);
+      map.addListener("dragstart", onUserMove);
+      map.addListener("zoom_changed", onUserMove);
 
-      // Idle fires once when movement stops — debounce + single reverse geocode
+      // Idle fires once when the map fully settles
       map.addListener("idle", () => {
         const c = map.getCenter();
         if (!c) return;
         const p = { lat: c.lat(), lng: c.lng() };
         setCenter(p);
+        movingRef.current = false;
         setMoving(false);
+        // Skip refetch if center hasn't actually changed
+        const last = lastFetchedRef.current;
+        if (last && Math.abs(last.lat - p.lat) < 1e-6 && Math.abs(last.lng - p.lng) < 1e-6) {
+          return;
+        }
         scheduleReverse(p);
       });
     })();
@@ -88,16 +99,18 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
   async function reverse(p: { lat: number; lng: number }) {
     const myId = ++reqIdRef.current;
     setLoading(true);
-    setMoving(false);
     try {
       const r = await reverseGeocode({ data: p });
       if (myId !== reqIdRef.current) return;
       setAddress(r.address || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
+      lastFetchedRef.current = p;
     } catch {
       if (myId !== reqIdRef.current) return;
       setAddress(`${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
+      lastFetchedRef.current = p;
     } finally {
-      if (myId === reqIdRef.current) setLoading(false);
+      // Always clear the spinner so it never gets stuck
+      setLoading(false);
     }
   }
 
