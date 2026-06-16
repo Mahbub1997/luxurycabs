@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import splashImg from "@/assets/splash.jpg";
+import splashAsset from "@/assets/luxury-cabs-splash.png.asset.json";
 import { getProfile } from "@/lib/profile";
 import { AppDrawer } from "@/components/AppDrawer";
 
@@ -15,30 +15,60 @@ export const Route = createFileRoute("/")({
   component: Splash,
 });
 
+const BRAND = "LUXURY CABS";
+
 function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
     const t = setTimeout(() => {
       const p = getProfile();
       navigate({ to: p ? "/booking" : "/auth", replace: true });
-    }, 4000);
+    }, 5000);
     return () => clearTimeout(t);
   }, [navigate]);
 
   return (
-    <div className="app-shell relative flex flex-col items-center justify-end overflow-hidden bg-white">
+    <div className="app-shell relative flex flex-col items-center justify-between overflow-hidden bg-white py-16">
       <AppDrawer />
-      <img
-        src={splashImg}
+
+      {/* Logo crown image */}
+      <motion.img
+        src={splashAsset.url}
         alt="Luxury Cabs"
-        className="absolute inset-0 h-full w-full object-cover"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10 mt-6 w-[78%] max-w-xs object-contain"
       />
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="relative z-10 mb-20 flex flex-col items-center gap-3"
-      >
+
+      {/* Letter-by-letter brand text (also visible in image, this is the typed animation overlay below) */}
+      <div className="relative z-10 flex flex-col items-center gap-2">
+        <div className="flex items-end justify-center">
+          {BRAND.split("").map((ch, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 + i * 0.18, duration: 0.45, ease: "easeOut" }}
+              className="text-3xl font-bold tracking-[0.18em] text-primary"
+              style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+            >
+              {ch === " " ? "\u00A0" : ch}
+            </motion.span>
+          ))}
+        </div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 + BRAND.length * 0.18 + 0.2, duration: 0.6 }}
+          className="text-[10px] font-semibold tracking-[0.3em] text-primary/70"
+        >
+          PREMIUM RIDES · EXCEPTIONAL JOURNEYS
+        </motion.p>
+      </div>
+
+      {/* Loading animation at bottom */}
+      <div className="relative z-10 mb-2 flex flex-col items-center gap-3">
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map((i) => (
             <motion.span
@@ -52,7 +82,7 @@ function Splash() {
         <p className="text-xs font-semibold tracking-[0.25em] text-primary">
           PLEASE WAIT...
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
