@@ -19,7 +19,9 @@ export const reverseGeocode = createServerFn({ method: "POST" })
     const json = (await res.json()) as {
       results?: Array<{ formatted_address: string; types?: string[] }>;
     };
-    const results = json.results ?? [];
+    const results = (json.results ?? []).filter(
+      (r) => r.formatted_address && !/^unnamed road/i.test(r.formatted_address)
+    );
     const pick =
       results.find((r) => r.types?.some((t) => ["street_address", "premise"].includes(t))) ??
       results.find((r) => r.types?.some((t) => ["route", "sublocality", "neighborhood"].includes(t))) ??

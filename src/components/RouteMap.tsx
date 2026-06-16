@@ -21,8 +21,6 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
-  const driverHeadingRef = useRef<number>(0);
-  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
@@ -101,31 +99,14 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
     })();
   }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
 
-  // Driver marker (rotates to face direction of movement)
+  // Driver marker (no rotation; static top-down car icon)
   useEffect(() => {
     (async () => {
       try {
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
 
-        // compute heading from previous position
-        const prev = lastDriverRef.current;
-        if (prev && (prev.lat !== driver.lat || prev.lng !== driver.lng)) {
-          const dKm = Math.hypot(prev.lat - driver.lat, prev.lng - driver.lng);
-          if (dKm > 0.00002) {
-            const heading = g.maps.geometry?.spherical?.computeHeading
-              ? g.maps.geometry.spherical.computeHeading(
-                  new g.maps.LatLng(prev.lat, prev.lng),
-                  new g.maps.LatLng(driver.lat, driver.lng)
-                )
-              : (Math.atan2(driver.lng - prev.lng, driver.lat - prev.lat) * 180) / Math.PI;
-            driverHeadingRef.current = heading;
-          }
-        }
-        lastDriverRef.current = { lat: driver.lat, lng: driver.lng };
-
         const carIcon: google.maps.Symbol = {
-          // top-down car shape pointing UP (north). Rotation rotates around anchor.
           path: "M 0 -16 C 4 -16 6 -14 6 -10 L 6 -2 L 7 0 L 7 12 L 6 14 L 6 16 C 6 17 4 17.5 0 17.5 C -4 17.5 -6 17 -6 16 L -6 14 L -7 12 L -7 0 L -6 -2 L -6 -10 C -6 -14 -4 -16 0 -16 Z M -4 -10 L 4 -10 L 5 -3 L -5 -3 Z M -5 4 L 5 4 L 5 11 L -5 11 Z",
           fillColor: "#0f3a22",
           fillOpacity: 1,
@@ -133,7 +114,6 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
           strokeWeight: 1.5,
           scale: 1.2,
           anchor: new g.maps.Point(0, 0),
-          rotation: driverHeadingRef.current,
         };
 
         if (!driverMarkerRef.current) {
