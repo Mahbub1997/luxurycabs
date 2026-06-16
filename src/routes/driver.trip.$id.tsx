@@ -47,11 +47,12 @@ function DriverTrip() {
     arrivedRef.current = false;
 
     // Draw planned driver→pickup route once.
-    const origin0 = { lat: b.driver_lat ?? b.pickup_lat, lng: b.driver_lng ?? b.pickup_lng };
+    const origin0 = b.driver_lat && b.driver_lng ? { lat: b.driver_lat, lng: b.driver_lng } : null;
     const pickupPt = { lat: b.pickup_lat, lng: b.pickup_lng };
-    setPos(origin0);
+    if (origin0) setPos(origin0);
     (async () => {
       try {
+        if (!origin0) return;
         const r = await computeRoute({ data: { origin: origin0, destination: pickupPt } });
         setPoly(r.polyline);
         setEtaMin(Math.max(1, Math.round(r.durationMin ?? 10)));
