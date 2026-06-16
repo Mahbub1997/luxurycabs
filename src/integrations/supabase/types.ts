@@ -149,6 +149,7 @@ export type Database = {
           is_online: boolean
           license_number: string | null
           license_photo_url: string | null
+          location_updated_at: string | null
           name: string
           phone: string
           photo: string | null
@@ -172,6 +173,7 @@ export type Database = {
           is_online?: boolean
           license_number?: string | null
           license_photo_url?: string | null
+          location_updated_at?: string | null
           name: string
           phone: string
           photo?: string | null
@@ -195,6 +197,7 @@ export type Database = {
           is_online?: boolean
           license_number?: string | null
           license_photo_url?: string | null
+          location_updated_at?: string | null
           name?: string
           phone?: string
           photo?: string | null
