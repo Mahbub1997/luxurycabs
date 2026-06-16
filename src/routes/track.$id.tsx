@@ -310,7 +310,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
     const applyDriverLocation = (row: any) => {
       if (!mounted || !row?.current_lat || !row?.current_lng) return;
       setDriver({ lat: Number(row.current_lat), lng: Number(row.current_lng) });
-      setFitKey((k) => k + 1);
     };
     supabase
       .from("drivers")
@@ -342,7 +341,6 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   useEffect(() => {
     if (b.driver_lat && b.driver_lng) {
       setDriver({ lat: b.driver_lat, lng: b.driver_lng });
-      setFitKey((k) => k + 1);
     }
     if (b.status === "driver_arrived" && phase === "to_pickup") setPhase("arrived");
     if (b.status === "in_progress" && phase !== "in_trip") setPhase("in_trip");
