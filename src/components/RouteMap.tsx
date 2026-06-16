@@ -60,6 +60,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         const map = new g.maps.Map(ref.current, {
           center: pickup,
           zoom: 13,
+          restriction: { latLngBounds: SOUTH_INDIA_BOUNDS, strictBounds: false },
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
@@ -73,7 +74,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
 
         new g.maps.Marker({
           position: pickup, map,
-          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 4, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1 },
+          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 3, fillColor: "#0f7a3a", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 0.75 },
         });
         new g.maps.Marker({
           position: drop, map,
@@ -83,6 +84,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         const bounds = new g.maps.LatLngBounds();
         bounds.extend(pickup);
         bounds.extend(drop);
+        if (driver) bounds.extend(driver);
         map.fitBounds(bounds, 48);
 
         g.maps.event.addListenerOnce(map, "idle", () => {
