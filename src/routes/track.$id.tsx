@@ -275,6 +275,43 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
 }
 
 
+function CancelledBooking({ b, onHome }: { b: Booking; onHome: () => void }) {
+  const code = bookingCode(b.id);
+  return (
+    <div className="app-shell flex flex-col bg-muted/30 pb-10">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-4 backdrop-blur">
+        <button onClick={onHome} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Home">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h1 className="flex-1 text-center text-lg font-bold">Booking Cancelled</h1>
+        <span className="h-9 w-9" />
+      </div>
+      <div className="mx-4 mt-6 rounded-2xl border border-destructive/30 bg-card p-5 text-center">
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-destructive/10 text-destructive">
+          <XCircle className="h-10 w-10" />
+        </div>
+        <h2 className="mt-4 text-xl font-extrabold text-destructive">Booking cancelled</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Your booking {code} has been cancelled.</p>
+      </div>
+      <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-3 w-3 rounded-full border-2 border-primary" />
+          <div className="min-w-0 flex-1 text-sm font-medium">{b.pickup_address}</div>
+        </div>
+        <div className="ml-1.5 my-2 h-6 w-px border-l-2 border-dashed border-muted-foreground/40" />
+        <div className="flex items-start gap-3">
+          <MapPin className="h-4 w-4 shrink-0 text-destructive" />
+          <div className="min-w-0 flex-1 text-sm font-medium">{b.drop_address}</div>
+        </div>
+      </div>
+      <button onClick={onHome} className="mx-4 mt-4 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">
+        Back to Home
+      </button>
+    </div>
+  );
+}
+
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-muted/40 px-3 py-2">
