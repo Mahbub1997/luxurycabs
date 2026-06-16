@@ -10,17 +10,39 @@ interface Props {
   driver?: { lat: number; lng: number } | null;
   height?: number | string;
   interactive?: boolean;
-  fitKey?: number;
+  fitKey?: number | string;
   showMyLocation?: boolean;
+  followDriver?: boolean;
 }
 
 type Status = "loading" | "ready" | "error";
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = true }: Props) {
+const SOUTH_INDIA_BOUNDS = { north: 21.5, south: 5.5, west: 72, east: 86.5 };
+
+function bearingBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function approxMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const dx = (b.lng - a.lng) * 111_320 * Math.cos((a.lat * Math.PI) / 180);
+  const dy = (b.lat - a.lat) * 110_540;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
+  const driverHeadingRef = useRef(0);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
