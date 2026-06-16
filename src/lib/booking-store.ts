@@ -56,7 +56,7 @@ export async function findActiveBookingId(): Promise<string | null> {
     let q = supabase
       .from("bookings")
       .select("id")
-      .in("status", ACTIVE_BOOKING_STATUSES as unknown as string[])
+      .in("status", [...ACTIVE_BOOKING_STATUSES])
       .order("created_at", { ascending: false })
       .limit(1);
 
