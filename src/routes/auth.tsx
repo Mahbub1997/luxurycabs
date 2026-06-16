@@ -94,9 +94,10 @@ function Auth() {
         <div className="text-center">
           <h1 className="text-xl font-bold text-primary">Login to continue</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            One mobile number = one account.
+            Enter your name and mobile number to login.
           </p>
         </div>
+
 
         <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
           <UserIcon className="h-4 w-4 text-primary" />
