@@ -90,7 +90,7 @@ function DriverTrip() {
   // IN TRIP — REAL device GPS, no fake animation. Live-pushes to customer + admin.
   useEffect(() => {
     if (!b || phase !== "in_trip") return;
-    cancelSimRef.current?.();
+
 
     // Draw the planned pickup→drop polyline once.
     (async () => {
