@@ -465,42 +465,7 @@ function Booking() {
       </div>
 
 
-      {/* Fare popup — auto-opens after route is calculated */}
-      <Sheet open={farePopupOpen} onOpenChange={setFarePopupOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0">
-          <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
-          <div className="px-5 pb-6 pt-4">
-            <h2 className="text-center text-lg font-bold">Your Ride is Ready</h2>
-            <p className="mt-1 text-center text-xs text-muted-foreground">Selected vehicle and fare estimate</p>
 
-            <div className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-primary bg-primary-soft/30 p-3">
-              <img src={carImg} alt={tariffLabel} className="h-16 w-24 object-contain scale-x-[-1]" />
-              <div className="min-w-0 flex-1">
-                <div className="text-base font-bold">{tariffLabel}</div>
-                <div className="text-[11px] text-muted-foreground">Best for {tab === "outstation" ? outVehicle.seats : vehicle === "sedan" ? 4 : 7} People · AC</div>
-                <button
-                  type="button"
-                  onClick={() => { setFarePopupOpen(false); setVehicleSheetOpen(true); }}
-                  className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary"
-                >
-                  <Pencil className="h-3 w-3" /> Change vehicle
-                </button>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] text-muted-foreground">Total Fare</div>
-                <div className="text-xl font-extrabold text-primary">{formatINR(estimatedFare)}</div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => { setFarePopupOpen(false); setSummaryOpen(true); }}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
-            >
-              Review & Book <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Vehicle picker Sheet */}
       <Sheet open={vehicleSheetOpen} onOpenChange={setVehicleSheetOpen}>
