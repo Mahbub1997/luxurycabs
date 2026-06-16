@@ -23,7 +23,7 @@ function Auth() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
+  
 
   useEffect(() => {
     (async () => {
