@@ -68,6 +68,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
         if (!c) return;
         const p = { lat: c.lat(), lng: c.lng() };
         setCenter(p);
+        setMoving(false);
         scheduleReverse(p);
       });
     })();
