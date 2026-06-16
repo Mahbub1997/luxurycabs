@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Phone, User as UserIcon, ArrowRight, Loader2, KeyRound, HelpCircle } from "lucide-react";
+import { Phone, User as UserIcon, ArrowRight, Loader2, HelpCircle } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
@@ -13,16 +13,15 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
-// Internal synthetic email so each mobile number maps to exactly one account.
+// Internal: one mobile number ⇒ one synthetic email ⇒ exactly one account.
 const emailFor = (phone: string) => `${phone}@customer.luxurycabs.local`;
-// Supabase requires >= 6 char passwords; pad PIN with a fixed suffix.
-const pinToPassword = (pin: string) => `${pin}-CUST`;
+// Fixed app-wide password derived from phone (no user-facing secret).
+const passwordFor = (phone: string) => `LX-${phone}-CUST`;
 
 function Auth() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
 
@@ -36,36 +35,25 @@ function Auth() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cleanPhone = phone.replace(/\D/g, "");
-    const cleanPin = pin.replace(/\D/g, "");
-    if (!name.trim() || cleanPhone.length !== 10 || cleanPin.length !== 4) return;
+    if (!name.trim() || cleanPhone.length !== 10) return;
     setBusy(true);
     try {
       const email = emailFor(cleanPhone);
-      const password = pinToPassword(cleanPin);
+      const password = passwordFor(cleanPhone);
 
-      // Try sign in first
+      // Try sign in; if account doesn't exist, create it.
       let res = await supabase.auth.signInWithPassword({ email, password });
-
       if (res.error) {
-        // If credentials are wrong it could mean wrong PIN OR account doesn't exist yet.
-        // Attempt signup; if that fails because user exists, then PIN was wrong.
         const signup = await supabase.auth.signUp({
           email,
           password,
           options: { data: { name: name.trim(), phone: cleanPhone } },
         });
-        if (signup.error) {
-          if (signup.error.message?.toLowerCase().includes("already")) {
-            throw new Error("Incorrect PIN for this mobile number");
-          }
+        if (signup.error && !signup.error.message?.toLowerCase().includes("already")) {
           throw signup.error;
         }
-        // Sign in after signup
         res = await supabase.auth.signInWithPassword({ email, password });
         if (res.error) throw res.error;
-        toast.success("Account created");
-      } else {
-        toast.success("Signed in");
       }
 
       const uid = res.data.user?.id;
@@ -76,6 +64,7 @@ function Auth() {
         );
       }
       saveProfile({ name: name.trim(), phone: cleanPhone, createdAt: new Date().toISOString() });
+      toast.success("Signed in");
       navigate({ to: "/booking", replace: true });
     } catch (err: any) {
       toast.error(err.message || "Sign in failed");
@@ -84,10 +73,7 @@ function Auth() {
     }
   }
 
-  const ready =
-    name.trim().length > 0 &&
-    phone.replace(/\D/g, "").length === 10 &&
-    pin.replace(/\D/g, "").length === 4;
+  const ready = name.trim().length > 0 && phone.replace(/\D/g, "").length === 10;
 
   return (
     <div className="app-shell relative flex flex-col bg-gradient-to-b from-primary-soft/40 to-background px-6">
@@ -108,7 +94,7 @@ function Auth() {
         <div className="text-center">
           <h1 className="text-xl font-bold text-primary">Login to continue</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            First time? Your 4-digit PIN will be set automatically.
+            One mobile number = one account.
           </p>
         </div>
 
@@ -134,18 +120,6 @@ function Auth() {
           />
         </label>
 
-        <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
-          <KeyRound className="h-4 w-4 text-primary" />
-          <input
-            type="password"
-            inputMode="numeric"
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            placeholder="4-digit PIN"
-            className="flex-1 bg-transparent text-sm tracking-[0.4em] outline-none"
-          />
-        </label>
-
         <button
           disabled={!ready || busy}
           className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
@@ -158,13 +132,13 @@ function Auth() {
           onClick={() => setShowForgot((v) => !v)}
           className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          <HelpCircle className="h-3.5 w-3.5" /> Forgot PIN / mobile?
+          <HelpCircle className="h-3.5 w-3.5" /> Forgot your registered name / number?
         </button>
 
         {showForgot && (
           <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3 text-[11px] text-muted-foreground">
-            Please contact our support team to reset your PIN or recover your registered
-            mobile number. Share your full name and any previous booking ID for verification.
+            Contact our support team to recover your registered details. Share your full name
+            and any previous booking ID for verification.
             <div className="mt-1 font-semibold text-foreground">📞 Support: +91 95661 23456</div>
           </div>
         )}
