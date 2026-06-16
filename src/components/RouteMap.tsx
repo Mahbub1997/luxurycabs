@@ -130,13 +130,20 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
 
+        const previous = lastDriverRef.current;
+        if (previous && approxMeters(previous, driver) > 1.5) {
+          driverHeadingRef.current = bearingBetween(previous, driver);
+        }
+        lastDriverRef.current = driver;
+
         const carIcon: google.maps.Symbol = {
-          path: "M 0 -16 C 4 -16 6 -14 6 -10 L 6 -2 L 7 0 L 7 12 L 6 14 L 6 16 C 6 17 4 17.5 0 17.5 C -4 17.5 -6 17 -6 16 L -6 14 L -7 12 L -7 0 L -6 -2 L -6 -10 C -6 -14 -4 -16 0 -16 Z M -4 -10 L 4 -10 L 5 -3 L -5 -3 Z M -5 4 L 5 4 L 5 11 L -5 11 Z",
-          fillColor: "#0f3a22",
+          path: "M 0 -19 C 5 -19 8 -16 9 -11 L 11 -2 C 13 -1 14 2 14 7 L 14 15 C 14 17 12 19 10 19 L 8 19 C 7 21 5 22 3 22 L -3 22 C -5 22 -7 21 -8 19 L -10 19 C -12 19 -14 17 -14 15 L -14 7 C -14 2 -13 -1 -11 -2 L -9 -11 C -8 -16 -5 -19 0 -19 Z M -6 -11 L 6 -11 L 8 -3 L -8 -3 Z M -9 5 L -5 5 L -5 10 L -9 10 Z M 5 5 L 9 5 L 9 10 L 5 10 Z M -6 14 L 6 14 L 6 17 L -6 17 Z",
+          fillColor: "#0b5b2b",
           fillOpacity: 1,
           strokeColor: "#ffffff",
-          strokeWeight: 1.5,
-          scale: 1.2,
+          strokeWeight: 1.8,
+          scale: 0.95,
+          rotation: driverHeadingRef.current,
           anchor: new g.maps.Point(0, 0),
         };
 
@@ -151,11 +158,24 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
           driverMarkerRef.current.setPosition(driver);
           driverMarkerRef.current.setIcon(carIcon);
         }
+        if (followDriver) {
+          const bounds = new g.maps.LatLngBounds();
+          bounds.extend(pickup);
+          bounds.extend(drop);
+          bounds.extend(driver);
+          mapRef.current.fitBounds(bounds, 56);
+          window.setTimeout(() => {
+            if (!mapRef.current) return;
+            mapRef.current.panTo(driver);
+            const nextZoom = phaseZoom(mapRef.current.getZoom() ?? 13, approxMeters(driver, pickup), approxMeters(driver, drop));
+            mapRef.current.setZoom(nextZoom);
+          }, 250);
+        }
       } catch {
         // map load error already surfaced by main effect
       }
     })();
-  }, [driver?.lat, driver?.lng]);
+  }, [driver?.lat, driver?.lng, pickup.lat, pickup.lng, drop.lat, drop.lng, followDriver]);
 
   // My current location (crosshair / aim icon)
   useEffect(() => {
