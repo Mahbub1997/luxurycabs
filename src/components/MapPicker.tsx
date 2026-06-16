@@ -68,6 +68,7 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
         if (!c) return;
         const p = { lat: c.lat(), lng: c.lng() };
         setCenter(p);
+        setMoving(false);
         scheduleReverse(p);
       });
     })();
@@ -90,11 +91,11 @@ export function MapPicker({ open, onClose, onPick, initial }: Props) {
     setMoving(false);
     try {
       const r = await reverseGeocode({ data: p });
-      if (myId !== reqIdRef.current) return; // a newer request superseded this one
-      setAddress(r.address || "Selected location");
+      if (myId !== reqIdRef.current) return;
+      setAddress(r.address || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
     } catch {
       if (myId !== reqIdRef.current) return;
-      setAddress("Selected location");
+      setAddress(`${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`);
     } finally {
       if (myId === reqIdRef.current) setLoading(false);
     }
