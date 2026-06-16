@@ -10,17 +10,46 @@ interface Props {
   driver?: { lat: number; lng: number } | null;
   height?: number | string;
   interactive?: boolean;
-  fitKey?: number;
+  fitKey?: number | string;
   showMyLocation?: boolean;
+  followDriver?: boolean;
 }
 
 type Status = "loading" | "ready" | "error";
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = true }: Props) {
+const SOUTH_INDIA_BOUNDS = { north: 21.5, south: 5.5, west: 72, east: 86.5 };
+
+function bearingBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function approxMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const dx = (b.lng - a.lng) * 111_320 * Math.cos((a.lat * Math.PI) / 180);
+  const dy = (b.lat - a.lat) * 110_540;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop: number) {
+  const nearest = Math.min(distanceToPickup, distanceToDrop);
+  if (nearest < 200) return Math.min(Math.max(currentZoom, 15), 17);
+  if (nearest < 1000) return Math.min(Math.max(currentZoom, 14), 16);
+  return Math.min(currentZoom, 13);
+}
+
+export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
+  const driverHeadingRef = useRef(0);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
@@ -35,9 +64,14 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       try {
         const g = await loadGoogleMaps();
         if (cancelled || !ref.current) return;
+        driverMarkerRef.current?.setMap(null);
+        driverMarkerRef.current = null;
+        meMarkerRef.current?.setMap(null);
+        meMarkerRef.current = null;
         const map = new g.maps.Map(ref.current, {
           center: pickup,
           zoom: 13,
+          restriction: { latLngBounds: SOUTH_INDIA_BOUNDS, strictBounds: false },
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
@@ -51,7 +85,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
 
         new g.maps.Marker({
           position: pickup, map,
-          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 4, fillColor: "#1f6f3f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1 },
+          icon: { path: g.maps.SymbolPath.CIRCLE, scale: 3, fillColor: "#0f7a3a", fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 0.75 },
         });
         new g.maps.Marker({
           position: drop, map,
@@ -61,6 +95,7 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         const bounds = new g.maps.LatLngBounds();
         bounds.extend(pickup);
         bounds.extend(drop);
+        if (driver) bounds.extend(driver);
         map.fitBounds(bounds, 48);
 
         g.maps.event.addListenerOnce(map, "idle", () => {
@@ -76,6 +111,10 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
       cancelled = true;
       polylineRef.current?.setMap(null);
       polylineRef.current = null;
+      driverMarkerRef.current?.setMap(null);
+      driverMarkerRef.current = null;
+      meMarkerRef.current?.setMap(null);
+      meMarkerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup.lat, pickup.lng, drop.lat, drop.lng, fitKey]);
@@ -106,13 +145,20 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
 
+        const previous = lastDriverRef.current;
+        if (previous && approxMeters(previous, driver) > 1.5) {
+          driverHeadingRef.current = bearingBetween(previous, driver);
+        }
+        lastDriverRef.current = driver;
+
         const carIcon: google.maps.Symbol = {
-          path: "M 0 -16 C 4 -16 6 -14 6 -10 L 6 -2 L 7 0 L 7 12 L 6 14 L 6 16 C 6 17 4 17.5 0 17.5 C -4 17.5 -6 17 -6 16 L -6 14 L -7 12 L -7 0 L -6 -2 L -6 -10 C -6 -14 -4 -16 0 -16 Z M -4 -10 L 4 -10 L 5 -3 L -5 -3 Z M -5 4 L 5 4 L 5 11 L -5 11 Z",
-          fillColor: "#0f3a22",
+          path: "M 0 -19 C 5 -19 8 -16 9 -11 L 11 -2 C 13 -1 14 2 14 7 L 14 15 C 14 17 12 19 10 19 L 8 19 C 7 21 5 22 3 22 L -3 22 C -5 22 -7 21 -8 19 L -10 19 C -12 19 -14 17 -14 15 L -14 7 C -14 2 -13 -1 -11 -2 L -9 -11 C -8 -16 -5 -19 0 -19 Z M -6 -11 L 6 -11 L 8 -3 L -8 -3 Z M -9 5 L -5 5 L -5 10 L -9 10 Z M 5 5 L 9 5 L 9 10 L 5 10 Z M -6 14 L 6 14 L 6 17 L -6 17 Z",
+          fillColor: "#0b5b2b",
           fillOpacity: 1,
           strokeColor: "#ffffff",
-          strokeWeight: 1.5,
-          scale: 1.2,
+          strokeWeight: 1.8,
+          scale: 0.95,
+          rotation: driverHeadingRef.current,
           anchor: new g.maps.Point(0, 0),
         };
 
@@ -127,11 +173,24 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
           driverMarkerRef.current.setPosition(driver);
           driverMarkerRef.current.setIcon(carIcon);
         }
+        if (followDriver) {
+          const bounds = new g.maps.LatLngBounds();
+          bounds.extend(pickup);
+          bounds.extend(drop);
+          bounds.extend(driver);
+          mapRef.current.fitBounds(bounds, 56);
+          window.setTimeout(() => {
+            if (!mapRef.current) return;
+            mapRef.current.panTo(driver);
+            const nextZoom = phaseZoom(mapRef.current.getZoom() ?? 13, approxMeters(driver, pickup), approxMeters(driver, drop));
+            mapRef.current.setZoom(nextZoom);
+          }, 250);
+        }
       } catch {
         // map load error already surfaced by main effect
       }
     })();
-  }, [driver?.lat, driver?.lng]);
+  }, [driver?.lat, driver?.lng, pickup.lat, pickup.lng, drop.lat, drop.lng, followDriver]);
 
   // My current location (crosshair / aim icon)
   useEffect(() => {

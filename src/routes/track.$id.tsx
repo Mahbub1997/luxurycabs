@@ -303,6 +303,30 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
   const [secsLeft, setSecsLeft] = useState(300);
   const cancelRef = useRef<(() => void) | null>(null);
 
+  // Follow the assigned driver's real GPS from the driver profile as soon as it changes.
+  useEffect(() => {
+    if (!b.assigned_driver_id) return;
+    let mounted = true;
+    const applyDriverLocation = (row: any) => {
+      if (!mounted || !row?.current_lat || !row?.current_lng) return;
+      setDriver({ lat: Number(row.current_lat), lng: Number(row.current_lng) });
+    };
+    supabase
+      .from("drivers")
+      .select("current_lat, current_lng")
+      .eq("id", b.assigned_driver_id)
+      .maybeSingle()
+      .then(({ data }) => applyDriverLocation(data));
+    const ch = supabase
+      .channel(`driver-location:${b.assigned_driver_id}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "drivers", filter: `id=eq.${b.assigned_driver_id}` },
+        (p) => applyDriverLocation(p.new)
+      )
+      .subscribe();
+    return () => { mounted = false; supabase.removeChannel(ch); };
+  }, [b.assigned_driver_id]);
+
   // OTP countdown (5 minutes) — starts only after driver has arrived.
   useEffect(() => {
     if (phase !== "arrived" && phase !== "otp") return;
@@ -315,7 +339,9 @@ function LiveTracking({ b, onBack }: { b: Booking; onBack: () => void }) {
 
   // React to live booking updates (driver app pushes status & coords).
   useEffect(() => {
-    if (b.driver_lat && b.driver_lng) setDriver({ lat: b.driver_lat, lng: b.driver_lng });
+    if (b.driver_lat && b.driver_lng) {
+      setDriver({ lat: b.driver_lat, lng: b.driver_lng });
+    }
     if (b.status === "driver_arrived" && phase === "to_pickup") setPhase("arrived");
     if (b.status === "in_progress" && phase !== "in_trip") setPhase("in_trip");
     if (b.status === "completed") {
