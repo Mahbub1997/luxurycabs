@@ -128,22 +128,8 @@ function Auth() {
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Login <ArrowRight className="h-4 w-4" /></>}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setShowForgot((v) => !v)}
-          className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" /> Forgot your registered name / number?
-        </button>
-
-        {showForgot && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3 text-[11px] text-muted-foreground">
-            Contact our support team to recover your registered details. Share your full name
-            and any previous booking ID for verification.
-            <div className="mt-1 font-semibold text-foreground">📞 Support: +91 95661 23456</div>
-          </div>
-        )}
       </form>
+
 
       <p className="mt-auto py-6 text-center text-[10px] text-muted-foreground">
         By continuing you agree to our Terms & Privacy Policy.
