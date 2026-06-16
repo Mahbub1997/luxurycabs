@@ -94,9 +94,10 @@ function Auth() {
         <div className="text-center">
           <h1 className="text-xl font-bold text-primary">Login to continue</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            One mobile number = one account.
+            Enter your name and mobile number to login.
           </p>
         </div>
+
 
         <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
           <UserIcon className="h-4 w-4 text-primary" />
@@ -124,7 +125,7 @@ function Auth() {
           disabled={!ready || busy}
           className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Continue <ArrowRight className="h-4 w-4" /></>}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Login <ArrowRight className="h-4 w-4" /></>}
         </button>
 
         <button
