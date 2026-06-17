@@ -88,6 +88,18 @@ function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop
   return Math.min(currentZoom, 13);
 }
 
+/** Top-view car SVG + yellow plate badge, rotated to the given heading.
+ *  The plate stays upright (counter-rotated) so it's always readable. */
+function rotatedCarSvgDataUrl(plate: string, kind: "sedan" | "suv", heading: number) {
+  const inner = vehicleIconSvg(plate, true, kind)
+    .replace(/^<svg[^>]*>/, "")
+    .replace(/<\/svg>\s*$/, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <g transform="translate(48 48) rotate(${heading.toFixed(1)}) translate(-48 -40)">${inner}</g>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
