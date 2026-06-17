@@ -41,9 +41,23 @@ function DriverTrip() {
   useEffect(() => {
     supabase.from("bookings").select("*").eq("id", id).maybeSingle().then(({ data }) => {
       setB(data);
-      if (data?.status === "in_progress") setPhase("in_trip");
+      if (data?.status === "in_progress") {
+        const ps = (data?.payment_status ?? "").toLowerCase();
+        if (ps === "awaiting" || ps === "cash_pending" || ps === "paid") setPhase("payment");
+        else setPhase("in_trip");
+      }
     });
+    // Live booking updates — needed so payment_method / payment_status changes
+    // pushed by the customer flow through to the driver UI in realtime.
+    const ch = supabase
+      .channel(`driver-booking:${id}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${id}` },
+        (p) => setB(p.new as any))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [id]);
+
 
   // Drive to PICKUP — REAL device GPS. Live-pushes to customer + admin.
   useEffect(() => {
