@@ -367,6 +367,13 @@ function ActionBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; 
 
 // ---------- Live tracking (driver assigned) ----------
 
+/** Public share viewers (link opened with `?share=1`) only get live map +
+ *  addresses + call + chat. No OTP, fare, cancel, payment overlay, share button. */
+function isShareView(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("share") === "1";
+}
+
 function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => void; onCancelled: (b: Booking) => void }) {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<LatLng | null>(
