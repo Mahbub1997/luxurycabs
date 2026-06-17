@@ -5,6 +5,7 @@ import { User, ChevronRight, Wallet, MapPin, Shield, LogOut, Phone, Pencil, Save
 import { clearProfile, getProfile, saveProfile, type UserProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PaymentMethodsManager } from "@/components/PaymentMethodsManager";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Profile — Luxury Cabs" }] }),
@@ -15,6 +16,7 @@ function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showPay, setShowPay] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   useEffect(() => { setProfile(getProfile()); }, []);
@@ -34,7 +36,7 @@ function Profile() {
 
   const items = [
     { I: MapPin, label: "Saved Addresses", onClick: () => navigate({ to: "/booking" }) },
-    { I: Wallet, label: "Payment Methods", onClick: () => alert("Cash on ride is currently the only supported payment method. More options coming soon.") },
+    { I: Wallet, label: "Payment Methods", onClick: () => setShowPay(true) },
     { I: Phone, label: "Help & Support (Toll-free)", onClick: () => { window.location.href = "tel:+919791298406"; } },
     { I: Shield, label: "Safety Center", onClick: () => alert("Your safety is our priority.\n\n• Verified drivers\n• Live trip sharing\n• 24/7 support helpline\n• SOS button on every ride") },
   ];
@@ -101,6 +103,8 @@ function Profile() {
       >
         <LogOut className="h-4 w-4" /> Log out
       </button>
+
+      {showPay && <PaymentMethodsManager onClose={() => setShowPay(false)} />}
     </div>
   );
 }
