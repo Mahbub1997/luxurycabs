@@ -642,29 +642,31 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             </div>
             <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
               <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
-              <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>
+              {!shareView && <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>}
             </div>
           </div>
 
-          {/* Share / Cancel */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={shareTrip}
-              className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
-            >
-              <Share2 className="h-4 w-4" /> Share
-            </button>
-            <button
-              onClick={() => setShowCancel(true)}
-              className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
-            >
-              <XCircle className="h-4 w-4" /> Cancel
-            </button>
-          </div>
+          {/* Share / Cancel — hidden in share view */}
+          {!shareView && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={shareTrip}
+                className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
+              >
+                <Share2 className="h-4 w-4" /> Share
+              </button>
+              <button
+                onClick={() => setShowCancel(true)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
+              >
+                <XCircle className="h-4 w-4" /> Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {showCancel && (
+      {showCancel && !shareView && (
         <CancelReasonModal
           title="Cancel this ride?"
           onCancel={() => setShowCancel(false)}
@@ -672,7 +674,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
         />
       )}
 
-      <UserPaymentOverlay b={b} />
+      {!shareView && <UserPaymentOverlay b={b} />}
     </div>
   );
 }
