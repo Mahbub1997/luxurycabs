@@ -25,6 +25,7 @@ function AdminShell() {
     { to: "/admin/approvals", label: "Approvals", Icon: UserCheck },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
     { to: "/admin/customers", label: "Customers", Icon: UserCircle2 },
+    { to: "/admin/add-admin", label: "Add Admin", Icon: ShieldPlus },
   ];
 
 
