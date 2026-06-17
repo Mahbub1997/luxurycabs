@@ -488,9 +488,9 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   }
 
   function shareTrip() {
-    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
+    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}?share=1` : "";
     const text = encodeURIComponent(
-      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
+      `Track my Luxury Cabs ride ${code} live: ${url}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
