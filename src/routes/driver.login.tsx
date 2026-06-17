@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
+import { claimSession } from "@/lib/session-guard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/driver/login")({
