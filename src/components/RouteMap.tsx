@@ -113,10 +113,18 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
     })();
     return () => {
       cancelled = true;
+      if (animRef.current !== null) {
+        cancelAnimationFrame(animRef.current);
+        animRef.current = null;
+      }
       polylineRef.current?.setMap(null);
       polylineRef.current = null;
+      polyPathRef.current = [];
+      polyFittedRef.current = false;
       driverMarkerRef.current?.setMap(null);
       driverMarkerRef.current = null;
+      driverPosRef.current = null;
+      lastDriverRef.current = null;
       meMarkerRef.current?.setMap(null);
       meMarkerRef.current = null;
     };
@@ -124,54 +132,113 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
   }, [pickup.lat, pickup.lng, drop.lat, drop.lng, fitKey]);
 
   // Draw / update the polyline overlay without re-creating the map.
+  // Only fit-to-bounds the FIRST time a polyline arrives — subsequent updates
+  // (e.g. recomputed during the trip) must not jerk the camera (flicker fix).
   useEffect(() => {
     (async () => {
       const g = await loadGoogleMaps().catch(() => null);
       if (!g || !mapRef.current) return;
       polylineRef.current?.setMap(null);
       const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
+      polyPathRef.current = path;
       polylineRef.current = new g.maps.Polyline({
         path, map: mapRef.current,
         strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
       });
-      if (polyline) {
+      if (polyline && !polyFittedRef.current) {
         const bounds = new g.maps.LatLngBounds();
         path.forEach((p) => bounds.extend(p));
         mapRef.current.fitBounds(bounds, 48);
+        polyFittedRef.current = true;
       }
     })();
   }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
 
-  // Driver marker — smooth pan, no zoom jumping
+  // Driver marker — smooth animated movement, bearing-rotated, snapped to road.
   useEffect(() => {
     (async () => {
       try {
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
 
-        const previous = lastDriverRef.current;
-        if (previous && approxMeters(previous, driver) > 1.5) {
-          driverHeadingRef.current = bearingBetween(previous, driver);
-        }
-        const isFirst = !driverMarkerRef.current;
-        lastDriverRef.current = driver;
+        // Snap incoming GPS point to the nearest point on the route polyline so
+        // the car visibly rides the road, not a straight diagonal.
+        const target = snapToPath(driver, polyPathRef.current) ?? driver;
 
-        const carIcon: google.maps.Icon = {
-          url: carTop,
-          scaledSize: new g.maps.Size(44, 44),
-          anchor: new g.maps.Point(22, 22),
+        const startPos = driverPosRef.current ?? target;
+        const distance = approxMeters(startPos, target);
+
+        // Compute bearing from previous to new (heading).
+        if (distance > 1.5) {
+          driverHeadingRef.current = bearingBetween(startPos, target);
+        }
+        const heading = driverHeadingRef.current;
+
+        // Build a car-shaped Symbol that rotates natively (no icon reload flicker).
+        const carSymbol: google.maps.Symbol = {
+          // Stylised top-down car pointing "up" (north). Map rotation aligns
+          // heading 0° = north, increasing clockwise — matches our bearing.
+          path: "M0,-14 L6,-8 L6,8 L4,12 L-4,12 L-6,8 L-6,-8 Z",
+          fillColor: "#16a34a",
+          fillOpacity: 1,
+          strokeColor: "#0f172a",
+          strokeWeight: 1.5,
+          scale: 1.5,
+          rotation: heading,
+          anchor: new g.maps.Point(0, 0),
         };
 
+        const isFirst = !driverMarkerRef.current;
         if (!driverMarkerRef.current) {
           driverMarkerRef.current = new g.maps.Marker({
             map: mapRef.current,
-            position: driver,
-            icon: carIcon,
+            position: target,
+            icon: carSymbol,
             zIndex: 5000,
             optimized: false,
           });
+          driverPosRef.current = target;
         } else {
-          driverMarkerRef.current.setPosition(driver);
+          driverMarkerRef.current.setIcon(carSymbol);
+        }
+        lastDriverRef.current = target;
+
+        // Cancel any in-flight animation before starting a new one.
+        if (animRef.current !== null) {
+          cancelAnimationFrame(animRef.current);
+          animRef.current = null;
+        }
+
+        // Animate from current displayed position → target over ~900ms.
+        // Skip the animation on the very first placement, or for huge jumps
+        // (>500m teleport, likely a GPS glitch) — snap directly.
+        const marker = driverMarkerRef.current;
+        if (isFirst || distance < 0.5 || distance > 500) {
+          marker.setPosition(target);
+          driverPosRef.current = target;
+        } else {
+          const from = startPos;
+          const to = target;
+          const duration = 900;
+          const t0 = performance.now();
+          const step = (now: number) => {
+            const k = Math.min(1, (now - t0) / duration);
+            // ease-out for a natural settle
+            const e = 1 - Math.pow(1 - k, 2);
+            const p = {
+              lat: from.lat + (to.lat - from.lat) * e,
+              lng: from.lng + (to.lng - from.lng) * e,
+            };
+            marker.setPosition(p);
+            driverPosRef.current = p;
+            if (k < 1) {
+              animRef.current = requestAnimationFrame(step);
+            } else {
+              animRef.current = null;
+              driverPosRef.current = to;
+            }
+          };
+          animRef.current = requestAnimationFrame(step);
         }
 
         if (followDriver) {
@@ -179,10 +246,10 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
             const bounds = new g.maps.LatLngBounds();
             bounds.extend(pickup);
             bounds.extend(drop);
-            bounds.extend(driver);
+            bounds.extend(target);
             mapRef.current.fitBounds(bounds, 64);
           } else {
-            mapRef.current.panTo(driver);
+            mapRef.current.panTo(target);
           }
         }
       } catch {
