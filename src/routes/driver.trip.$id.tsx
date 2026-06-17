@@ -187,10 +187,9 @@ function DriverTrip() {
     () => (b ? { lat: b.drop_lat, lng: b.drop_lng } : null),
     [b?.drop_lat, b?.drop_lng]
   );
-  const mapOrigin = useMemo(
-    () => (phase === "to_pickup" ? (pos ?? mapPickup) : mapPickup),
-    [phase, pos?.lat, pos?.lng, mapPickup]
-  );
+  // Keep map endpoints STABLE — the driver marker animates on top.
+  // Using `pos` as origin re-initializes the map on every GPS tick (flicker).
+  const mapOrigin = mapPickup;
   const mapDest = useMemo(
     () => (phase === "in_trip" ? mapDrop : mapPickup),
     [phase, mapPickup, mapDrop]
