@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { acceptRide, rejectRide } from "@/lib/driver.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export const Route = createFileRoute("/driver/")({
   head: () => ({ meta: [{ title: "Driver — Luxury Cabs" }] }),
