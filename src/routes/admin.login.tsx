@@ -44,7 +44,7 @@ function AdminLogin() {
       }
       // Bootstrap main admin on first login (idempotent)
       await ensureMainAdmin({ data: { password } });
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: MAIN_ADMIN_EMAIL,
         password,
       });
@@ -55,6 +55,8 @@ function AdminLogin() {
         await supabase.auth.signOut();
         throw new Error("Invalid username or password");
       }
+      const uid = data.user?.id;
+      if (uid) await claimSession("profiles", { column: "user_id", value: uid });
       navigate({ to: "/admin/bookings", replace: true });
     } catch (e: any) {
       toast.error(e.message || "Invalid username or password");
