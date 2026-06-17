@@ -262,6 +262,8 @@ function DriverTrip() {
             drop={mapDest!}
             polyline={poly}
             driver={pos}
+            driverPlate={b.vehicle_number ?? undefined}
+            driverVehicleKind={b.vehicle_type === "suv" ? "suv" : "sedan"}
             height="100%"
           />
         </div>
