@@ -13,10 +13,11 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
-// Internal: one mobile number ⇒ one synthetic email ⇒ exactly one account.
-const emailFor = (phone: string) => `cust${phone}@luxurycabs.app`;
-// Fixed app-wide password derived from phone (no user-facing secret).
-const passwordFor = (phone: string) => `LX-${phone}-CUST`;
+// Identity = (username + mobile). Same combo ⇒ same account; differ in either ⇒ a new account.
+const slugName = (n: string) => n.trim().toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 24) || "user";
+const emailFor = (name: string, phone: string) => `cust.${slugName(name)}.${phone}@luxurycabs.app`;
+// Fixed app-wide password derived from username+phone (no user-facing secret).
+const passwordFor = (name: string, phone: string) => `LX-${slugName(name)}-${phone}-CUST`;
 
 function Auth() {
   const navigate = useNavigate();
@@ -38,8 +39,8 @@ function Auth() {
     if (!name.trim() || cleanPhone.length !== 10) return;
     setBusy(true);
     try {
-      const email = emailFor(cleanPhone);
-      const password = passwordFor(cleanPhone);
+      const email = emailFor(name, cleanPhone);
+      const password = passwordFor(name, cleanPhone);
 
       // Try sign in; if account doesn't exist, create it.
       let res = await supabase.auth.signInWithPassword({ email, password });

@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
+import { vehicleIconSvg } from "@/components/VehicleIcon";
 
 interface Props {
   pickup: { lat: number; lng: number };
   drop: { lat: number; lng: number };
   polyline?: string | null;
   driver?: { lat: number; lng: number } | null;
+  driverPlate?: string | null;
+  driverVehicleKind?: "sedan" | "suv";
   height?: number | string;
   interactive?: boolean;
   fitKey?: number | string;
@@ -85,7 +88,19 @@ function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop
   return Math.min(currentZoom, 13);
 }
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
+/** Top-view car SVG + yellow plate badge, rotated to the given heading.
+ *  The plate stays upright (counter-rotated) so it's always readable. */
+function rotatedCarSvgDataUrl(plate: string, kind: "sedan" | "suv", heading: number) {
+  const inner = vehicleIconSvg(plate, true, kind)
+    .replace(/^<svg[^>]*>/, "")
+    .replace(/<\/svg>\s*$/, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <g transform="translate(48 48) rotate(${heading.toFixed(1)}) translate(-48 -40)">${inner}</g>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
@@ -216,18 +231,12 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
         }
         const heading = driverHeadingRef.current;
 
-        // Build a car-shaped Symbol that rotates natively (no icon reload flicker).
-        const carSymbol: google.maps.Symbol = {
-          // Stylised top-down car pointing "up" (north). Map rotation aligns
-          // heading 0° = north, increasing clockwise — matches our bearing.
-          path: "M0,-14 L6,-8 L6,8 L4,12 L-4,12 L-6,8 L-6,-8 Z",
-          fillColor: "#16a34a",
-          fillOpacity: 1,
-          strokeColor: "#0f172a",
-          strokeWeight: 1.5,
-          scale: 1.5,
-          rotation: heading,
-          anchor: new g.maps.Point(0, 0),
+        // Build a real top-view car icon with number plate tag, rotated to heading.
+        const carUrl = rotatedCarSvgDataUrl(driverPlate || "", driverVehicleKind, heading);
+        const carIcon: google.maps.Icon = {
+          url: carUrl,
+          scaledSize: new g.maps.Size(96, 96),
+          anchor: new g.maps.Point(48, 48),
         };
 
         const isFirst = !driverMarkerRef.current;
@@ -235,13 +244,13 @@ export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey 
           driverMarkerRef.current = new g.maps.Marker({
             map: mapRef.current,
             position: target,
-            icon: carSymbol,
+            icon: carIcon,
             zIndex: 5000,
             optimized: false,
           });
           driverPosRef.current = target;
         } else {
-          driverMarkerRef.current.setIcon(carSymbol);
+          driverMarkerRef.current.setIcon(carIcon);
         }
         lastDriverRef.current = target;
 
