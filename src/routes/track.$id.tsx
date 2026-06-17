@@ -667,7 +667,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
 
 function UserPaymentOverlay({ b }: { b: Booking }) {
   const [busy, setBusy] = useState(false);
-  const [openMethod, setOpenMethod] = useState<"upi" | "card" | null>(null);
+  const [openCard, setOpenCard] = useState(false);
   const pStatus = (b.payment_status ?? "").toLowerCase();
   const pMethod = (b.payment_method ?? "").toLowerCase();
 
@@ -675,33 +675,56 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
   const needsChoice = pStatus === "awaiting" && !pMethod;
   // Customer picked Cash — waiting for the driver to confirm cash received.
   const cashWaiting = pMethod === "cash" && b.status !== "completed";
-  // Customer paid online — waiting for the driver to confirm completion.
-  const onlinePaid = (pMethod === "upi" || pMethod === "card") && pStatus === "paid" && b.status !== "completed";
+  // UPI intent launched — waiting for payment-gateway confirmation.
+  const upiPending = pMethod === "upi" && pStatus === "awaiting_gateway" && b.status !== "completed";
+  // Card paid — waiting for the driver to confirm completion.
+  const cardPaid = pMethod === "card" && pStatus === "paid" && b.status !== "completed";
 
-  async function pick(method: "cash" | "upi" | "card") {
+  async function pickCash() {
     if (busy) return;
-    if (method === "cash") {
-      setBusy(true);
-      try {
-        await updateBooking(b.id, { payment_method: "cash", payment_status: "cash_pending" } as any);
-      } catch (e: any) { toast.error(e.message || "Failed"); }
-      finally { setBusy(false); }
-      return;
-    }
-    setOpenMethod(method);
-  }
-
-  async function confirmOnline(method: "upi" | "card") {
     setBusy(true);
     try {
-      await updateBooking(b.id, { payment_method: method, payment_status: "paid" } as any);
-      setOpenMethod(null);
+      await updateBooking(b.id, { payment_method: "cash", payment_status: "cash_pending" } as any);
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function pickUpi() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Mark as awaiting gateway confirmation BEFORE launching the intent so the
+      // overlay locks into the "verifying" state — there is no manual confirm.
+      await updateBooking(b.id, {
+        payment_method: "upi",
+        payment_status: "awaiting_gateway",
+      } as any);
+      const uri = buildUpiUri({
+        amount: Number(b.fare),
+        note: `Cab fare ${bookingCode(b.id)}`,
+        txnRef: b.id,
+      });
+      // Trigger UPI app intent immediately (no Confirm button).
+      window.location.href = uri;
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function pickCard() {
+    setOpenCard(true);
+  }
+
+  async function confirmCard() {
+    setBusy(true);
+    try {
+      await updateBooking(b.id, { payment_method: "card", payment_status: "paid" } as any);
+      setOpenCard(false);
       toast.success("Payment sent. Waiting for driver to confirm…");
     } catch (e: any) { toast.error(e.message || "Failed"); }
     finally { setBusy(false); }
   }
 
-  if (!needsChoice && !cashWaiting && !onlinePaid) return null;
+  if (!needsChoice && !cashWaiting && !upiPending && !cardPaid) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
@@ -715,12 +738,12 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="text-center text-3xl font-extrabold text-primary mt-1">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
             <div className="mt-5 grid grid-cols-3 gap-2">
-              <PayBtn I={Banknote} l="Cash" onClick={() => pick("cash")} disabled={busy} />
-              <PayBtn I={Wallet} l="UPI" onClick={() => pick("upi")} disabled={busy} />
-              <PayBtn I={CreditCard} l="Card" onClick={() => pick("card")} disabled={busy} />
+              <PayBtn I={Banknote} l="Cash" onClick={pickCash} disabled={busy} />
+              <PayBtn I={Wallet} l="UPI" onClick={pickUpi} disabled={busy} />
+              <PayBtn I={CreditCard} l="Card" onClick={pickCard} disabled={busy} />
             </div>
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              Trip cannot complete without payment.
+              UPI opens your payment app instantly. Trip completes only after gateway confirmation.
             </div>
           </>
         )}
@@ -739,14 +762,43 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
           </div>
         )}
 
-        {onlinePaid && (
+        {upiPending && (
+          <div className="text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft">
+              <Wallet className="h-7 w-7 text-primary" />
+            </div>
+            <div className="mt-3 text-lg font-extrabold">Verifying UPI payment…</div>
+            <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+            <div className="text-[12px] text-muted-foreground">
+              Complete the payment in your UPI app. Trip will auto-complete once the gateway confirms.
+            </div>
+            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for gateway confirmation…
+            </div>
+            <button
+              onClick={() => {
+                const uri = buildUpiUri({
+                  amount: Number(b.fare),
+                  note: `Cab fare ${bookingCode(b.id)}`,
+                  txnRef: b.id,
+                });
+                window.location.href = uri;
+              }}
+              className="mt-4 text-xs font-semibold text-primary underline"
+            >
+              Reopen UPI app
+            </button>
+          </div>
+        )}
+
+        {cardPaid && (
           <div className="text-center">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
               <CheckCircle2 className="h-7 w-7 text-emerald-600" />
             </div>
             <div className="mt-3 text-lg font-extrabold">Payment sent</div>
             <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
-            <div className="text-[12px] text-muted-foreground">Paid via {pMethod.toUpperCase()}. Waiting for driver to confirm.</div>
+            <div className="text-[12px] text-muted-foreground">Paid via Card. Waiting for driver to confirm.</div>
             <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Completing trip…
             </div>
@@ -754,15 +806,15 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
         )}
       </div>
 
-      {openMethod && (
+      {openCard && (
         <PaymentSheet
           amount={Number(b.fare)}
           note={`Cab fare ${bookingCode(b.id)}`}
-          title={openMethod === "upi" ? "Pay via UPI" : "Pay via Card"}
+          title="Pay via Card"
           hideCash
           busy={busy}
-          onClose={() => setOpenMethod(null)}
-          onConfirm={(m) => confirmOnline(m === "card" ? "card" : "upi")}
+          onClose={() => setOpenCard(false)}
+          onConfirm={() => confirmCard()}
         />
       )}
     </div>
