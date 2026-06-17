@@ -26,8 +26,8 @@ function DriverTrip() {
   const [b, setB] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("to_pickup");
   const [otp, setOtp] = useState("");
-  const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
