@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Banknote, Wallet, CreditCard, Loader2, Navigation, Clock as ClockIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Loader2, Navigation, Clock as ClockIcon, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { RouteMap } from "@/components/RouteMap";
+import { PaymentSheet } from "@/components/PaymentSheet";
+import { CancelReasonModal } from "@/components/CancelReasonModal";
+import { cancelBookingServer } from "@/lib/driver.functions";
 type LatLng = { lat: number; lng: number };
 import { beep, ensureNotifyPermission, notify } from "@/lib/notify";
 import { toast } from "sonner";
