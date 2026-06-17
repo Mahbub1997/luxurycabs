@@ -55,9 +55,15 @@ export function clearLocalSessionId(table: Table) {
  * Watches the row for active_session_id changes. If the DB value differs from
  * the local one (and prod-mode + non-test account), signs out and redirects.
  */
-export function useSessionGuard(table: Table, rowId: string | null | undefined, redirectTo: string) {
+export function useSessionGuard(
+  table: Table,
+  match: { column: string; value: string | null | undefined } | null,
+  redirectTo: string
+) {
+  const matchCol = match?.column;
+  const matchVal = match?.value ?? null;
   useEffect(() => {
-    if (!rowId) return;
+    if (!matchCol || !matchVal) return;
     if (!isProductionMode()) return; // bypass outside prod
 
     let cancelled = false;
@@ -65,18 +71,18 @@ export function useSessionGuard(table: Table, rowId: string | null | undefined, 
     async function check(remote?: any) {
       if (cancelled) return;
       const local = getLocalSessionId(table);
-      if (!local) return; // not yet claimed
+      if (!local) return;
       let row = remote;
       if (!row) {
         const { data } = await supabase
           .from(table)
           .select("active_session_id, is_test_account")
-          .eq("id", rowId!)
+          .eq(matchCol!, matchVal!)
           .maybeSingle();
         row = data;
       }
       if (!row) return;
-      if (row.is_test_account) return; // per-account bypass
+      if (row.is_test_account) return;
       const remoteId: string | null = row.active_session_id ?? null;
       if (remoteId && remoteId !== local) {
         clearLocalSessionId(table);
@@ -88,15 +94,14 @@ export function useSessionGuard(table: Table, rowId: string | null | undefined, 
 
     void check();
     const channel = supabase
-      .channel(`session-guard:${table}:${rowId}`)
+      .channel(`session-guard:${table}:${matchVal}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table, filter: `id=eq.${rowId}` },
+        { event: "UPDATE", schema: "public", table, filter: `${matchCol}=eq.${matchVal}` },
         (payload) => void check(payload.new)
       )
       .subscribe();
 
-    // Cross-tab logout: if another tab clears the local id, drop us too.
     const onStorage = (e: StorageEvent) => {
       if (e.key === SESSION_KEY(table) && e.newValue === null) {
         void supabase.auth.signOut();
@@ -110,5 +115,5 @@ export function useSessionGuard(table: Table, rowId: string | null | undefined, 
       supabase.removeChannel(channel);
       window.removeEventListener("storage", onStorage);
     };
-  }, [table, rowId, redirectTo]);
+  }, [table, matchCol, matchVal, redirectTo]);
 }
