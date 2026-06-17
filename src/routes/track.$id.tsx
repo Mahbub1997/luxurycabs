@@ -14,6 +14,7 @@ import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { buildUpiUri } from "@/lib/payment";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import { formatDuration, formatTime12 } from "@/lib/utils";
