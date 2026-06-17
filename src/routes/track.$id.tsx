@@ -267,7 +267,7 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
       </div>
 
       <button
-        onClick={cancelBooking}
+        onClick={() => setShowCancel(true)}
         className="mx-4 mt-3 flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-background py-3 text-sm font-semibold text-destructive"
       >
         <XCircle className="h-4 w-4" /> Cancel Booking
@@ -280,6 +280,14 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
           <Copy className="h-3 w-3" />{copied ? "Copied" : "Copy"}
         </button>
       </div>
+
+      {showCancel && (
+        <CancelReasonModal
+          title="Cancel booking?"
+          onCancel={() => setShowCancel(false)}
+          onConfirm={doCancel}
+        />
+      )}
     </div>
   );
 }
