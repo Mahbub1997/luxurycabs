@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getUnreadCount } from "@/lib/notify";
 
-const items = [
-  { to: "/booking", label: "Home", Icon: Home, match: (p: string) => p === "/booking" || p === "/" },
-  { to: "/bookings", label: "Bookings", Icon: CalendarCheck, match: (p: string) => p.startsWith("/bookings") },
-  { to: "/notifications", label: "Alerts", Icon: Inbox, match: (p: string) => p.startsWith("/notifications"), badge: true },
-  { to: "/profile", label: "Profile", Icon: User, match: (p: string) => p.startsWith("/profile") },
-] as const;
+const items: Array<{ to: string; label: string; Icon: typeof Home; match: (p: string) => boolean; badge?: boolean }> = [
+  { to: "/booking", label: "Home", Icon: Home, match: (p) => p === "/booking" || p === "/" },
+  { to: "/bookings", label: "Bookings", Icon: CalendarCheck, match: (p) => p.startsWith("/bookings") },
+  { to: "/notifications", label: "Alerts", Icon: Inbox, match: (p) => p.startsWith("/notifications"), badge: true },
+  { to: "/profile", label: "Profile", Icon: User, match: (p) => p.startsWith("/profile") },
+];
 
 export function BottomNav() {
   const path = useRouterState({ select: (s) => s.location.pathname });
