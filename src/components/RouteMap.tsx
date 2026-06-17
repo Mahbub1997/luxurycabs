@@ -36,6 +36,48 @@ function approxMeters(a: { lat: number; lng: number }, b: { lat: number; lng: nu
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+/** Project `p` onto the closest segment of `path` (returns the snapped point).
+ *  Used so the moving vehicle marker rides the road polyline instead of
+ *  cutting straight lines between noisy GPS samples. */
+function snapToPath(
+  p: { lat: number; lng: number },
+  path: Array<{ lat: number; lng: number }>
+): { lat: number; lng: number } | null {
+  if (!path || path.length < 2) return null;
+  const latRad = (p.lat * Math.PI) / 180;
+  const mPerDegLng = 111_320 * Math.cos(latRad);
+  const mPerDegLat = 110_540;
+  const toXY = (q: { lat: number; lng: number }) => ({
+    x: (q.lng - p.lng) * mPerDegLng,
+    y: (q.lat - p.lat) * mPerDegLat,
+  });
+  let best: { lat: number; lng: number } | null = null;
+  let bestDist = Infinity;
+  // Only consider segments within ~80m of p for performance + sanity.
+  const MAX = 80;
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = toXY(path[i]);
+    const b = toXY(path[i + 1]);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    if (len2 === 0) continue;
+    let t = -(a.x * dx + a.y * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const px = a.x + t * dx;
+    const py = a.y + t * dy;
+    const d2 = px * px + py * py;
+    if (d2 < bestDist) {
+      bestDist = d2;
+      const lat = path[i].lat + t * (path[i + 1].lat - path[i].lat);
+      const lng = path[i].lng + t * (path[i + 1].lng - path[i].lng);
+      best = { lat, lng };
+    }
+  }
+  if (!best || Math.sqrt(bestDist) > MAX) return null;
+  return best;
+}
+
 function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop: number) {
   const nearest = Math.min(distanceToPickup, distanceToDrop);
   if (nearest < 200) return Math.min(Math.max(currentZoom, 15), 17);
