@@ -102,6 +102,7 @@ function Track() {
 
 function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => void; onCancelled: (b: Booking) => void }) {
   const [copied, setCopied] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
   const code = bookingCode(b.id);
   const tariff = tariffFor(b.vehicle_type as VehicleType);
   const carImg = b.vehicle_type === "suv" ? suvImg : sedanImg;
@@ -115,12 +116,18 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
     } catch {}
   }
 
-  async function cancelBooking() {
-    if (!confirm("Cancel this booking?")) return;
-    const next = await updateBooking(b.id, { status: "cancelled" });
-    clearMinimizedActiveBooking(b.id);
-    notify("Booking cancelled", "Your booking has been cancelled.");
-    onCancelled(next);
+  async function doCancel(reason: string) {
+    try {
+      await cancelBookingServer({ data: { booking_id: b.id, reason, by: "user" } });
+      const next = await getBooking(b.id);
+      clearMinimizedActiveBooking(b.id);
+      notify("Booking cancelled", "Your booking has been cancelled.");
+      if (next) onCancelled(next);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel");
+    } finally {
+      setShowCancel(false);
+    }
   }
 
   function shareTrip() {
