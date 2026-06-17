@@ -15,6 +15,7 @@ function Notifications() {
   useEffect(() => {
     const load = () => setAlerts(getAlerts());
     load();
+    markAlertsRead();
     window.addEventListener("luxury-alerts-updated", load);
     window.addEventListener("storage", load);
     return () => {
