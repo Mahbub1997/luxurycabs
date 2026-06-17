@@ -125,9 +125,20 @@ function AdminDrivers() {
                       await updateDriverStatus({ data: { driver_id: d.id, status: "suspended" } });
                       toast.success("Suspended"); load();
                     }}
-                    className="rounded-lg bg-rose-600 px-2 py-1 text-xs text-white"
-                  >Deactivate</button>
+                    className="rounded-lg bg-amber-600 px-2 py-1 text-xs text-white"
+                  ><Ban className="inline h-3 w-3 mr-1" />Deactivate</button>
                 )}
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Permanently delete ${d.name}?\n\nThis removes the driver account, login, wallet history and any pending withdrawals. Past bookings keep their snapshot of this driver. This cannot be undone.`)) return;
+                    try {
+                      await deleteDriverAccount({ data: { driver_id: d.id } });
+                      toast.success("Driver deleted");
+                      load();
+                    } catch (e: any) { toast.error(e.message); }
+                  }}
+                  className="rounded-lg bg-rose-700 px-2 py-1 text-xs text-white"
+                ><Trash2 className="inline h-3 w-3 mr-1" />Delete</button>
               </div>
             </div>
           </div>
