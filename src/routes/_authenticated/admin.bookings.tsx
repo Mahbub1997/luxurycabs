@@ -225,6 +225,21 @@ function BookingCard({ b }: { b: any }) {
         </button>
       )}
 
+      {isActive && (
+        <button
+          onClick={() => setCancelling(true)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-destructive/40 py-2 text-xs font-bold text-destructive"
+        >
+          <XCircle className="h-3.5 w-3.5" /> Cancel Trip
+        </button>
+      )}
+
+      {b.status === "cancelled" && b.cancellation_reason && (
+        <div className="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">
+          <span className="font-bold">Cancelled by {b.cancelled_by ?? "user"}:</span> {b.cancellation_reason}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <User className="h-3 w-3" /> {b.id.slice(0, 8)}
@@ -235,6 +250,20 @@ function BookingCard({ b }: { b: any }) {
       </div>
 
       {assigning && <AssignModal booking={b} onClose={() => setAssigning(false)} />}
+      {cancelling && (
+        <CancelReasonModal
+          title="Cancel this trip?"
+          description="The customer will see this reason on their tracking screen."
+          onCancel={() => setCancelling(false)}
+          onConfirm={async (reason) => {
+            try {
+              await cancelBookingServer({ data: { booking_id: b.id, reason, by: "admin" } });
+              toast.success("Trip cancelled");
+              setCancelling(false);
+            } catch (e: any) { toast.error(e.message); }
+          }}
+        />
+      )}
     </div>
   );
 }
