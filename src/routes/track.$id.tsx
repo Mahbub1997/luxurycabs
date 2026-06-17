@@ -4,6 +4,7 @@ import {
   ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
   Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck, X,
+  Banknote, Wallet, CreditCard,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
@@ -12,6 +13,7 @@ import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
+import { PaymentSheet } from "@/components/PaymentSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import { formatDuration, formatTime12 } from "@/lib/utils";
@@ -20,6 +22,7 @@ import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
 
 
 type LatLng = { lat: number; lng: number };
