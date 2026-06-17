@@ -88,7 +88,7 @@ function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop
   return Math.min(currentZoom, 13);
 }
 
-export function RouteMap({ pickup, drop, polyline, driver, height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
+export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
