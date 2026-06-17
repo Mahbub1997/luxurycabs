@@ -88,14 +88,16 @@ function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop
   return Math.min(currentZoom, 13);
 }
 
-/** Top-view car SVG + yellow plate badge, rotated to the given heading.
- *  The plate stays upright (counter-rotated) so it's always readable. */
-function rotatedCarSvgDataUrl(plate: string, kind: "sedan" | "suv", heading: number) {
-  const inner = vehicleIconSvg(plate, true, kind)
+/** Top-view car SVG rotated to the given heading. No plate on the marker —
+ *  plate is highlighted separately in the driver-details card. */
+function rotatedCarSvgDataUrl(_plate: string, kind: "sedan" | "suv", heading: number) {
+  const inner = vehicleIconSvg("", true, kind, false)
     .replace(/^<svg[^>]*>/, "")
     .replace(/<\/svg>\s*$/, "");
+  // Inner car-only canvas is 96x52, body centered at ~y=30. Center it inside
+  // a 96x96 rotation canvas so heading rotates around the car body.
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-    <g transform="translate(48 48) rotate(${heading.toFixed(1)}) translate(-48 -40)">${inner}</g>
+    <g transform="translate(48 48) rotate(${heading.toFixed(1)}) translate(-48 -30)">${inner}</g>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
