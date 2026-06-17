@@ -657,9 +657,128 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
           onConfirm={doCancel}
         />
       )}
+
+      <UserPaymentOverlay b={b} />
     </div>
   );
 }
+
+function UserPaymentOverlay({ b }: { b: Booking }) {
+  const [busy, setBusy] = useState(false);
+  const [openMethod, setOpenMethod] = useState<"upi" | "card" | null>(null);
+  const pStatus = (b.payment_status ?? "").toLowerCase();
+  const pMethod = (b.payment_method ?? "").toLowerCase();
+
+  // Driver has reached the drop and is waiting for the customer to pick a method.
+  const needsChoice = pStatus === "awaiting" && !pMethod;
+  // Customer picked Cash — waiting for the driver to confirm cash received.
+  const cashWaiting = pMethod === "cash" && b.status !== "completed";
+  // Customer paid online — waiting for the driver to confirm completion.
+  const onlinePaid = (pMethod === "upi" || pMethod === "card") && pStatus === "paid" && b.status !== "completed";
+
+  async function pick(method: "cash" | "upi" | "card") {
+    if (busy) return;
+    if (method === "cash") {
+      setBusy(true);
+      try {
+        await updateBooking(b.id, { payment_method: "cash", payment_status: "cash_pending" } as any);
+      } catch (e: any) { toast.error(e.message || "Failed"); }
+      finally { setBusy(false); }
+      return;
+    }
+    setOpenMethod(method);
+  }
+
+  async function confirmOnline(method: "upi" | "card") {
+    setBusy(true);
+    try {
+      await updateBooking(b.id, { payment_method: method, payment_status: "paid" } as any);
+      setOpenMethod(null);
+      toast.success("Payment sent. Waiting for driver to confirm…");
+    } catch (e: any) { toast.error(e.message || "Failed"); }
+    finally { setBusy(false); }
+  }
+
+  if (!needsChoice && !cashWaiting && !onlinePaid) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-md rounded-t-3xl bg-card p-6 shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
+        {needsChoice && (
+          <>
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft">
+              <CheckCircle2 className="h-7 w-7 text-primary" />
+            </div>
+            <div className="mt-3 text-center text-lg font-extrabold">You've reached your drop</div>
+            <div className="text-center text-3xl font-extrabold text-primary mt-1">₹{Number(b.fare).toFixed(2)}</div>
+            <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              <PayBtn I={Banknote} l="Cash" onClick={() => pick("cash")} disabled={busy} />
+              <PayBtn I={Wallet} l="UPI" onClick={() => pick("upi")} disabled={busy} />
+              <PayBtn I={CreditCard} l="Card" onClick={() => pick("card")} disabled={busy} />
+            </div>
+            <div className="mt-3 text-center text-[11px] text-muted-foreground">
+              Trip cannot complete without payment.
+            </div>
+          </>
+        )}
+
+        {cashWaiting && (
+          <div className="text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100">
+              <Banknote className="h-7 w-7 text-amber-600" />
+            </div>
+            <div className="mt-3 text-lg font-extrabold">Pay cash to the driver</div>
+            <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+            <div className="text-[12px] text-muted-foreground">Driver will confirm once cash is received.</div>
+            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for driver to confirm…
+            </div>
+          </div>
+        )}
+
+        {onlinePaid && (
+          <div className="text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+            </div>
+            <div className="mt-3 text-lg font-extrabold">Payment sent</div>
+            <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+            <div className="text-[12px] text-muted-foreground">Paid via {pMethod.toUpperCase()}. Waiting for driver to confirm.</div>
+            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Completing trip…
+            </div>
+          </div>
+        )}
+      </div>
+
+      {openMethod && (
+        <PaymentSheet
+          amount={Number(b.fare)}
+          note={`Cab fare ${bookingCode(b.id)}`}
+          title={openMethod === "upi" ? "Pay via UPI" : "Pay via Card"}
+          hideCash
+          busy={busy}
+          onClose={() => setOpenMethod(null)}
+          onConfirm={(m) => confirmOnline(m === "card" ? "card" : "upi")}
+        />
+      )}
+    </div>
+  );
+}
+
+function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-col items-center gap-1 rounded-xl border-2 border-border bg-background p-3 text-xs font-semibold transition hover:border-primary disabled:opacity-50"
+    >
+      <I className="h-5 w-5 text-primary" /> {l}
+    </button>
+  );
+}
+
 
 function DriverPhoto({ src, name }: { src?: string | null; name?: string | null }) {
   const [loaded, setLoaded] = useState(false);
