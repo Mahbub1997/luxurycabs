@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { acceptRide, rejectRide } from "@/lib/driver.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export const Route = createFileRoute("/driver/")({
   head: () => ({ meta: [{ title: "Driver — Luxury Cabs" }] }),
@@ -155,7 +156,10 @@ function DriverHome() {
         <div className="flex items-center gap-2 text-primary">
           <CredoomWordmark label="Luxury Cabs Driver" />
         </div>
-        <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground"><LogOut className="h-4 w-4" /> Sign out</button>
+        <div className="flex items-center gap-1">
+          <NotificationBell iconClassName="text-muted-foreground" />
+          <button onClick={signOut} className="flex items-center gap-1 text-xs text-muted-foreground"><LogOut className="h-4 w-4" /> Sign out</button>
+        </div>
       </header>
 
       <div className="p-4">

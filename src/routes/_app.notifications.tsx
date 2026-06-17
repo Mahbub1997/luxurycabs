@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BrandHeader } from "@/components/Brand";
 import { Bell, Inbox } from "lucide-react";
-import { getAlerts, type AppAlert } from "@/lib/notify";
+import { getAlerts, markAlertsRead, type AppAlert } from "@/lib/notify";
 
 export const Route = createFileRoute("/_app/notifications")({
   head: () => ({ meta: [{ title: "Notifications — Luxury Cabs" }] }),
@@ -15,6 +15,7 @@ function Notifications() {
   useEffect(() => {
     const load = () => setAlerts(getAlerts());
     load();
+    markAlertsRead();
     window.addEventListener("luxury-alerts-updated", load);
     window.addEventListener("storage", load);
     return () => {
