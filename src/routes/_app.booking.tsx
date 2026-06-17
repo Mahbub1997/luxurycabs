@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Crosshair,
+  Users, Snowflake, Crosshair, Wallet, Banknote, CreditCard, Plus,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -24,6 +24,9 @@ import { createBooking, pushRecentBooking, findActiveBookingId, isActiveBookingM
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { PaymentMethodsManager } from "@/components/PaymentMethodsManager";
+import { PaymentSheet } from "@/components/PaymentSheet";
+import { getPreferredPaymentMethod, type PaymentMethod } from "@/lib/payment-methods";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 
