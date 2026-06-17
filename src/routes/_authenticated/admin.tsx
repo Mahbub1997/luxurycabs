@@ -34,9 +34,12 @@ function AdminShell() {
         <div className="flex items-center gap-2 text-primary">
           <CredoomWordmark label="Luxury Cabs Admin" />
         </div>
-        <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-          <LogOut className="h-4 w-4" /> Sign out
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell iconClassName="text-muted-foreground" />
+          <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
       </header>
       <nav className="sticky top-[49px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-card px-2 py-2">
         {tabs.map(({ to, label, Icon }) => {
