@@ -219,18 +219,12 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
         }
         const heading = driverHeadingRef.current;
 
-        // Build a car-shaped Symbol that rotates natively (no icon reload flicker).
-        const carSymbol: google.maps.Symbol = {
-          // Stylised top-down car pointing "up" (north). Map rotation aligns
-          // heading 0° = north, increasing clockwise — matches our bearing.
-          path: "M0,-14 L6,-8 L6,8 L4,12 L-4,12 L-6,8 L-6,-8 Z",
-          fillColor: "#16a34a",
-          fillOpacity: 1,
-          strokeColor: "#0f172a",
-          strokeWeight: 1.5,
-          scale: 1.5,
-          rotation: heading,
-          anchor: new g.maps.Point(0, 0),
+        // Build a real top-view car icon with number plate tag, rotated to heading.
+        const carUrl = rotatedCarSvgDataUrl(driverPlate || "", driverVehicleKind, heading);
+        const carIcon: google.maps.Icon = {
+          url: carUrl,
+          scaledSize: new g.maps.Size(96, 96),
+          anchor: new g.maps.Point(48, 48),
         };
 
         const isFirst = !driverMarkerRef.current;
@@ -238,13 +232,13 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
           driverMarkerRef.current = new g.maps.Marker({
             map: mapRef.current,
             position: target,
-            icon: carSymbol,
+            icon: carIcon,
             zIndex: 5000,
             optimized: false,
           });
           driverPosRef.current = target;
         } else {
-          driverMarkerRef.current.setIcon(carSymbol);
+          driverMarkerRef.current.setIcon(carIcon);
         }
         lastDriverRef.current = target;
 
