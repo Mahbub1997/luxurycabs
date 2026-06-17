@@ -3,6 +3,7 @@ import { ClipboardList, Users, LogOut, UserCheck, Activity, Map as MapIcon, User
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminShell,
