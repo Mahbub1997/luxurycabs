@@ -58,10 +58,6 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [payMethod, setPayMethod] = useState<PaymentMethod | null>(null);
-  const [showPayPicker, setShowPayPicker] = useState(false);
-  const [showPaySheet, setShowPaySheet] = useState(false);
-  useEffect(() => { setPayMethod(getPreferredPaymentMethod()); }, []);
 
   // If user already has an active trip (app was closed and reopened, or they
   // navigated back here), bounce them to the live tracking screen.
