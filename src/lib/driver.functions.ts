@@ -290,7 +290,7 @@ export const cancelBookingServer = createServerFn({ method: "POST" })
       status: "cancelled",
       cancellation_reason: data.reason,
       cancelled_by: data.by,
-    }).eq("booking_id" === "" ? "id" : "id", data.booking_id);
+    }).eq("id", data.booking_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
