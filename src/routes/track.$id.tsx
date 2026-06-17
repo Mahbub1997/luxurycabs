@@ -310,6 +310,14 @@ function CancelledBooking({ b, onHome }: { b: Booking; onHome: () => void }) {
         </div>
         <h2 className="mt-4 text-xl font-extrabold text-destructive">Booking cancelled</h2>
         <p className="mt-1 text-sm text-muted-foreground">Your booking {code} has been cancelled.</p>
+        {(b as any).cancellation_reason && (
+          <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-left text-xs">
+            <div className="font-semibold text-destructive">
+              Cancelled {(b as any).cancelled_by ? `by ${(b as any).cancelled_by}` : ""}
+            </div>
+            <div className="mt-1 text-foreground/80">{(b as any).cancellation_reason}</div>
+          </div>
+        )}
       </div>
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
         <div className="flex items-start gap-3">
