@@ -602,8 +602,8 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             </button>
           </div>
 
-          {/* OTP block (only before in-trip) */}
-          {phase !== "in_trip" && phase !== "completing" && (
+          {/* OTP block (only before in-trip, hidden in share view) */}
+          {!shareView && phase !== "in_trip" && phase !== "completing" && (
             <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-3">
               <div className="flex items-center gap-2 text-xs font-bold text-primary">
                 <ShieldCheck className="h-4 w-4" /> Trip Start OTP
