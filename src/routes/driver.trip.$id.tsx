@@ -200,6 +200,20 @@ function DriverTrip() {
     finally { setBusy(false); }
   }
 
+  // Auto-complete when the customer has paid online (UPI / Card).
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (!b || phase !== "payment" || busy || autoRanRef.current) return;
+    const pm = (b.payment_method ?? "").toLowerCase();
+    const ps = (b.payment_status ?? "").toLowerCase();
+    if ((pm === "upi" || pm === "card") && ps === "paid") {
+      autoRanRef.current = true;
+      collectAndComplete(pm as "upi" | "card");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [b?.payment_method, b?.payment_status, phase]);
+
+
   // Memoize map endpoints so RouteMap doesn't re-init every render (flicker fix)
   const mapPickup = useMemo(
     () => (b ? { lat: b.pickup_lat, lng: b.pickup_lng } : null),
