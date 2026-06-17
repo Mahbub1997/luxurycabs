@@ -28,6 +28,7 @@ function DriverTrip() {
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
 
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
