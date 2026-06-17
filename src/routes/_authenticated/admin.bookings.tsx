@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone } from "lucide-react";
+import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
-import { assignBookingToDriver } from "@/lib/driver.functions";
+import { assignBookingToDriver, cancelBookingServer } from "@/lib/driver.functions";
+import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/bookings")({
