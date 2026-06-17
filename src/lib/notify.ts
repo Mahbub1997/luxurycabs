@@ -31,6 +31,20 @@ export function getAlerts(): AppAlert[] {
   try { return JSON.parse(localStorage.getItem(ALERTS_KEY) ?? "[]") as AppAlert[]; } catch { return []; }
 }
 
+const SEEN_KEY = "luxury_alerts_seen_at";
+
+export function getUnreadCount(): number {
+  if (typeof window === "undefined") return 0;
+  const seen = Number(localStorage.getItem(SEEN_KEY) ?? "0");
+  return getAlerts().filter((a) => new Date(a.createdAt).getTime() > seen).length;
+}
+
+export function markAlertsRead() {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(SEEN_KEY, String(Date.now()));
+  window.dispatchEvent(new CustomEvent("luxury-alerts-updated"));
+}
+
 export async function ensureNotifyPermission(): Promise<boolean> {
   if (typeof window === "undefined" || !("Notification" in window)) return false;
   if (Notification.permission === "granted") return true;
