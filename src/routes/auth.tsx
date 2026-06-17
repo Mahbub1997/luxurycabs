@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
+import { claimSession } from "@/lib/session-guard";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
 import { CredoomWordmark } from "@/components/Brand";
