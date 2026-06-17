@@ -675,34 +675,14 @@ function Booking() {
             </div>
 
 
-            {/* Payment method selector */}
-            <button
-              type="button"
-              onClick={() => setShowPayPicker(true)}
-              className={cn(
-                "mt-3 flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-4 text-left",
-                payMethod ? "border-border" : "border-primary"
-              )}
-            >
-              {payMethod?.kind === "upi" ? <Wallet className="h-5 w-5 text-primary" />
-                : payMethod?.kind === "card" ? <CreditCard className="h-5 w-5 text-primary" />
-                : payMethod?.kind === "cash" ? <Banknote className="h-5 w-5 text-primary" />
-                : <Plus className="h-5 w-5 text-primary" />}
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Payment Method</div>
-                <div className="text-sm font-bold">
-                  {payMethod ? payMethod.label : "Add Payment Method"}
-                </div>
-                {payMethod?.kind === "upi" && <div className="text-[11px] text-muted-foreground truncate">{payMethod.upiId}</div>}
-                {payMethod?.kind === "card" && <div className="text-[11px] text-muted-foreground">{payMethod.cardBrand} •••• {payMethod.cardLast4}</div>}
-              </div>
-              <span className="text-xs font-semibold text-primary">{payMethod ? "Change" : "Add"}</span>
-            </button>
-
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
               <span className="h-4 w-px bg-border" />
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Free cancellation</span>
+            </div>
+
+            <div className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              Choose your payment method (Cash / UPI / Card) after the driver reaches the drop location.
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -717,34 +697,13 @@ function Booking() {
                 onClick={() => handleBook()}
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : payMethod && payMethod.kind !== "cash" ? <>Pay & Confirm <ArrowRight className="h-4 w-4" /></> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
               </button>
             </div>
           </div>
         </SheetContent>
       </Sheet>
 
-      {showPayPicker && (
-        <PaymentMethodsManager
-          pickerOnly
-          onPick={(m) => setPayMethod(m)}
-          onClose={() => { setShowPayPicker(false); setPayMethod(getPreferredPaymentMethod()); }}
-        />
-      )}
-
-      {showPaySheet && payMethod && (
-        <PaymentSheet
-          amount={estimatedFare}
-          note={`Cab fare`}
-          title={`Pay via ${payMethod.kind === "upi" ? "UPI" : "Card"}`}
-          hideCash
-          onClose={() => setShowPaySheet(false)}
-          onConfirm={async () => {
-            setShowPaySheet(false);
-            await handleBook({ paidOnline: true });
-          }}
-        />
-      )}
     </div>
   );
 }
