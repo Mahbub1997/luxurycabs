@@ -28,6 +28,7 @@ function DriverTrip() {
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
 
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
@@ -177,15 +178,43 @@ function DriverTrip() {
     finally { setBusy(false); }
   }
 
-  if (!b) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  // Memoize map endpoints so RouteMap doesn't re-init every render (flicker fix)
+  const mapPickup = useMemo(
+    () => (b ? { lat: b.pickup_lat, lng: b.pickup_lng } : null),
+    [b?.pickup_lat, b?.pickup_lng]
+  );
+  const mapDrop = useMemo(
+    () => (b ? { lat: b.drop_lat, lng: b.drop_lng } : null),
+    [b?.drop_lat, b?.drop_lng]
+  );
+  const mapOrigin = useMemo(
+    () => (phase === "to_pickup" ? (pos ?? mapPickup) : mapPickup),
+    [phase, pos?.lat, pos?.lng, mapPickup]
+  );
+  const mapDest = useMemo(
+    () => (phase === "in_trip" ? mapDrop : mapPickup),
+    [phase, mapPickup, mapDrop]
+  );
 
-  const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
-  const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
+  if (!b || !mapPickup || !mapDrop) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
   const showMap = phase === "to_pickup" || phase === "in_trip";
-  const mapEndpoints = phase === "in_trip"
-    ? { pickup: mapPickup, drop: mapDrop }
-    : { pickup: pos ?? mapPickup, drop: mapPickup };
   const destLabel = phase === "in_trip" ? "drop" : "pickup";
+
+  async function doCancel(reason: string) {
+    if (!b) return;
+    setCancelling(true);
+    try {
+      await cancelBookingServer({ data: { booking_id: b.id, reason, by: "driver" } });
+      toast.success("Trip cancelled");
+      navigate({ to: "/driver" });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel");
+    } finally {
+      setCancelling(false);
+      setShowCancel(false);
+    }
+  }
 
   // Full-screen layout while driving
   if (showMap) {
@@ -194,8 +223,8 @@ function DriverTrip() {
         {/* Full-screen map */}
         <div className="absolute inset-0">
           <RouteMap
-            pickup={mapEndpoints.pickup}
-            drop={mapEndpoints.drop}
+            pickup={mapOrigin!}
+            drop={mapDest!}
             polyline={poly}
             driver={pos}
             height="100%"
@@ -214,6 +243,11 @@ function DriverTrip() {
               <ClockIcon className="h-3 w-3" /> {etaMin} min
             </div>
           )}
+          <button
+            onClick={() => setShowCancel(true)}
+            className="rounded-full p-2 text-rose-600 hover:bg-rose-50"
+            title="Cancel trip"
+          ><XCircle className="h-5 w-5" /></button>
         </header>
 
         {/* Bottom sheet */}
@@ -251,6 +285,14 @@ function DriverTrip() {
             >Reached {destLabel}</button>
           </div>
         </div>
+
+        {showCancel && (
+          <CancelReasonModal
+            title="Cancel this trip?"
+            onCancel={() => setShowCancel(false)}
+            onConfirm={doCancel}
+          />
+        )}
       </div>
     );
   }
@@ -297,36 +339,14 @@ function DriverTrip() {
 
       {/* Payment modal popup */}
       {phase === "payment" && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border p-5 animate-in slide-in-from-bottom-4 fade-in">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <div className="mt-3 text-center text-base font-bold">Trip Complete</div>
-            <div className="mt-1 text-center text-xs text-muted-foreground">Reached drop location. Collect payment to finish.</div>
-            <div className="mt-4 text-center text-3xl font-bold text-primary">₹{b.fare}</div>
-
-            <div className="mt-4 text-center text-xs font-semibold text-muted-foreground">Payment method</div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {[
-                { id: "cash" as const, I: Banknote, l: "Cash" },
-                { id: "upi" as const, I: Wallet, l: "UPI" },
-                { id: "card" as const, I: CreditCard, l: "Card" },
-              ].map(({ id, I, l }) => (
-                <button key={id} onClick={() => setPay(id)} className={cn("flex flex-col items-center gap-1 rounded-xl border-2 bg-card p-3 text-xs font-semibold",
-                  pay === id ? "border-primary text-primary" : "border-border text-muted-foreground")}>
-                  <I className="h-5 w-5" />{l}
-                </button>
-              ))}
-            </div>
-            <button onClick={collectAndComplete} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete trip</>}
-            </button>
-            {pay === "cash" && (
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">10% platform commission will be deducted from your wallet.</p>
-            )}
-          </div>
-        </div>
+        <PaymentSheet
+          amount={Number(b.fare)}
+          note={`Cab fare ${b.id.slice(0,8)}`}
+          txnRef={b.id}
+          busy={busy}
+          title="Collect payment"
+          onConfirm={(m) => collectAndComplete(m)}
+        />
       )}
     </div>
   );
