@@ -62,6 +62,8 @@ function DriverHome() {
   const [loading, setLoading] = useState(true);
   const seenRef = useRef<Set<string>>(new Set());
 
+  useSessionGuard("drivers", driver?.user_id ? { column: "user_id", value: driver.user_id } : null, "/driver/login");
+
   async function loadDriver(uid: string) {
     const { data } = await supabase.from("drivers").select("*").eq("user_id", uid).maybeSingle();
     setDriver(data);
