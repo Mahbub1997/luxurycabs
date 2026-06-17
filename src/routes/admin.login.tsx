@@ -9,6 +9,7 @@ import {
   MAIN_ADMIN_EMAIL,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import { claimSession } from "@/lib/session-guard";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({ meta: [{ title: "Admin — Luxury Cabs" }] }),
