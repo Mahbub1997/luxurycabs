@@ -504,6 +504,8 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
           drop={mapDrop}
           polyline={polylineForMap}
           driver={driver}
+          driverPlate={b.vehicle_number ?? undefined}
+          driverVehicleKind={b.vehicle_type === "suv" ? "suv" : "sedan"}
           height="100%"
           fitKey={fitKey}
         />
