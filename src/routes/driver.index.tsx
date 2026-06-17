@@ -7,6 +7,7 @@ import { acceptRide, rejectRide } from "@/lib/driver.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
+import { VehicleIcon } from "@/components/VehicleIcon";
 
 export const Route = createFileRoute("/driver/")({
   head: () => ({ meta: [{ title: "Driver — Luxury Cabs" }] }),
@@ -164,13 +165,21 @@ function DriverHome() {
 
       <div className="p-4">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <div className="font-bold">{driver.name}</div>
               <div className="text-xs text-muted-foreground">{driver.phone}</div>
               <div className="text-[11px] text-muted-foreground">{driver.vehicle_type} · {driver.vehicle_model || "—"} · {driver.vehicle_number || "—"}</div>
+              <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", statusColor)}>{driver.status}</span>
             </div>
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", statusColor)}>{driver.status}</span>
+            <VehicleIcon
+              plate={driver.vehicle_number || "—"}
+              online={!!driver.is_online}
+              kind={driver.vehicle_type === "suv" ? "suv" : "sedan"}
+              width={84}
+              height={70}
+              className="shrink-0"
+            />
           </div>
 
           {driver.status !== "approved" && (

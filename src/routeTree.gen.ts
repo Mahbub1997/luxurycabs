@@ -35,6 +35,7 @@ import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin.customers'
 import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
+import { Route as AuthenticatedAdminAddAdminRouteImport } from './routes/_authenticated/admin.add-admin'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -170,6 +171,12 @@ const AuthenticatedAdminApprovalsRoute =
     path: '/approvals',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAddAdminRoute =
+  AuthenticatedAdminAddAdminRouteImport.update({
+    id: '/add-admin',
+    path: '/add-admin',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver': typeof DriverIndexRoute
+  '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
@@ -242,6 +251,7 @@ export interface FileRoutesById {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/_authenticated/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/admin/add-admin'
     | '/admin/approvals'
     | '/admin/bookings'
     | '/admin/customers'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver'
+    | '/admin/add-admin'
     | '/admin/approvals'
     | '/admin/bookings'
     | '/admin/customers'
@@ -324,6 +336,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/_authenticated/admin/add-admin'
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/bookings'
     | '/_authenticated/admin/customers'
@@ -535,10 +548,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminApprovalsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/add-admin': {
+      id: '/_authenticated/admin/add-admin'
+      path: '/add-admin'
+      fullPath: '/admin/add-admin'
+      preLoaderRoute: typeof AuthenticatedAdminAddAdminRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAddAdminRoute: typeof AuthenticatedAdminAddAdminRoute
   AuthenticatedAdminApprovalsRoute: typeof AuthenticatedAdminApprovalsRoute
   AuthenticatedAdminBookingsRoute: typeof AuthenticatedAdminBookingsRoute
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
@@ -550,6 +571,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAddAdminRoute: AuthenticatedAdminAddAdminRoute,
   AuthenticatedAdminApprovalsRoute: AuthenticatedAdminApprovalsRoute,
   AuthenticatedAdminBookingsRoute: AuthenticatedAdminBookingsRoute,
   AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
