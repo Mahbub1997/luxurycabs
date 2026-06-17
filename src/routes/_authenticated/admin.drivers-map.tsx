@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
+import { vehicleIconSvg } from "@/components/VehicleIcon";
 import { Loader2, Car } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/drivers-map")({
