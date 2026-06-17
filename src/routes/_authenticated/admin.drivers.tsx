@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Wallet, X, Check, XCircle, FileText, Loader2, Search } from "lucide-react";
+import { Wallet, X, Check, XCircle, FileText, Loader2, Search, Trash2, Ban } from "lucide-react";
 import { decideWithdrawal, updateDriverStatus, getDriverDocUrls } from "@/lib/admin.functions";
+import { deleteDriverAccount } from "@/lib/driver.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
