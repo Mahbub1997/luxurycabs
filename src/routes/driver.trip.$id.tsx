@@ -166,11 +166,11 @@ function DriverTrip() {
     setPhase("payment");
   }
 
-  async function collectAndComplete() {
+  async function collectAndComplete(method: "cash" | "upi" | "card") {
     if (!b || busy) return;
     setBusy(true);
     try {
-      const r = await completeRide({ data: { booking_id: b.id, payment_method: pay } });
+      const r = await completeRide({ data: { booking_id: b.id, payment_method: method } });
       toast.success(`Trip complete. ₹${r.credit} credited.`);
       navigate({ to: "/driver" });
     } catch (e: any) { toast.error(e.message); }
