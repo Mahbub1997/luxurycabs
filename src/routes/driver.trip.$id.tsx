@@ -41,9 +41,23 @@ function DriverTrip() {
   useEffect(() => {
     supabase.from("bookings").select("*").eq("id", id).maybeSingle().then(({ data }) => {
       setB(data);
-      if (data?.status === "in_progress") setPhase("in_trip");
+      if (data?.status === "in_progress") {
+        const ps = (data?.payment_status ?? "").toLowerCase();
+        if (ps === "awaiting" || ps === "cash_pending" || ps === "paid") setPhase("payment");
+        else setPhase("in_trip");
+      }
     });
+    // Live booking updates — needed so payment_method / payment_status changes
+    // pushed by the customer flow through to the driver UI in realtime.
+    const ch = supabase
+      .channel(`driver-booking:${id}`)
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${id}` },
+        (p) => setB(p.new as any))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [id]);
+
 
   // Drive to PICKUP — REAL device GPS. Live-pushes to customer + admin.
   useEffect(() => {
@@ -163,9 +177,17 @@ function DriverTrip() {
 
   async function reachedDrop() {
     if (!b) return;
-    await supabase.from("bookings").update({ driver_lat: b.drop_lat, driver_lng: b.drop_lng }).eq("id", b.id);
+    // Flip booking into "awaiting" — the customer app instantly opens the
+    // payment chooser (Cash / UPI / Card). Driver waits for the choice.
+    await supabase.from("bookings").update({
+      driver_lat: b.drop_lat,
+      driver_lng: b.drop_lng,
+      payment_status: "awaiting",
+      payment_method: "",
+    } as any).eq("id", b.id);
     setPhase("payment");
   }
+
 
   async function collectAndComplete(method: "cash" | "upi" | "card") {
     if (!b || busy) return;
@@ -177,6 +199,20 @@ function DriverTrip() {
     } catch (e: any) { toast.error(e.message); }
     finally { setBusy(false); }
   }
+
+  // Auto-complete when the customer has paid online (UPI / Card).
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (!b || phase !== "payment" || busy || autoRanRef.current) return;
+    const pm = (b.payment_method ?? "").toLowerCase();
+    const ps = (b.payment_status ?? "").toLowerCase();
+    if ((pm === "upi" || pm === "card") && ps === "paid") {
+      autoRanRef.current = true;
+      collectAndComplete(pm as "upi" | "card");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [b?.payment_method, b?.payment_status, phase]);
+
 
   // Memoize map endpoints so RouteMap doesn't re-init every render (flicker fix)
   const mapPickup = useMemo(
@@ -336,48 +372,64 @@ function DriverTrip() {
         )}
       </div>
 
-      {/* Payment phase — behaviour depends on what user picked */}
-      {phase === "payment" && (
-        (b.payment_method === "upi" || b.payment_method === "card") && b.payment_status === "paid" ? (
+      {/* Payment phase — driver waits for / responds to customer choice */}
+      {phase === "payment" && (() => {
+        const pm = (b.payment_method ?? "").toLowerCase();
+        const ps = (b.payment_status ?? "").toLowerCase();
+        const isOnlinePaid = (pm === "upi" || pm === "card") && ps === "paid";
+        const isCash = pm === "cash";
+        return (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
             <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
-                <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-              </div>
-              <div className="mt-3 text-base font-bold">Payment Completed (Online)</div>
-              <div className="text-[12px] text-muted-foreground">
-                Paid via {b.payment_method === "upi" ? "UPI" : "Card"} · ₹{Number(b.fare).toFixed(2)}
-              </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">No cash to collect.</div>
-              <button
-                disabled={busy}
-                onClick={() => collectAndComplete((b.payment_method as "upi" | "card") ?? "upi")}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete Trip</>}
-              </button>
+              {!pm && !isOnlinePaid && (
+                <>
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft">
+                    <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  </div>
+                  <div className="mt-3 text-base font-bold">Waiting for customer</div>
+                  <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    Customer is choosing payment method (Cash / UPI / Card).
+                  </div>
+                </>
+              )}
+
+              {isCash && (
+                <>
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100">
+                    <KeyRound className="h-7 w-7 text-amber-600" />
+                  </div>
+                  <div className="mt-3 text-base font-bold">Collect Cash</div>
+                  <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+                  <div className="text-[11px] text-muted-foreground">Customer selected Cash. Collect this amount.</div>
+                  <button
+                    disabled={busy}
+                    onClick={() => collectAndComplete("cash")}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Payment Complete</>}
+                  </button>
+                </>
+              )}
+
+              {isOnlinePaid && (
+                <>
+                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
+                    <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                  </div>
+                  <div className="mt-3 text-base font-bold">Payment Received</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    Paid via {pm.toUpperCase()} · ₹{Number(b.fare).toFixed(2)}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">Completing trip…</div>
+                  {busy && <Loader2 className="mx-auto mt-3 h-5 w-5 animate-spin text-primary" />}
+                </>
+              )}
             </div>
           </div>
-        ) : (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-            <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100">
-                <KeyRound className="h-7 w-7 text-amber-600" />
-              </div>
-              <div className="mt-3 text-base font-bold">Collect Cash</div>
-              <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground">Collect this amount from the customer.</div>
-              <button
-                disabled={busy}
-                onClick={() => collectAndComplete("cash")}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Cash Received · Complete Trip</>}
-              </button>
-            </div>
-          </div>
-        )
-      )}
+        );
+      })()}
     </div>
+
   );
 }

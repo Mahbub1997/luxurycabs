@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Crosshair, Wallet, Banknote, CreditCard, Plus,
+  Users, Snowflake, Crosshair,
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
@@ -24,9 +24,6 @@ import { createBooking, pushRecentBooking, findActiveBookingId, isActiveBookingM
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { PaymentMethodsManager } from "@/components/PaymentMethodsManager";
-import { PaymentSheet } from "@/components/PaymentSheet";
-import { getPreferredPaymentMethod, type PaymentMethod } from "@/lib/payment-methods";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 
@@ -61,10 +58,6 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [payMethod, setPayMethod] = useState<PaymentMethod | null>(null);
-  const [showPayPicker, setShowPayPicker] = useState(false);
-  const [showPaySheet, setShowPaySheet] = useState(false);
-  useEffect(() => { setPayMethod(getPreferredPaymentMethod()); }, []);
 
   // If user already has an active trip (app was closed and reopened, or they
   // navigated back here), bounce them to the live tracking screen.
@@ -162,16 +155,10 @@ function Booking() {
     setVehicleSheetOpen(false);
   }
 
-  async function handleBook(opts?: { paidOnline?: boolean }) {
+  async function handleBook() {
     if (submitting) return;
     if (tab !== "rental" && (!pickup || !drop || !routeInfo)) return;
     if (tab === "rental" && (!pickup || !drop)) return;
-    if (!payMethod) { setShowPayPicker(true); return; }
-    // For UPI / Card we open the PaymentSheet first to capture payment, then re-enter handleBook.
-    if (!opts?.paidOnline && (payMethod.kind === "upi" || payMethod.kind === "card")) {
-      setShowPaySheet(true);
-      return;
-    }
     setSubmitting(true);
     try {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId);
@@ -195,8 +182,7 @@ function Booking() {
 
       const profile = getProfile();
       const { data: authData } = await supabase.auth.getUser();
-      const payment_method = payMethod.kind; // 'cash' | 'upi' | 'card'
-      const payment_status = opts?.paidOnline ? "paid" : "pending";
+      // Payment method is chosen by the customer AT DROP, not during booking.
       const booking = await createBooking({
         trip_type: tab,
         trip_mode: tab === "outstation" ? "round" : null,
@@ -217,8 +203,8 @@ function Booking() {
         customer_name: profile?.name ?? authData.user?.user_metadata?.name ?? null,
         customer_phone: profile?.phone ?? authData.user?.phone ?? null,
         user_id: authData.user?.id ?? null,
-        payment_method,
-        payment_status,
+        payment_method: "",
+        payment_status: "pending",
       } as any);
       pushRecentBooking(booking.id);
       clearMinimizedActiveBooking();
@@ -228,6 +214,7 @@ function Booking() {
       alert("Could not create booking. Please try again.");
     } finally { setSubmitting(false); }
   }
+
 
   const tariffLabel =
     tab === "outstation"
@@ -688,34 +675,14 @@ function Booking() {
             </div>
 
 
-            {/* Payment method selector */}
-            <button
-              type="button"
-              onClick={() => setShowPayPicker(true)}
-              className={cn(
-                "mt-3 flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-4 text-left",
-                payMethod ? "border-border" : "border-primary"
-              )}
-            >
-              {payMethod?.kind === "upi" ? <Wallet className="h-5 w-5 text-primary" />
-                : payMethod?.kind === "card" ? <CreditCard className="h-5 w-5 text-primary" />
-                : payMethod?.kind === "cash" ? <Banknote className="h-5 w-5 text-primary" />
-                : <Plus className="h-5 w-5 text-primary" />}
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Payment Method</div>
-                <div className="text-sm font-bold">
-                  {payMethod ? payMethod.label : "Add Payment Method"}
-                </div>
-                {payMethod?.kind === "upi" && <div className="text-[11px] text-muted-foreground truncate">{payMethod.upiId}</div>}
-                {payMethod?.kind === "card" && <div className="text-[11px] text-muted-foreground">{payMethod.cardBrand} •••• {payMethod.cardLast4}</div>}
-              </div>
-              <span className="text-xs font-semibold text-primary">{payMethod ? "Change" : "Add"}</span>
-            </button>
-
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
               <span className="h-4 w-px bg-border" />
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> Free cancellation</span>
+            </div>
+
+            <div className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              Choose your payment method (Cash / UPI / Card) after the driver reaches the drop location.
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -730,34 +697,13 @@ function Booking() {
                 onClick={() => handleBook()}
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : payMethod && payMethod.kind !== "cash" ? <>Pay & Confirm <ArrowRight className="h-4 w-4" /></> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
               </button>
             </div>
           </div>
         </SheetContent>
       </Sheet>
 
-      {showPayPicker && (
-        <PaymentMethodsManager
-          pickerOnly
-          onPick={(m) => setPayMethod(m)}
-          onClose={() => { setShowPayPicker(false); setPayMethod(getPreferredPaymentMethod()); }}
-        />
-      )}
-
-      {showPaySheet && payMethod && (
-        <PaymentSheet
-          amount={estimatedFare}
-          note={`Cab fare`}
-          title={`Pay via ${payMethod.kind === "upi" ? "UPI" : "Card"}`}
-          hideCash
-          onClose={() => setShowPaySheet(false)}
-          onConfirm={async () => {
-            setShowPaySheet(false);
-            await handleBook({ paidOnline: true });
-          }}
-        />
-      )}
     </div>
   );
 }
