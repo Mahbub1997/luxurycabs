@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { RouteMap } from "@/components/RouteMap";
-import { PaymentSheet } from "@/components/PaymentSheet";
+// PaymentSheet no longer needed — payment method is decided up-front by the customer.
 import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { cancelBookingServer } from "@/lib/driver.functions";
 type LatLng = { lat: number; lng: number };
@@ -337,16 +337,47 @@ function DriverTrip() {
         )}
       </div>
 
-      {/* Payment modal popup */}
+      {/* Payment phase — behaviour depends on what user picked */}
       {phase === "payment" && (
-        <PaymentSheet
-          amount={Number(b.fare)}
-          note={`Cab fare ${b.id.slice(0,8)}`}
-          txnRef={b.id}
-          busy={busy}
-          title="Collect payment"
-          onConfirm={(m) => collectAndComplete(m)}
-        />
+        (b.payment_method === "upi" || b.payment_method === "card") && b.payment_status === "paid" ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+            <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+              </div>
+              <div className="mt-3 text-base font-bold">Payment Completed (Online)</div>
+              <div className="text-[12px] text-muted-foreground">
+                Paid via {b.payment_method === "upi" ? "UPI" : "Card"} · ₹{Number(b.fare).toFixed(2)}
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">No cash to collect.</div>
+              <button
+                disabled={busy}
+                onClick={() => collectAndComplete((b.payment_method as "upi" | "card") ?? "upi")}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete Trip</>}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+            <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-amber-100">
+                <KeyRound className="h-7 w-7 text-amber-600" />
+              </div>
+              <div className="mt-3 text-base font-bold">Collect Cash</div>
+              <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground">Collect this amount from the customer.</div>
+              <button
+                disabled={busy}
+                onClick={() => collectAndComplete("cash")}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Cash Received · Complete Trip</>}
+              </button>
+            </div>
+          </div>
+        )
       )}
     </div>
   );
