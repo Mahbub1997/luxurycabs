@@ -339,36 +339,14 @@ function DriverTrip() {
 
       {/* Payment modal popup */}
       {phase === "payment" && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-card shadow-2xl border border-border p-5 animate-in slide-in-from-bottom-4 fade-in">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <div className="mt-3 text-center text-base font-bold">Trip Complete</div>
-            <div className="mt-1 text-center text-xs text-muted-foreground">Reached drop location. Collect payment to finish.</div>
-            <div className="mt-4 text-center text-3xl font-bold text-primary">₹{b.fare}</div>
-
-            <div className="mt-4 text-center text-xs font-semibold text-muted-foreground">Payment method</div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {[
-                { id: "cash" as const, I: Banknote, l: "Cash" },
-                { id: "upi" as const, I: Wallet, l: "UPI" },
-                { id: "card" as const, I: CreditCard, l: "Card" },
-              ].map(({ id, I, l }) => (
-                <button key={id} onClick={() => setPay(id)} className={cn("flex flex-col items-center gap-1 rounded-xl border-2 bg-card p-3 text-xs font-semibold",
-                  pay === id ? "border-primary text-primary" : "border-border text-muted-foreground")}>
-                  <I className="h-5 w-5" />{l}
-                </button>
-              ))}
-            </div>
-            <button onClick={collectAndComplete} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Complete trip</>}
-            </button>
-            {pay === "cash" && (
-              <p className="mt-2 text-center text-[11px] text-muted-foreground">10% platform commission will be deducted from your wallet.</p>
-            )}
-          </div>
-        </div>
+        <PaymentSheet
+          amount={Number(b.fare)}
+          note={`Cab fare ${b.id.slice(0,8)}`}
+          txnRef={b.id}
+          busy={busy}
+          title="Collect payment"
+          onConfirm={(m) => collectAndComplete(m)}
+        />
       )}
     </div>
   );
