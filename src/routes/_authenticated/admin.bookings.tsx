@@ -147,12 +147,14 @@ function AssignModal({ booking, onClose }: { booking: any; onClose: () => void }
 
 function BookingCard({ b }: { b: any }) {
   const [assigning, setAssigning] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const statusColor =
 
     b.status === "completed" ? "bg-emerald-100 text-emerald-700"
     : b.status === "cancelled" ? "bg-rose-100 text-rose-700"
     : b.status === "pending" ? "bg-amber-100 text-amber-700"
     : "bg-sky-100 text-sky-700";
+  const isActive = ["pending", "driver_assigned", "driver_arrived", "in_progress"].includes(b.status);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
