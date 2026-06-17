@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
 import { VehicleIcon } from "@/components/VehicleIcon";
+import { useSessionGuard } from "@/lib/session-guard";
 
 export const Route = createFileRoute("/driver/")({
   head: () => ({ meta: [{ title: "Driver — Luxury Cabs" }] }),
@@ -60,6 +61,8 @@ function DriverHome() {
   const [incoming, setIncoming] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const seenRef = useRef<Set<string>>(new Set());
+
+  useSessionGuard("drivers", driver?.user_id ? { column: "user_id", value: driver.user_id } : null, "/driver/login");
 
   async function loadDriver(uid: string) {
     const { data } = await supabase.from("drivers").select("*").eq("user_id", uid).maybeSingle();

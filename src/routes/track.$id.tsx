@@ -9,6 +9,7 @@ import {
 import { motion } from "framer-motion";
 import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
+import { PlateBadge } from "@/components/VehicleIcon";
 import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
@@ -366,6 +367,13 @@ function ActionBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; 
 
 // ---------- Live tracking (driver assigned) ----------
 
+/** Public share viewers (link opened with `?share=1`) only get live map +
+ *  addresses + call + chat. No OTP, fare, cancel, payment overlay, share button. */
+function isShareView(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("share") === "1";
+}
+
 function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => void; onCancelled: (b: Booking) => void }) {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<LatLng | null>(
@@ -383,6 +391,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   const [secsLeft, setSecsLeft] = useState(300);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const shareView = isShareView();
 
   // Memoize map endpoints so RouteMap doesn't re-init on every parent render (flicker fix)
   const mapPickup = useMemo(() => ({ lat: b.pickup_lat, lng: b.pickup_lng }), [b.pickup_lat, b.pickup_lng]);
@@ -479,9 +488,9 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   }
 
   function shareTrip() {
-    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
+    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}?share=1` : "";
     const text = encodeURIComponent(
-      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
+      `Track my Luxury Cabs ride ${code} live: ${url}`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
   }
@@ -570,15 +579,17 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
                 <span className="font-semibold text-foreground">{b.driver_rating ?? "—"}</span>
                 <span>({b.driver_trips ?? 0} trips)</span>
               </div>
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{b.vehicle_number ?? "—"}</span>
-                <span> · {b.vehicle_model ?? "—"}</span>
+              <div className="mt-1 flex items-center gap-2">
+                <PlateBadge plate={b.vehicle_number} />
+                <span className="truncate text-xs text-muted-foreground">{b.vehicle_model ?? "—"}</span>
               </div>
             </div>
-            <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
-              <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
-            </div>
+            {!shareView && (
+              <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
+                <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
+              </div>
+            )}
           </div>
 
           {/* Call / Chat */}
@@ -591,8 +602,8 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             </button>
           </div>
 
-          {/* OTP block (only before in-trip) */}
-          {phase !== "in_trip" && phase !== "completing" && (
+          {/* OTP block (only before in-trip, hidden in share view) */}
+          {!shareView && phase !== "in_trip" && phase !== "completing" && (
             <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-3">
               <div className="flex items-center gap-2 text-xs font-bold text-primary">
                 <ShieldCheck className="h-4 w-4" /> Trip Start OTP
@@ -631,29 +642,31 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             </div>
             <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
               <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
-              <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>
+              {!shareView && <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>}
             </div>
           </div>
 
-          {/* Share / Cancel */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={shareTrip}
-              className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
-            >
-              <Share2 className="h-4 w-4" /> Share
-            </button>
-            <button
-              onClick={() => setShowCancel(true)}
-              className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
-            >
-              <XCircle className="h-4 w-4" /> Cancel
-            </button>
-          </div>
+          {/* Share / Cancel — hidden in share view */}
+          {!shareView && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={shareTrip}
+                className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
+              >
+                <Share2 className="h-4 w-4" /> Share
+              </button>
+              <button
+                onClick={() => setShowCancel(true)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
+              >
+                <XCircle className="h-4 w-4" /> Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {showCancel && (
+      {showCancel && !shareView && (
         <CancelReasonModal
           title="Cancel this ride?"
           onCancel={() => setShowCancel(false)}
@@ -661,7 +674,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
         />
       )}
 
-      <UserPaymentOverlay b={b} />
+      {!shareView && <UserPaymentOverlay b={b} />}
     </div>
   );
 }

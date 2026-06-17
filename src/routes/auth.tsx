@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Phone, User as UserIcon, ArrowRight, Loader2 } from "lucide-react";
 import { saveProfile } from "@/lib/profile";
+import { claimSession } from "@/lib/session-guard";
 import { supabase } from "@/integrations/supabase/client";
 import { AppDrawer } from "@/components/AppDrawer";
 import { CredoomWordmark } from "@/components/Brand";
@@ -63,6 +64,8 @@ function Auth() {
           { user_id: uid, name: name.trim(), phone: cleanPhone },
           { onConflict: "user_id" }
         );
+        // Claim single active session (invalidates any other device's session in prod).
+        await claimSession("profiles", { column: "user_id", value: uid });
       }
       saveProfile({ name: name.trim(), phone: cleanPhone, createdAt: new Date().toISOString() });
       toast.success("Signed in");

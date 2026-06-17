@@ -147,12 +147,14 @@ export type Database = {
       }
       drivers: {
         Row: {
+          active_session_id: string | null
           created_at: string
           current_lat: number | null
           current_lng: number | null
           email: string | null
           id: string
           is_online: boolean
+          is_test_account: boolean
           license_number: string | null
           license_photo_url: string | null
           location_updated_at: string | null
@@ -161,6 +163,7 @@ export type Database = {
           photo: string | null
           rating: number | null
           selfie_url: string | null
+          session_updated_at: string | null
           status: Database["public"]["Enums"]["driver_status"]
           total_trips: number
           updated_at: string
@@ -171,12 +174,14 @@ export type Database = {
           wallet_balance: number
         }
         Insert: {
+          active_session_id?: string | null
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
           email?: string | null
           id?: string
           is_online?: boolean
+          is_test_account?: boolean
           license_number?: string | null
           license_photo_url?: string | null
           location_updated_at?: string | null
@@ -185,6 +190,7 @@ export type Database = {
           photo?: string | null
           rating?: number | null
           selfie_url?: string | null
+          session_updated_at?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_trips?: number
           updated_at?: string
@@ -195,12 +201,14 @@ export type Database = {
           wallet_balance?: number
         }
         Update: {
+          active_session_id?: string | null
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
           email?: string | null
           id?: string
           is_online?: boolean
+          is_test_account?: boolean
           license_number?: string | null
           license_photo_url?: string | null
           location_updated_at?: string | null
@@ -209,6 +217,7 @@ export type Database = {
           photo?: string | null
           rating?: number | null
           selfie_url?: string | null
+          session_updated_at?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_trips?: number
           updated_at?: string
@@ -303,26 +312,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_id: string | null
           created_at: string
           id: string
+          is_test_account: boolean
           name: string | null
           phone: string | null
+          session_updated_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          active_session_id?: string | null
           created_at?: string
           id?: string
+          is_test_account?: boolean
           name?: string | null
           phone?: string | null
+          session_updated_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          active_session_id?: string | null
           created_at?: string
           id?: string
+          is_test_account?: boolean
           name?: string | null
           phone?: string | null
+          session_updated_at?: string | null
           updated_at?: string
           user_id?: string
         }

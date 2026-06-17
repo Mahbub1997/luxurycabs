@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
+import { claimSession } from "@/lib/session-guard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/driver/login")({
@@ -30,8 +31,12 @@ function DriverLogin() {
     e.preventDefault();
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      const uid = data.user?.id;
+      if (uid) {
+        await claimSession("drivers", { column: "user_id", value: uid });
+      }
       navigate({ to: "/driver", replace: true });
     } catch (e: any) {
       toast.error(e.message || "Login failed");
