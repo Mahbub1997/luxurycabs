@@ -177,9 +177,17 @@ function DriverTrip() {
 
   async function reachedDrop() {
     if (!b) return;
-    await supabase.from("bookings").update({ driver_lat: b.drop_lat, driver_lng: b.drop_lng }).eq("id", b.id);
+    // Flip booking into "awaiting" — the customer app instantly opens the
+    // payment chooser (Cash / UPI / Card). Driver waits for the choice.
+    await supabase.from("bookings").update({
+      driver_lat: b.drop_lat,
+      driver_lng: b.drop_lng,
+      payment_status: "awaiting",
+      payment_method: "",
+    } as any).eq("id", b.id);
     setPhase("payment");
   }
+
 
   async function collectAndComplete(method: "cash" | "upi" | "card") {
     if (!b || busy) return;
