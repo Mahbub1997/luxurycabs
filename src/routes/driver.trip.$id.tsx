@@ -286,13 +286,13 @@ function DriverTrip() {
           </div>
         </div>
 
-        <CancelReasonModal
-          open={showCancel}
-          onClose={() => setShowCancel(false)}
-          onSubmit={doCancel}
-          busy={cancelling}
-          title="Cancel this trip?"
-        />
+        {showCancel && (
+          <CancelReasonModal
+            title="Cancel this trip?"
+            onCancel={() => setShowCancel(false)}
+            onConfirm={doCancel}
+          />
+        )}
       </div>
     );
   }
