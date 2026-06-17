@@ -11,6 +11,20 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setUserId(data.user?.id ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (!cancelled) setUserId(s?.user?.id ?? null);
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, []);
+
+  useSessionGuard("profiles", userId ? { column: "user_id", value: userId } : null, "/auth");
 
   useEffect(() => {
     let cancelled = false;
