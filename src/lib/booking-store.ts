@@ -22,6 +22,25 @@ export async function updateBooking(id: string, patch: Partial<Booking>) {
   return data;
 }
 
+export async function cancelBookingWithReason(
+  id: string,
+  reason: string,
+  by: "user" | "admin" | "driver"
+): Promise<Booking> {
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status: "cancelled",
+      cancellation_reason: reason,
+      cancelled_by: by,
+    } as Partial<Booking>)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 /** Short, shareable booking code derived from the uuid. */
 export function bookingCode(id: string): string {
   const hex = id.replace(/-/g, "").slice(0, 8).toUpperCase();
