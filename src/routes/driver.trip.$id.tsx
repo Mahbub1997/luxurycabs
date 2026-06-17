@@ -177,15 +177,43 @@ function DriverTrip() {
     finally { setBusy(false); }
   }
 
-  if (!b) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  // Memoize map endpoints so RouteMap doesn't re-init every render (flicker fix)
+  const mapPickup = useMemo(
+    () => (b ? { lat: b.pickup_lat, lng: b.pickup_lng } : null),
+    [b?.pickup_lat, b?.pickup_lng]
+  );
+  const mapDrop = useMemo(
+    () => (b ? { lat: b.drop_lat, lng: b.drop_lng } : null),
+    [b?.drop_lat, b?.drop_lng]
+  );
+  const mapOrigin = useMemo(
+    () => (phase === "to_pickup" ? (pos ?? mapPickup) : mapPickup),
+    [phase, pos?.lat, pos?.lng, mapPickup]
+  );
+  const mapDest = useMemo(
+    () => (phase === "in_trip" ? mapDrop : mapPickup),
+    [phase, mapPickup, mapDrop]
+  );
 
-  const mapPickup = { lat: b.pickup_lat, lng: b.pickup_lng };
-  const mapDrop = { lat: b.drop_lat, lng: b.drop_lng };
+  if (!b || !mapPickup || !mapDrop) return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
   const showMap = phase === "to_pickup" || phase === "in_trip";
-  const mapEndpoints = phase === "in_trip"
-    ? { pickup: mapPickup, drop: mapDrop }
-    : { pickup: pos ?? mapPickup, drop: mapPickup };
   const destLabel = phase === "in_trip" ? "drop" : "pickup";
+
+  async function doCancel(reason: string) {
+    if (!b) return;
+    setCancelling(true);
+    try {
+      await cancelBookingServer({ data: { booking_id: b.id, reason, by: "driver" } });
+      toast.success("Trip cancelled");
+      navigate({ to: "/driver" });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to cancel");
+    } finally {
+      setCancelling(false);
+      setShowCancel(false);
+    }
+  }
 
   // Full-screen layout while driving
   if (showMap) {
@@ -194,8 +222,8 @@ function DriverTrip() {
         {/* Full-screen map */}
         <div className="absolute inset-0">
           <RouteMap
-            pickup={mapEndpoints.pickup}
-            drop={mapEndpoints.drop}
+            pickup={mapOrigin!}
+            drop={mapDest!}
             polyline={poly}
             driver={pos}
             height="100%"
@@ -214,6 +242,11 @@ function DriverTrip() {
               <ClockIcon className="h-3 w-3" /> {etaMin} min
             </div>
           )}
+          <button
+            onClick={() => setShowCancel(true)}
+            className="rounded-full p-2 text-rose-600 hover:bg-rose-50"
+            title="Cancel trip"
+          ><XCircle className="h-5 w-5" /></button>
         </header>
 
         {/* Bottom sheet */}
@@ -251,6 +284,14 @@ function DriverTrip() {
             >Reached {destLabel}</button>
           </div>
         </div>
+
+        <CancelReasonModal
+          open={showCancel}
+          onClose={() => setShowCancel(false)}
+          onSubmit={doCancel}
+          busy={cancelling}
+          title="Cancel this trip?"
+        />
       </div>
     );
   }
