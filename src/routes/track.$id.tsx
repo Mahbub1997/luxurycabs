@@ -9,6 +9,7 @@ import {
 import { motion } from "framer-motion";
 import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
+import { PlateBadge } from "@/components/VehicleIcon";
 import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
