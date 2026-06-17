@@ -39,8 +39,8 @@ function Auth() {
     if (!name.trim() || cleanPhone.length !== 10) return;
     setBusy(true);
     try {
-      const email = emailFor(cleanPhone);
-      const password = passwordFor(cleanPhone);
+      const email = emailFor(name, cleanPhone);
+      const password = passwordFor(name, cleanPhone);
 
       // Try sign in; if account doesn't exist, create it.
       let res = await supabase.auth.signInWithPassword({ email, password });
