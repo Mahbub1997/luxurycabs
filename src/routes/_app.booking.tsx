@@ -155,16 +155,10 @@ function Booking() {
     setVehicleSheetOpen(false);
   }
 
-  async function handleBook(opts?: { paidOnline?: boolean }) {
+  async function handleBook() {
     if (submitting) return;
     if (tab !== "rental" && (!pickup || !drop || !routeInfo)) return;
     if (tab === "rental" && (!pickup || !drop)) return;
-    if (!payMethod) { setShowPayPicker(true); return; }
-    // For UPI / Card we open the PaymentSheet first to capture payment, then re-enter handleBook.
-    if (!opts?.paidOnline && (payMethod.kind === "upi" || payMethod.kind === "card")) {
-      setShowPaySheet(true);
-      return;
-    }
     setSubmitting(true);
     try {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId);
@@ -188,8 +182,7 @@ function Booking() {
 
       const profile = getProfile();
       const { data: authData } = await supabase.auth.getUser();
-      const payment_method = payMethod.kind; // 'cash' | 'upi' | 'card'
-      const payment_status = opts?.paidOnline ? "paid" : "pending";
+      // Payment method is chosen by the customer AT DROP, not during booking.
       const booking = await createBooking({
         trip_type: tab,
         trip_mode: tab === "outstation" ? "round" : null,
@@ -210,8 +203,8 @@ function Booking() {
         customer_name: profile?.name ?? authData.user?.user_metadata?.name ?? null,
         customer_phone: profile?.phone ?? authData.user?.phone ?? null,
         user_id: authData.user?.id ?? null,
-        payment_method,
-        payment_status,
+        payment_method: "",
+        payment_status: "pending",
       } as any);
       pushRecentBooking(booking.id);
       clearMinimizedActiveBooking();
@@ -221,6 +214,7 @@ function Booking() {
       alert("Could not create booking. Please try again.");
     } finally { setSubmitting(false); }
   }
+
 
   const tariffLabel =
     tab === "outstation"
