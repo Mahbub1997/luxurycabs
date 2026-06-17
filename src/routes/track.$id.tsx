@@ -391,6 +391,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   const [secsLeft, setSecsLeft] = useState(300);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const shareView = isShareView();
 
   // Memoize map endpoints so RouteMap doesn't re-init on every parent render (flicker fix)
   const mapPickup = useMemo(() => ({ lat: b.pickup_lat, lng: b.pickup_lng }), [b.pickup_lat, b.pickup_lng]);
