@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
+import { vehicleIconSvg } from "@/components/VehicleIcon";
 
 interface Props {
   pickup: { lat: number; lng: number };
   drop: { lat: number; lng: number };
   polyline?: string | null;
   driver?: { lat: number; lng: number } | null;
+  driverPlate?: string | null;
+  driverVehicleKind?: "sedan" | "suv";
   height?: number | string;
   interactive?: boolean;
   fitKey?: number | string;
