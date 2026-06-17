@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Wallet, X, Check, XCircle, FileText, Loader2, Search } from "lucide-react";
+import { Wallet, X, Check, XCircle, FileText, Loader2, Search, Trash2, Ban } from "lucide-react";
 import { decideWithdrawal, updateDriverStatus, getDriverDocUrls } from "@/lib/admin.functions";
+import { deleteDriverAccount } from "@/lib/driver.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -124,9 +125,20 @@ function AdminDrivers() {
                       await updateDriverStatus({ data: { driver_id: d.id, status: "suspended" } });
                       toast.success("Suspended"); load();
                     }}
-                    className="rounded-lg bg-rose-600 px-2 py-1 text-xs text-white"
-                  >Deactivate</button>
+                    className="rounded-lg bg-amber-600 px-2 py-1 text-xs text-white"
+                  ><Ban className="inline h-3 w-3 mr-1" />Deactivate</button>
                 )}
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Permanently delete ${d.name}?\n\nThis removes the driver account, login, wallet history and any pending withdrawals. Past bookings keep their snapshot of this driver. This cannot be undone.`)) return;
+                    try {
+                      await deleteDriverAccount({ data: { driver_id: d.id } });
+                      toast.success("Driver deleted");
+                      load();
+                    } catch (e: any) { toast.error(e.message); }
+                  }}
+                  className="rounded-lg bg-rose-700 px-2 py-1 text-xs text-white"
+                ><Trash2 className="inline h-3 w-3 mr-1" />Delete</button>
               </div>
             </div>
           </div>

@@ -17,6 +17,8 @@ export type Database = {
       bookings: {
         Row: {
           assigned_driver_id: string | null
+          cancellation_reason: string | null
+          cancelled_by: string | null
           completed_at: string | null
           created_at: string
           customer_name: string | null
@@ -55,6 +57,8 @@ export type Database = {
         }
         Insert: {
           assigned_driver_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           created_at?: string
           customer_name?: string | null
@@ -93,6 +97,8 @@ export type Database = {
         }
         Update: {
           assigned_driver_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           created_at?: string
           customer_name?: string | null

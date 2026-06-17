@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone } from "lucide-react";
+import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
-import { assignBookingToDriver } from "@/lib/driver.functions";
+import { assignBookingToDriver, cancelBookingServer } from "@/lib/driver.functions";
+import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/bookings")({
@@ -146,12 +147,14 @@ function AssignModal({ booking, onClose }: { booking: any; onClose: () => void }
 
 function BookingCard({ b }: { b: any }) {
   const [assigning, setAssigning] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const statusColor =
 
     b.status === "completed" ? "bg-emerald-100 text-emerald-700"
     : b.status === "cancelled" ? "bg-rose-100 text-rose-700"
     : b.status === "pending" ? "bg-amber-100 text-amber-700"
     : "bg-sky-100 text-sky-700";
+  const isActive = ["pending", "driver_assigned", "driver_arrived", "in_progress"].includes(b.status);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
@@ -222,6 +225,21 @@ function BookingCard({ b }: { b: any }) {
         </button>
       )}
 
+      {isActive && (
+        <button
+          onClick={() => setCancelling(true)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-destructive/40 py-2 text-xs font-bold text-destructive"
+        >
+          <XCircle className="h-3.5 w-3.5" /> Cancel Trip
+        </button>
+      )}
+
+      {b.status === "cancelled" && b.cancellation_reason && (
+        <div className="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">
+          <span className="font-bold">Cancelled by {b.cancelled_by ?? "user"}:</span> {b.cancellation_reason}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <User className="h-3 w-3" /> {b.id.slice(0, 8)}
@@ -232,6 +250,20 @@ function BookingCard({ b }: { b: any }) {
       </div>
 
       {assigning && <AssignModal booking={b} onClose={() => setAssigning(false)} />}
+      {cancelling && (
+        <CancelReasonModal
+          title="Cancel this trip?"
+          description="The customer will see this reason on their tracking screen."
+          onCancel={() => setCancelling(false)}
+          onConfirm={async (reason) => {
+            try {
+              await cancelBookingServer({ data: { booking_id: b.id, reason, by: "admin" } });
+              toast.success("Trip cancelled");
+              setCancelling(false);
+            } catch (e: any) { toast.error(e.message); }
+          }}
+        />
+      )}
     </div>
   );
 }

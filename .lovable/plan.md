@@ -1,78 +1,81 @@
 
-This is a large set of changes. I'll outline scope and approach, then ask a couple of decisions before building. Many items touch the same files (booking, confirm, track), so I'll batch.
-
 ## Scope
 
-### 1. Auth — single page
-Combine name + phone on one screen (remove 2-step). Save profile, go to booking.
+Multi-area update across user / driver / admin apps. All changes frontend + existing tables (no new schema unless noted).
 
-### 2. Header
-Remove "Luxury Cabs" wordmark/logo from in-app header (keep hamburger + current-location icon).
+---
 
-### 3. Vehicle list (Local + Rental)
-Only Sedan and SUV cards (matching uploaded mock):
-- Big white car image left, name + "X Seats | AC" + "Best for N People" right, radio right
-- Selected = **black border** (no green theme), unselected = light gray border
-- Remove the 7-model grid + custom "Other" input on Local/Rental tabs
+### 1. Payment options on trip-complete (User)
 
-### 4. Auto pickup time
-Default departure datetime = now + 15 minutes (editable).
+- Add **UPI** and **Card** to existing Cash on `complete.$id.tsx` (and driver complete flow).
+- UPI ID: `mabubbasha9791-1@oksbi` (constant in `src/lib/payment.ts`).
+- "Pay via UPI" → opens `upi://pay?pa=mabubbasha9791-1@oksbi&pn=Luxury%20Cabs&am=<fare>&cu=INR&tn=Trip%20<id>`.
+- "Pay via Card" → Lovable-style sheet with card number / expiry / CVV fields (UI only, no gateway). On submit just marks payment_method=card, payment_status=paid (mock confirmation toast).
+- `completeRide` server fn already accepts `cash|upi|card` — no backend change.
 
-### 5. "Change vehicle" on confirm page
-On `/confirm/$id`, show the selected vehicle card with a "Change Vehicle" button → opens a sheet listing Sedan/SUV → updates booking + recalculates fare.
+### 2. Cancel-with-reason (User + Admin)
 
-### 6. City limit rule (Local)
-If route distance > 15 km on Local tab → auto-switch to Outstation pricing/flow with a notice ("Trip exceeds 15 km local limit — switching to Outstation").
+- `src/lib/booking-store.ts` + new server fn `cancelBookingWithReason` (or extend existing) that writes `status='cancelled'`, `cancellation_reason`, `cancelled_by` (`user`|`admin`).
+- Migration: add `cancellation_reason text`, `cancelled_by text` columns to `bookings` if not present.
+- **User**: cancel button on tracking screen opens a free-text reason modal → confirm → cancels.
+- **Admin**: in `admin.bookings.tsx`, "Cancel" action on active bookings → reason modal → cancels. The reason is shown on the user's tracking screen (cancelled state) with "Cancelled by admin: <reason>".
 
-### 7. Outstation tab redesign (image 2)
-- Header card "Outstation Trip — Travel to any city with comfort and safety" + illustration
-- Journey Type (One Way / Round Trip), Departure Date, Return Date (optional)
-- Vehicle horizontal scroller with 4 cards: **Sedan (Dzire/Etios) ₹12/km**, **Premium Sedan (Camry) ₹16/km**, **SUV (Innova Crysta) ₹18/km**, **SUV (Fortuner) ₹22/km** — selected card has green check badge
-- "All outstation trips include Driver, Fuel, Toll, Parking & State Permit" notice
-- Estimated Fare panel with Calculate Fare button → Distance / Duration / Estimated Fare
-- Full-width green Continue button
+### 3. Admin: delete driver (soft + hard)
 
-### 8. Booking-confirmed page (image 3) — replaces current "finding driver" stage
-After Confirm Booking:
-- Show "My Booking" page with: Booking ID (LC + 8 digits) + Copy button
-- Green "Booking Confirmed — Driver details will be shared with you shortly" banner
-- Trip Details card (pickup, drop, date, time, distance, ETA)
-- Ride Details card (vehicle image + seats + fare + payment)
-- Yellow "Driver Not Assigned Yet — We are finding the nearest driver for your ride" panel with driver-silhouette illustration
-- Action row: Track Booking / Contact Support / Cancel Booking
-- "Share Trip" safety strip
-- Stays on this screen until admin assigns driver (poll Supabase `status` field; 10–20 min real wait)
-- Once `status = driver_assigned`, auto-navigate to live Track page (image 4 style)
+- `admin.drivers.tsx`: add row actions **Deactivate** (soft) and **Delete permanently** (hard, confirm modal).
+- Server fns `deactivateDriver` (set `status='inactive'`) and `deleteDriver` (delete row + auth user via `supabaseAdmin.auth.admin.deleteUser`). Both admin-gated via `has_role(admin)`.
+- Deleted driver's past bookings retain snapshotted name/phone/vehicle (already stored on booking row).
 
-### 9. Live Track page (image 4)
-- Full-screen Google Map with route polyline, driver car icon moving along route, pickup + drop markers
-- Top-left "Live Tracking — ETA: N min" pill
-- Right column stat cards: Estimated Time, Distance, Estimated Fare, Toll
-- Bottom bar: car icon + "Your Ride is on the way / Driver is following the best route" + driver photo, name, rating, plate, call button
-- Auto-fit bounds, pinch zoom, recenter button
+### 4. Admin manual assign driver
 
-### 10. Activate all demo buttons across app
-Wire up: heart (favorite), Share Trip (WhatsApp share sheet), Contact Support (tel:), Cancel Booking (updates Supabase + back to home), Copy booking ID (clipboard), recenter map button, call driver (tel:), swap pickup/drop arrows.
+- Already exists (`assignBookingToDriver`). Surface it in `admin.bookings.tsx` for pending bookings: "Assign driver" dropdown listing approved drivers, then assign.
 
-### 11. Admin assignment model (prep)
-Driver assignment will no longer be auto-mocked in the customer app. We mark booking `status = searching_driver` on confirm and rely on an admin app (next phase) flipping it to `driver_assigned` with driver + vehicle details. For now, I'll add a small "Simulate Admin Assignment" dev-only button on the booking-confirmed page so the flow is testable end-to-end without the admin app yet.
+### 5. Unified live driver location across all 3 apps
 
-## Files to touch
-- `src/routes/auth.tsx` — single-page form
-- `src/routes/_app.booking.tsx` — header logo removed, sedan/SUV-only list, +15min default time, 15km auto-switch, redesigned outstation tab
-- `src/components/VehicleCard.tsx` — black-border selected state, layout to match mock
-- `src/routes/confirm.$id.tsx` — add Change Vehicle sheet
-- `src/routes/track.$id.tsx` — split into two stages: "Booking Confirmed / awaiting driver" (image 3) and "Live tracking" (image 4); poll Supabase status
-- `src/lib/booking-store.ts` — add `LC########` short ID, status enum, helpers
-- `src/lib/fare.ts` — outstation per-km tiers (12/16/18/22), 15km local cap helper
-- `src/components/RouteMap.tsx` — auto-fit, driver marker animation, recenter
+- Driver app already writes `driver_lat/lng` to `bookings` and `current_lat/lng` to `drivers` via location watch on `driver.trip.$id.tsx`.
+- Confirm/ensure realtime is enabled on `bookings`. If not, migration: `ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;`
+- User `track.$id.tsx`, driver `driver.trip.$id.tsx`, admin `admin.live.tsx` all subscribe to the same booking row → same coords → same marker.
 
-## Decisions I need from you
+### 6. Customer tracking: full-screen map + bottom sheet (Uber/Ola)
 
-1. **Outstation vehicle set** — keep all 4 tiers (Sedan Dzire/Etios, Premium Sedan Camry, SUV Innova Crysta, SUV Fortuner)? Local tab keeps only Sedan + SUV.
+- Rewrite `src/routes/track.$id.tsx` layout:
+  - `RouteMap` fills viewport (`h-screen`).
+  - Floating top bar: back + status badge.
+  - Bottom sheet (drag-collapsible or fixed) showing: driver photo, name, rating, vehicle model + number, **OTP (large)**, ETA "Driver reaching in X min" (updates every 60s using Routes API ETA from driver coords to pickup, or by `eta_to_pickup_seconds` stored on booking), call button, cancel button.
+- Remove pickup/drop address text from the map overlay; show them in the sheet (small icons).
+- Map still shows pickup pin, drop pin, driver car icon, polyline.
 
-2. **Admin assignment** — for now (before admin app exists), should I add a temporary "Simulate driver assigned" button on the awaiting-driver screen so you can test the full flow? Or wait fully silent until the admin app is built?
+### 7. ETA refresh every minute
 
-3. **Real-time updates** — use Supabase Realtime to push driver-assigned status (instant), or simple polling every 10s? Realtime is smoother; polling is simpler.
+- `track.$id.tsx` + driver app: every 60s call `getRoute` server fn (already exists in `src/lib/maps/routes.functions.ts`) with driver→pickup (before pickup) or driver→drop (after pickup). Display `duration_text`.
 
-Once you answer, I'll build everything in one pass.
+### 8. Driver app pickup-page flicker fix
+
+- Investigate `driver.trip.$id.tsx`. Likely cause: same `RouteMap`-effect dependency loop. Fix: stable deps in map effect, throttle GPS writes (already 5s), avoid re-fitting bounds on every coord update — `RouteMap` already handles this after last fix but the driver page may be re-rendering map with new `pickup`/`drop` object identities each render → wrap in `useMemo`.
+
+### 9. Additional items I'd like to add (for your approval — see end)
+
+---
+
+## Technical Notes
+
+- New file: `src/lib/payment.ts` (UPI constant, helpers).
+- New component: `src/components/PaymentSheet.tsx` (Cash / UPI / Card tabs).
+- New component: `src/components/CancelReasonModal.tsx`.
+- New component: `src/components/TrackingBottomSheet.tsx`.
+- Server fn additions in `src/lib/booking.functions.ts` (new file): `cancelBooking({booking_id, reason, by})`.
+- Server fn additions in `src/lib/driver.functions.ts`: `deactivateDriver`, `deleteDriver`.
+- Migration: add `cancellation_reason`, `cancelled_by`, `eta_minutes` columns to `bookings`; add `bookings` + `drivers` to `supabase_realtime` publication if missing.
+- `useMemo` pickup/drop objects in `driver.trip.$id.tsx` and `track.$id.tsx` to stop RouteMap reinit loop.
+
+---
+
+## Items to approve (additional, not yet built)
+
+1. **Auto-cancel if no driver in 5 min** during searching → user gets "No drivers available, please try again" instead of infinite spinner.
+2. **In-app driver↔user chat** (simple text, realtime) on tracking screen.
+3. **Show fare breakdown** in bottom sheet (base + distance + GST).
+4. **"Share live trip" button** that copies a public tracking link to clipboard (read-only view for family).
+5. **Cancellation fee** (₹0 free if cancel within 2 min of assign, else ₹25 deducted from next ride).
+
+Reply approve 1 / 2 / 3 / 4 / 5 (or "skip") after the main implementation.

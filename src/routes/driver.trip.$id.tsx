@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Banknote, Wallet, CreditCard, Loader2, Navigation, Clock as ClockIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Loader2, Navigation, Clock as ClockIcon, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { RouteMap } from "@/components/RouteMap";
+import { PaymentSheet } from "@/components/PaymentSheet";
+import { CancelReasonModal } from "@/components/CancelReasonModal";
+import { cancelBookingServer } from "@/lib/driver.functions";
 type LatLng = { lat: number; lng: number };
 import { beep, ensureNotifyPermission, notify } from "@/lib/notify";
 import { toast } from "sonner";
@@ -23,8 +26,8 @@ function DriverTrip() {
   const [b, setB] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("to_pickup");
   const [otp, setOtp] = useState("");
-  const [pay, setPay] = useState<"cash" | "upi" | "card">("cash");
   const [busy, setBusy] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
@@ -163,11 +166,11 @@ function DriverTrip() {
     setPhase("payment");
   }
 
-  async function collectAndComplete() {
+  async function collectAndComplete(method: "cash" | "upi" | "card") {
     if (!b || busy) return;
     setBusy(true);
     try {
-      const r = await completeRide({ data: { booking_id: b.id, payment_method: pay } });
+      const r = await completeRide({ data: { booking_id: b.id, payment_method: method } });
       toast.success(`Trip complete. ₹${r.credit} credited.`);
       navigate({ to: "/driver" });
     } catch (e: any) { toast.error(e.message); }

@@ -219,3 +219,78 @@ export const assignBookingToDriver = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Admin: hard-delete a driver (auth user + drivers row). Past bookings keep snapshot data. */
+export const deleteDriverAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ driver_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const isAdmin = await supabaseAdmin.from("user_roles")
+      .select("role, approved")
+      .eq("user_id", context.userId)
+      .in("role", ["admin", "super_admin"])
+      .eq("approved", true)
+      .maybeSingle();
+    if (!isAdmin.data) throw new Error("Not admin");
+
+    // Block delete if driver has any active booking.
+    const { data: active } = await supabaseAdmin
+      .from("bookings")
+      .select("id")
+      .eq("assigned_driver_id", data.driver_id)
+      .in("status", ["driver_assigned", "driver_arrived", "in_progress"])
+      .limit(1);
+    if (active && active.length > 0) {
+      throw new Error("Driver has an active trip — cannot delete. Please wait until the trip is complete or cancelled.");
+    }
+
+    const { data: drv, error: dErr } = await supabaseAdmin
+      .from("drivers").select("user_id").eq("id", data.driver_id).maybeSingle();
+    if (dErr) throw new Error(dErr.message);
+
+    // Detach from past bookings (keeps snapshot of name/phone/vehicle).
+    await supabaseAdmin.from("bookings")
+      .update({ assigned_driver_id: null })
+      .eq("assigned_driver_id", data.driver_id);
+
+    // Delete child rows that reference driver_id.
+    await supabaseAdmin.from("wallet_transactions").delete().eq("driver_id", data.driver_id);
+    await supabaseAdmin.from("withdrawal_requests").delete().eq("driver_id", data.driver_id);
+
+    const { error: rmErr } = await supabaseAdmin.from("drivers").delete().eq("id", data.driver_id);
+    if (rmErr) throw new Error(rmErr.message);
+
+    if (drv?.user_id) {
+      // Remove role rows and auth user (ignore errors so a stuck auth row doesn't block).
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", drv.user_id);
+      await supabaseAdmin.auth.admin.deleteUser(drv.user_id).catch(() => {});
+    }
+    return { ok: true };
+  });
+
+/** Admin or user: cancel a booking with a reason — accessible from any side. */
+export const cancelBookingServer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    booking_id: z.string().uuid(),
+    reason: z.string().trim().min(3).max(300),
+    by: z.enum(["user", "admin", "driver"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Anyone authenticated can request cancel, but admin role required if by==='admin'.
+    if (data.by === "admin") {
+      const { data: ar } = await supabaseAdmin.from("user_roles")
+        .select("approved").eq("user_id", context.userId)
+        .in("role", ["admin", "super_admin"]).eq("approved", true).maybeSingle();
+      if (!ar) throw new Error("Not admin");
+    }
+    const { error } = await supabaseAdmin.from("bookings").update({
+      status: "cancelled",
+      cancellation_reason: data.reason,
+      cancelled_by: data.by,
+    }).eq("id", data.booking_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
