@@ -579,15 +579,17 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
                 <span className="font-semibold text-foreground">{b.driver_rating ?? "—"}</span>
                 <span>({b.driver_trips ?? 0} trips)</span>
               </div>
-              <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{b.vehicle_number ?? "—"}</span>
-                <span> · {b.vehicle_model ?? "—"}</span>
+              <div className="mt-1 flex items-center gap-2">
+                <PlateBadge plate={b.vehicle_number} />
+                <span className="truncate text-xs text-muted-foreground">{b.vehicle_model ?? "—"}</span>
               </div>
             </div>
-            <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
-              <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
-            </div>
+            {!shareView && (
+              <div className="rounded-xl border border-primary/30 bg-primary-soft px-2.5 py-1.5 text-center">
+                <div className="text-sm font-bold text-primary leading-none">{formatDuration(eta)}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">away</div>
+              </div>
+            )}
           </div>
 
           {/* Call / Chat */}
