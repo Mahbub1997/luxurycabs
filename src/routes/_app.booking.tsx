@@ -703,10 +703,10 @@ function Booking() {
               </button>
               <button
                 disabled={submitting}
-                onClick={handleBook}
+                onClick={() => handleBook()}
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : payMethod && payMethod.kind !== "cash" ? <>Pay & Confirm <ArrowRight className="h-4 w-4" /></> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
               </button>
             </div>
           </div>
