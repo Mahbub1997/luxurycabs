@@ -33,35 +33,30 @@ function AdminLogin() {
     })();
   }, [navigate]);
 
-  function resolveEmail(input: string) {
-    const v = input.trim().toLowerCase();
-    if (!v) return "";
-    if (v === "luxury cabs" || v === "luxurycabs") return MAIN_ADMIN_EMAIL;
-    if (v.includes("@")) return v;
-    return `${v.replace(/\s+/g, "")}@admin.local`;
-  }
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      const email = resolveEmail(identifier);
-      const isMain = email === MAIN_ADMIN_EMAIL;
-      if (isMain) {
-        // Bootstrap main admin on first login
-        await ensureMainAdmin({ data: { password } });
+      const uname = identifier.trim().toLowerCase().replace(/\s+/g, "");
+      if (uname !== "luxurycabs" || password !== "5678") {
+        throw new Error("Invalid username or password");
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      // Bootstrap main admin on first login (idempotent)
+      await ensureMainAdmin({ data: { password } });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: MAIN_ADMIN_EMAIL,
+        password,
+      });
+      if (error) throw new Error("Invalid username or password");
 
       const r = await checkIsAdmin();
       if (!r.isAdmin) {
         await supabase.auth.signOut();
-        throw new Error("This account is not an admin. Ask the main admin to add you.");
+        throw new Error("Invalid username or password");
       }
       navigate({ to: "/admin/bookings", replace: true });
     } catch (e: any) {
-      toast.error(e.message || "Login failed");
+      toast.error(e.message || "Invalid username or password");
     } finally {
       setBusy(false);
     }
