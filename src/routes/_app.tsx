@@ -2,6 +2,8 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { bookingCode, findActiveBookingId, getBooking, isActiveBookingMinimized, type Booking } from "@/lib/booking-store";
+import { useSessionGuard } from "@/lib/session-guard";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
