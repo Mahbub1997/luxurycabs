@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { RouteMap } from "@/components/RouteMap";
-import { PaymentSheet } from "@/components/PaymentSheet";
+// PaymentSheet no longer needed — payment method is decided up-front by the customer.
 import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { cancelBookingServer } from "@/lib/driver.functions";
 type LatLng = { lat: number; lng: number };
