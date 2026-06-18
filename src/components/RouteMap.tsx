@@ -310,48 +310,25 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
     })();
   }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
 
-  // Driver marker — smooth animated movement, bearing-rotated, snapped to road.
+  // Driver car — real PNG overlay, center anchored, route-distance interpolation.
   useEffect(() => {
     (async () => {
       try {
         const g = await loadGoogleMaps();
         if (!mapRef.current || !driver) return;
 
-        // Snap incoming GPS point to the nearest point on the route polyline so
-        // the car visibly rides the road, not a straight diagonal.
-        const target = snapToPath(driver, polyPathRef.current) ?? driver;
+        const routePoint = closestPointOnPath(driver, polyPathRef.current);
+        const target = routePoint?.point ?? driver;
+        const targetDistance = routePoint?.distanceAlong ?? null;
+        const targetHeading = routePoint?.heading ?? (driverPosRef.current ? bearingBetween(driverPosRef.current, target) : driverHeadingRef.current);
 
-        const startPos = driverPosRef.current ?? target;
-        const distance = approxMeters(startPos, target);
-
-        // Compute bearing from previous to new (heading).
-        if (distance > 1.5) {
-          driverHeadingRef.current = bearingBetween(startPos, target);
-        }
-        const heading = driverHeadingRef.current;
-
-        // Build a real top-view car icon with number plate tag, rotated to heading.
-        const carUrl = rotatedCarSvgDataUrl(driverPlate || "", driverVehicleKind, heading);
-        const carIcon: google.maps.Icon = {
-          url: carUrl,
-          scaledSize: new g.maps.Size(96, 96),
-          anchor: new g.maps.Point(48, 48),
-        };
-
-        const isFirst = !driverMarkerRef.current;
-        if (!driverMarkerRef.current) {
-          driverMarkerRef.current = new g.maps.Marker({
-            map: mapRef.current,
-            position: target,
-            icon: carIcon,
-            zIndex: 5000,
-            optimized: false,
-          });
+        const isFirst = !carOverlayRef.current;
+        if (!carOverlayRef.current) {
+          carOverlayRef.current = createCarOverlay(g, mapRef.current, target, targetHeading);
           driverPosRef.current = target;
-        } else {
-          driverMarkerRef.current.setIcon(carIcon);
+          driverRouteDistanceRef.current = targetDistance;
+          driverHeadingRef.current = targetHeading;
         }
-        lastDriverRef.current = target;
 
         // Cancel any in-flight animation before starting a new one.
         if (animRef.current !== null) {
@@ -359,33 +336,44 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
           animRef.current = null;
         }
 
-        // Animate from current displayed position → target over ~900ms.
-        // Skip the animation on the very first placement, or for huge jumps
-        // (>500m teleport, likely a GPS glitch) — snap directly.
-        const marker = driverMarkerRef.current;
+        const currentPos = driverPosRef.current ?? target;
+        const currentDistance = driverRouteDistanceRef.current;
+        const distance = approxMeters(currentPos, target);
+        const overlay = carOverlayRef.current;
         if (isFirst || distance < 0.5 || distance > 500) {
-          marker.setPosition(target);
+          overlay.setPosition(target);
+          overlay.setHeading(targetHeading);
           driverPosRef.current = target;
+          driverRouteDistanceRef.current = targetDistance;
+          driverHeadingRef.current = targetHeading;
         } else {
-          const from = startPos;
-          const to = target;
+          const from = currentPos;
+          const fromDistance = currentDistance ?? null;
+          const toDistance = targetDistance;
           const duration = 900;
           const t0 = performance.now();
           const step = (now: number) => {
             const k = Math.min(1, (now - t0) / duration);
-            // ease-out for a natural settle
-            const e = 1 - Math.pow(1 - k, 2);
-            const p = {
-              lat: from.lat + (to.lat - from.lat) * e,
-              lng: from.lng + (to.lng - from.lng) * e,
-            };
-            marker.setPosition(p);
+            const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+            const p = fromDistance !== null && toDistance !== null
+              ? pointAtPathDistance(polyPathRef.current, fromDistance + (toDistance - fromDistance) * e).point
+              : { lat: from.lat + (target.lat - from.lat) * e, lng: from.lng + (target.lng - from.lng) * e };
+            const liveHeading = fromDistance !== null && toDistance !== null
+              ? pointAtPathDistance(polyPathRef.current, fromDistance + (toDistance - fromDistance) * e).heading
+              : bearingBetween(driverPosRef.current ?? from, p);
+            driverHeadingRef.current = smoothHeading(driverHeadingRef.current, liveHeading, 0.18);
+            overlay.setPosition(p);
+            overlay.setHeading(driverHeadingRef.current);
             driverPosRef.current = p;
             if (k < 1) {
               animRef.current = requestAnimationFrame(step);
             } else {
               animRef.current = null;
-              driverPosRef.current = to;
+              driverPosRef.current = target;
+              driverRouteDistanceRef.current = targetDistance;
+              driverHeadingRef.current = smoothHeading(driverHeadingRef.current, targetHeading, 0.35);
+              overlay.setPosition(target);
+              overlay.setHeading(driverHeadingRef.current);
             }
           };
           animRef.current = requestAnimationFrame(step);
