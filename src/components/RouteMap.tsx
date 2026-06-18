@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
-import { vehicleIconSvg } from "@/components/VehicleIcon";
+import { realisticCarTop } from "@/components/VehicleIcon";
 
 interface Props {
   pickup: { lat: number; lng: number };
@@ -88,18 +88,115 @@ function phaseZoom(currentZoom: number, distanceToPickup: number, distanceToDrop
   return Math.min(currentZoom, 13);
 }
 
-/** Top-view car SVG rotated to the given heading. No plate on the marker —
- *  plate is highlighted separately in the driver-details card. */
-function rotatedCarSvgDataUrl(_plate: string, kind: "sedan" | "suv", heading: number) {
-  const inner = vehicleIconSvg("", true, kind, false)
-    .replace(/^<svg[^>]*>/, "")
-    .replace(/<\/svg>\s*$/, "");
-  // Inner car-only canvas is 96x52, body centered at ~y=30. Center it inside
-  // a 96x96 rotation canvas so heading rotates around the car body.
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-    <g transform="translate(48 48) rotate(${heading.toFixed(1)}) translate(-48 -30)">${inner}</g>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+type PathPoint = { lat: number; lng: number };
+
+type CarOverlay = google.maps.OverlayView & {
+  setPosition(position: PathPoint): void;
+  setHeading(heading: number): void;
+};
+
+function closestPointOnPath(p: PathPoint, path: PathPoint[]) {
+  if (!path || path.length < 2) return null;
+  const latRad = (p.lat * Math.PI) / 180;
+  const mPerDegLng = 111_320 * Math.cos(latRad);
+  const mPerDegLat = 110_540;
+  const toXY = (q: PathPoint) => ({ x: (q.lng - p.lng) * mPerDegLng, y: (q.lat - p.lat) * mPerDegLat });
+  let best: { point: PathPoint; distanceAlong: number; distanceFromRoute: number; heading: number } | null = null;
+  let walked = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = toXY(path[i]);
+    const b = toXY(path[i + 1]);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    const segmentLength = approxMeters(path[i], path[i + 1]);
+    if (len2 === 0 || segmentLength === 0) continue;
+    const t = Math.max(0, Math.min(1, -(a.x * dx + a.y * dy) / len2));
+    const px = a.x + t * dx;
+    const py = a.y + t * dy;
+    const distanceFromRoute = Math.sqrt(px * px + py * py);
+    if (!best || distanceFromRoute < best.distanceFromRoute) {
+      best = {
+        point: { lat: path[i].lat + t * (path[i + 1].lat - path[i].lat), lng: path[i].lng + t * (path[i + 1].lng - path[i].lng) },
+        distanceAlong: walked + segmentLength * t,
+        distanceFromRoute,
+        heading: bearingBetween(path[i], path[i + 1]),
+      };
+    }
+    walked += segmentLength;
+  }
+  return best && best.distanceFromRoute <= 100 ? best : null;
+}
+
+function pointAtPathDistance(path: PathPoint[], distanceAlong: number) {
+  if (path.length < 2) return { point: path[0], heading: 0 };
+  const total = path.reduce((sum, p, i) => i === 0 ? 0 : sum + approxMeters(path[i - 1], p), 0);
+  let remaining = Math.max(0, Math.min(distanceAlong, total));
+  for (let i = 0; i < path.length - 1; i++) {
+    const segmentLength = approxMeters(path[i], path[i + 1]);
+    if (remaining <= segmentLength || i === path.length - 2) {
+      const t = segmentLength === 0 ? 0 : remaining / segmentLength;
+      return {
+        point: { lat: path[i].lat + t * (path[i + 1].lat - path[i].lat), lng: path[i].lng + t * (path[i + 1].lng - path[i].lng) },
+        heading: bearingBetween(path[i], path[i + 1]),
+      };
+    }
+    remaining -= segmentLength;
+  }
+  return { point: path[path.length - 1], heading: bearingBetween(path[path.length - 2], path[path.length - 1]) };
+}
+
+function smoothHeading(from: number, to: number, amount: number) {
+  const delta = ((to - from + 540) % 360) - 180;
+  return (from + delta * amount + 360) % 360;
+}
+
+function createCarOverlay(g: typeof google, map: google.maps.Map, position: PathPoint, heading: number): CarOverlay {
+  class RealCarOverlay extends g.maps.OverlayView {
+    private div: HTMLDivElement | null = null;
+    private position = position;
+    private heading = heading;
+
+    onAdd() {
+      const div = document.createElement("div");
+      div.style.position = "absolute";
+      div.style.width = "64px";
+      div.style.height = "64px";
+      div.style.pointerEvents = "none";
+      div.style.transformOrigin = "center center";
+      div.style.willChange = "transform";
+      div.innerHTML = `<img src="${realisticCarTop}" alt="Live car" style="width:64px;height:64px;object-fit:contain;display:block;filter:drop-shadow(0 3px 4px rgba(0,0,0,.38));" />`;
+      this.div = div;
+      this.getPanes()?.overlayMouseTarget.appendChild(div);
+    }
+
+    draw() {
+      if (!this.div) return;
+      const projection = this.getProjection();
+      const point = projection.fromLatLngToDivPixel(new g.maps.LatLng(this.position.lat, this.position.lng));
+      if (!point) return;
+      this.div.style.transform = `translate3d(${point.x}px, ${point.y}px, 0) translate(-50%, -50%) rotate(${this.heading.toFixed(1)}deg)`;
+    }
+
+    onRemove() {
+      this.div?.remove();
+      this.div = null;
+    }
+
+    setPosition(next: PathPoint) {
+      this.position = next;
+      this.draw();
+    }
+
+    setHeading(next: number) {
+      this.heading = next;
+      this.draw();
+    }
+  }
+
+  const overlay = new RealCarOverlay() as CarOverlay;
+  overlay.setMap(map);
+  return overlay;
 }
 
 export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
