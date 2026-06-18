@@ -297,6 +297,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       polylineRef.current?.setMap(null);
       const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
       polyPathRef.current = path;
+      driverRouteDistanceRef.current = null;
       polylineRef.current = new g.maps.Polyline({
         path, map: mapRef.current,
         strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
@@ -318,9 +319,14 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
         if (!mapRef.current || !driver) return;
 
         const routePoint = closestPointOnPath(driver, polyPathRef.current);
-        const target = routePoint?.point ?? driver;
-        const targetDistance = routePoint?.distanceAlong ?? null;
-        const targetHeading = routePoint?.heading ?? (driverPosRef.current ? bearingBetween(driverPosRef.current, target) : driverHeadingRef.current);
+        const currentDistance = driverRouteDistanceRef.current;
+        const nextDistance = routePoint && currentDistance !== null
+          ? Math.max(routePoint.distanceAlong, currentDistance)
+          : routePoint?.distanceAlong ?? null;
+        const routedTarget = nextDistance !== null ? pointAtPathDistance(polyPathRef.current, nextDistance) : null;
+        const target = routedTarget?.point ?? routePoint?.point ?? driver;
+        const targetDistance = nextDistance;
+        const targetHeading = routedTarget?.heading ?? routePoint?.heading ?? (driverPosRef.current ? bearingBetween(driverPosRef.current, target) : driverHeadingRef.current);
 
         const isFirst = !carOverlayRef.current;
         if (!carOverlayRef.current) {
@@ -337,9 +343,9 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
         }
 
         const currentPos = driverPosRef.current ?? target;
-        const currentDistance = driverRouteDistanceRef.current;
         const distance = approxMeters(currentPos, target);
         const overlay = carOverlayRef.current;
+        if (!overlay) return;
         if (isFirst || distance < 0.5 || distance > 500) {
           overlay.setPosition(target);
           overlay.setHeading(targetHeading);
