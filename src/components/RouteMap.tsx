@@ -151,11 +151,11 @@ function smoothHeading(from: number, to: number, amount: number) {
   return (from + delta * amount + 360) % 360;
 }
 
-function createCarOverlay(g: typeof google, map: google.maps.Map, position: PathPoint, heading: number): CarOverlay {
+function createCarOverlay(g: typeof google, map: google.maps.Map, initialPosition: PathPoint, initialHeading: number): CarOverlay {
   class RealCarOverlay extends g.maps.OverlayView {
     private div: HTMLDivElement | null = null;
-    private position = position;
-    private heading = heading;
+    private position = initialPosition;
+    private heading = initialHeading;
 
     onAdd() {
       const div = document.createElement("div");
@@ -205,10 +205,10 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
   const polylineRef = useRef<google.maps.Polyline | null>(null);
   const polyPathRef = useRef<Array<{ lat: number; lng: number }>>([]);
   const polyFittedRef = useRef(false);
-  const driverMarkerRef = useRef<google.maps.Marker | null>(null);
+  const carOverlayRef = useRef<CarOverlay | null>(null);
   const driverPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const driverRouteDistanceRef = useRef<number | null>(null);
   const animRef = useRef<number | null>(null);
-  const lastDriverRef = useRef<{ lat: number; lng: number } | null>(null);
   const driverHeadingRef = useRef(0);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -224,8 +224,8 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       try {
         const g = await loadGoogleMaps();
         if (cancelled || !ref.current) return;
-        driverMarkerRef.current?.setMap(null);
-        driverMarkerRef.current = null;
+        carOverlayRef.current?.setMap(null);
+        carOverlayRef.current = null;
         meMarkerRef.current?.setMap(null);
         meMarkerRef.current = null;
         const map = new g.maps.Map(ref.current, {
@@ -277,10 +277,10 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       polylineRef.current = null;
       polyPathRef.current = [];
       polyFittedRef.current = false;
-      driverMarkerRef.current?.setMap(null);
-      driverMarkerRef.current = null;
+      carOverlayRef.current?.setMap(null);
+      carOverlayRef.current = null;
       driverPosRef.current = null;
-      lastDriverRef.current = null;
+      driverRouteDistanceRef.current = null;
       meMarkerRef.current?.setMap(null);
       meMarkerRef.current = null;
     };
