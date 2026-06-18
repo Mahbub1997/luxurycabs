@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import { vehicleIconSvg } from "@/components/VehicleIcon";
+import { realisticCarTop } from "@/components/VehicleIcon";
 import { Loader2, Car } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/drivers-map")({
@@ -73,12 +73,10 @@ function AdminDriversMap() {
         bounds.extend(pos);
         any = true;
         const plate = (d.vehicle_number || "—").toString().toUpperCase();
-        const online = !!d.is_online;
-        const svg = vehicleIconSvg("", online, d.vehicle_type === "suv" ? "suv" : "sedan", false);
         const icon: google.maps.Icon = {
-          url: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-          scaledSize: new g.maps.Size(96, 52),
-          anchor: new g.maps.Point(48, 26),
+          url: realisticCarTop,
+          scaledSize: new g.maps.Size(64, 64),
+          anchor: new g.maps.Point(32, 32),
         };
         const existing = markersRef.current.get(d.id);
         if (existing) {
