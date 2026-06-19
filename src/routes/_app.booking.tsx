@@ -225,11 +225,7 @@ function Booking() {
   const tariffLabel =
     tab === "outstation"
       ? outVehicle.label
-      : localModel === "ciaz"
-        ? "Ciaz"
-        : vehicle === "sedan"
-          ? "Sedan"
-          : "SUV";
+      : ({ sedan: "Sedan", ciaz: "Ciaz", suv: "SUV", ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const)[localModel];
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
   // Hide app header + bottom nav once both pickup & drop are selected so the
