@@ -176,7 +176,7 @@ export function PlaceAutocomplete({
             />
           </div>
 
-          {!query && (
+          {!query && showChooseOnMap && (
             <div className="border-b border-border">
               <button
                 onClick={() => setPickerOpen(true)}
@@ -194,12 +194,31 @@ export function PlaceAutocomplete({
           )}
 
           <div className="flex-1 overflow-y-auto">
+            {!query && recent.length > 0 && (
+              <>
+                <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Recent searches
+                </div>
+                {recent.slice(0, MAX_RECENT).map((r, i) => (
+                  <button
+                    key={`r-${i}`}
+                    onClick={() => pickRecent(r)}
+                    className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left hover:bg-muted"
+                  >
+                    <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{r.address}</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
             {loading && (
               <div className="flex items-center justify-center p-6 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
             )}
-            {!loading && suggestions.map((s, i) => {
+            {!loading && suggestions.slice(0, MAX_RECENT).map((s, i) => {
               const main = s.placePrediction?.mainText?.text ?? "";
               const sec = s.placePrediction?.secondaryText?.text ?? "";
               return (
