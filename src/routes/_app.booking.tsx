@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
+import { MapPicker } from "@/components/MapPicker";
 import { VehicleCard } from "@/components/VehicleCard";
 import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
@@ -44,7 +45,7 @@ function Booking() {
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
-  const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv">("sedan");
+  const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta">("sedan");
   const [outVehicleId, setOutVehicleId] = useState<string>(OUTSTATION_VEHICLES[0].id);
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
@@ -58,6 +59,7 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [mapPickerFor, setMapPickerFor] = useState<null | "pickup" | "drop">(null);
 
   // If user already has an active trip (app was closed and reopened, or they
   // navigated back here), bounce them to the live tracking screen.
@@ -145,7 +147,7 @@ function Booking() {
     setSummaryOpen(true);
   }
 
-  function chooseLocalRental(v: VehicleType, model: "sedan" | "ciaz" | "suv" = v as any) {
+  function chooseLocalRental(v: VehicleType, model: "sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta" = v as any) {
     setVehicle(v);
     setLocalModel(model);
     setVehicleSheetOpen(false);
@@ -165,7 +167,11 @@ function Booking() {
       let distance: number;
       let duration: number;
       let vehicleType: VehicleType = vehicle;
-      let vehicleModel: string = localModel === "ciaz" ? "Ciaz" : vehicle === "sedan" ? "Sedan" : "SUV";
+      const LOCAL_LABELS: Record<string, string> = {
+        sedan: "Sedan", ciaz: "Ciaz", suv: "SUV",
+        ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
+      };
+      let vehicleModel: string = LOCAL_LABELS[localModel] ?? (vehicle === "sedan" ? "Sedan" : "SUV");
 
       if (tab === "rental") {
         distance = pkg!.km;
@@ -219,11 +225,7 @@ function Booking() {
   const tariffLabel =
     tab === "outstation"
       ? outVehicle.label
-      : localModel === "ciaz"
-        ? "Ciaz"
-        : vehicle === "sedan"
-          ? "Sedan"
-          : "SUV";
+      : ({ sedan: "Sedan", ciaz: "Ciaz", suv: "SUV", ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const)[localModel];
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
   // Hide app header + bottom nav once both pickup & drop are selected so the
@@ -268,6 +270,23 @@ function Booking() {
         ))}
       </div>
 
+      {/* Choose on map (top, above pickup/drop) */}
+      <div className="mx-4">
+        <button
+          type="button"
+          onClick={() => setMapPickerFor(pickup ? "drop" : "pickup")}
+          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
+        >
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
+            <MapIcon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">Choose on map</div>
+            <div className="text-xs text-muted-foreground">Drop a pin for {pickup ? "drop" : "pickup"} location</div>
+          </div>
+        </button>
+      </div>
+
       {/* Pickup + Drop search cards (tap to open full-screen search) */}
       <div className="mx-4 space-y-2">
         <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
@@ -278,6 +297,7 @@ function Booking() {
               onChange={setPickup}
               placeholder="Search pickup"
               autoDetect
+              showChooseOnMap={false}
             />
           </div>
           <Crosshair className="h-4 w-4 shrink-0 text-primary" />
@@ -288,11 +308,21 @@ function Booking() {
               label="Drop Location"
               value={drop}
               onChange={setDrop}
-              placeholder="Where to go?"
+              placeholder="Enter Drop Location"
               accent="green"
+              showChooseOnMap={false}
             />
           </div>
         </div>
+        {!drop && (
+          <div className="px-1 text-[11px] font-medium text-primary">
+            {tab === "rental"
+              ? "Enter Drop Location and select a rental duration package below."
+              : tab === "outstation"
+                ? "Enter Drop Location — this is a round trip, also pick a return date below."
+                : "Enter Drop Location to see fare and available vehicles."}
+          </div>
+        )}
       </div>
 
       {/* Map — compact so vehicle cards stay above the fold */}
@@ -439,7 +469,7 @@ function Booking() {
                 label="SUV"
                 seats={7}
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
-                selected={vehicle === "suv"}
+                selected={vehicle === "suv" && localModel === "suv"}
                 disabled={false}
                 onSelect={() => chooseLocalRental("suv", "suv")}
               />
@@ -448,20 +478,9 @@ function Booking() {
         </div>
 
         {canPickVehicle && (
-          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
-                <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
-              </div>
-              <button
-                type="button"
-                onClick={openSummary}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
-              >
-                Book Now <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3 text-center">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
+            <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
           </div>
         )}
       </div>
@@ -544,7 +563,33 @@ function Booking() {
                       <div className="mt-1 text-xs text-muted-foreground">Premium sedan · 4 Seats · AC</div>
                     </div>
                   </button>
-                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
+                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv" && localModel === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
+                  {(["ertiga", "innova", "crysta"] as const).map((m) => {
+                    const labels = { ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const;
+                    const subs = { ertiga: "6 Seats · AC", innova: "7 Seats · AC", crysta: "Premium 7 Seats · AC" } as const;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => chooseLocalRental("suv", m)}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                          localModel === m ? "border-foreground" : "border-border"
+                        )}
+                      >
+                        <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
+                          <img src={suvImg} alt={labels[m]} className="h-full w-full object-contain scale-x-[-1]" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-base font-bold text-foreground">{labels[m]}</span>
+                            <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.suv : localFares.suv)}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">{subs[m]}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </>
               )}
             </div>
@@ -704,6 +749,39 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
+      {/* Map picker for top "Choose on map" button */}
+      <MapPicker
+        open={mapPickerFor !== null}
+        onClose={() => setMapPickerFor(null)}
+        initial={
+          mapPickerFor === "drop" && drop
+            ? { lat: drop.lat, lng: drop.lng }
+            : pickup
+              ? { lat: pickup.lat, lng: pickup.lng }
+              : null
+        }
+        onPick={(p) => {
+          if (mapPickerFor === "drop") setDrop(p);
+          else setPickup(p);
+          setMapPickerFor(null);
+        }}
+      />
+
+      {/* Floating Book Now button */}
+      {canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <button
+            type="button"
+            onClick={openSummary}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg"
+          >
+            Book Now · {formatINR(estimatedFare)} <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { reverseGeocode } from "@/lib/maps/geocode.functions";
-import { MapPin, Loader2, Map as MapIcon, X } from "lucide-react";
+import { MapPin, Loader2, Map as MapIcon, X, Clock } from "lucide-react";
 import { MapPicker } from "@/components/MapPicker";
 
 export interface PlacePick {
@@ -18,12 +18,36 @@ interface Props {
   accent?: "green" | "red";
   /** Auto-detect device location on mount if no value is set. */
   autoDetect?: boolean;
+  /** Show "Choose on map" row inside the search dropdown. */
+  showChooseOnMap?: boolean;
+}
+
+const RECENT_PLACES_KEY = "luxury_recent_places";
+const MAX_RECENT = 5;
+
+function readRecentPlaces(): PlacePick[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_PLACES_KEY);
+    const arr: PlacePick[] = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.slice(0, MAX_RECENT) : [];
+  } catch { return []; }
+}
+function pushRecentPlace(p: PlacePick) {
+  if (typeof window === "undefined" || !p?.address) return;
+  const prev = readRecentPlaces().filter(
+    (x) => x.address !== p.address || Math.abs(x.lat - p.lat) > 1e-5 || Math.abs(x.lng - p.lng) > 1e-5
+  );
+  const next = [p, ...prev].slice(0, MAX_RECENT);
+  try { localStorage.setItem(RECENT_PLACES_KEY, JSON.stringify(next)); } catch {}
 }
 
 export function PlaceAutocomplete({
-  label, value, onChange, placeholder, accent = "green", autoDetect = false,
+  label, value, onChange, placeholder, accent = "green", autoDetect = false, showChooseOnMap = true,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [recent, setRecent] = useState<PlacePick[]>([]);
+  useEffect(() => { if (open) setRecent(readRecentPlaces()); }, [open]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,16 +114,24 @@ export function PlaceAutocomplete({
     try {
       const place = s.placePrediction.toPlace();
       await place.fetchFields({ fields: ["formattedAddress", "location", "displayName"] });
-      onChange({
+      const picked: PlacePick = {
         address: place.formattedAddress ?? place.displayName ?? "",
         lat: place.location!.lat(),
         lng: place.location!.lng(),
-      });
+      };
+      onChange(picked);
+      pushRecentPlace(picked);
       setOpen(false);
       setQuery("");
       setSuggestions([]);
       tokenRef.current = null;
     } catch (e) { console.error(e); }
+  }
+  function pickRecent(p: PlacePick) {
+    onChange(p);
+    pushRecentPlace(p);
+    setOpen(false);
+    setQuery("");
   }
 
   const dotColor = accent === "red" ? "text-destructive" : "text-primary";
@@ -144,7 +176,7 @@ export function PlaceAutocomplete({
             />
           </div>
 
-          {!query && (
+          {!query && showChooseOnMap && (
             <div className="border-b border-border">
               <button
                 onClick={() => setPickerOpen(true)}
@@ -162,12 +194,31 @@ export function PlaceAutocomplete({
           )}
 
           <div className="flex-1 overflow-y-auto">
+            {!query && recent.length > 0 && (
+              <>
+                <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Recent searches
+                </div>
+                {recent.slice(0, MAX_RECENT).map((r, i) => (
+                  <button
+                    key={`r-${i}`}
+                    onClick={() => pickRecent(r)}
+                    className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left hover:bg-muted"
+                  >
+                    <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{r.address}</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
             {loading && (
               <div className="flex items-center justify-center p-6 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
             )}
-            {!loading && suggestions.map((s, i) => {
+            {!loading && suggestions.slice(0, MAX_RECENT).map((s, i) => {
               const main = s.placePrediction?.mainText?.text ?? "";
               const sec = s.placePrediction?.secondaryText?.text ?? "";
               return (
@@ -197,6 +248,7 @@ export function PlaceAutocomplete({
         initial={value ? { lat: value.lat, lng: value.lng } : null}
         onPick={(p) => {
           onChange(p);
+          pushRecentPlace(p);
           setPickerOpen(false);
           setOpen(false);
         }}
