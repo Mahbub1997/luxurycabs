@@ -167,7 +167,11 @@ function Booking() {
       let distance: number;
       let duration: number;
       let vehicleType: VehicleType = vehicle;
-      let vehicleModel: string = localModel === "ciaz" ? "Ciaz" : vehicle === "sedan" ? "Sedan" : "SUV";
+      const LOCAL_LABELS: Record<typeof localModel, string> = {
+        sedan: "Sedan", ciaz: "Ciaz", suv: "SUV",
+        ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
+      };
+      let vehicleModel: string = LOCAL_LABELS[localModel] ?? (vehicle === "sedan" ? "Sedan" : "SUV");
 
       if (tab === "rental") {
         distance = pkg!.km;
