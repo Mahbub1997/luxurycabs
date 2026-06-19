@@ -45,7 +45,7 @@ function Booking() {
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
-  const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv">("sedan");
+  const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta">("sedan");
   const [outVehicleId, setOutVehicleId] = useState<string>(OUTSTATION_VEHICLES[0].id);
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
