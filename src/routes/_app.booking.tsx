@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
+import { MapPicker } from "@/components/MapPicker";
 import { VehicleCard } from "@/components/VehicleCard";
 import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
