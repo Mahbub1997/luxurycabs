@@ -268,6 +268,23 @@ function Booking() {
         ))}
       </div>
 
+      {/* Choose on map (top, above pickup/drop) */}
+      <div className="mx-4">
+        <button
+          type="button"
+          onClick={() => setMapPickerFor(pickup ? "drop" : "pickup")}
+          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
+        >
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
+            <MapIcon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">Choose on map</div>
+            <div className="text-xs text-muted-foreground">Drop a pin for {pickup ? "drop" : "pickup"} location</div>
+          </div>
+        </button>
+      </div>
+
       {/* Pickup + Drop search cards (tap to open full-screen search) */}
       <div className="mx-4 space-y-2">
         <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
@@ -278,6 +295,7 @@ function Booking() {
               onChange={setPickup}
               placeholder="Search pickup"
               autoDetect
+              showChooseOnMap={false}
             />
           </div>
           <Crosshair className="h-4 w-4 shrink-0 text-primary" />
@@ -288,11 +306,21 @@ function Booking() {
               label="Drop Location"
               value={drop}
               onChange={setDrop}
-              placeholder="Where to go?"
+              placeholder="Enter Drop Location"
               accent="green"
+              showChooseOnMap={false}
             />
           </div>
         </div>
+        {!drop && (
+          <div className="px-1 text-[11px] font-medium text-primary">
+            {tab === "rental"
+              ? "Enter Drop Location and select a rental duration package below."
+              : tab === "outstation"
+                ? "Enter Drop Location — this is a round trip, also pick a return date below."
+                : "Enter Drop Location to see fare and available vehicles."}
+          </div>
+        )}
       </div>
 
       {/* Map — compact so vehicle cards stay above the fold */}
