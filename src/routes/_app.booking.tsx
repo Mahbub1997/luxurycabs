@@ -59,6 +59,7 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [mapPickerFor, setMapPickerFor] = useState<null | "pickup" | "drop">(null);
 
   // If user already has an active trip (app was closed and reopened, or they
   // navigated back here), bounce them to the live tracking screen.
