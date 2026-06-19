@@ -563,7 +563,33 @@ function Booking() {
                       <div className="mt-1 text-xs text-muted-foreground">Premium sedan · 4 Seats · AC</div>
                     </div>
                   </button>
-                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
+                  <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv" && localModel === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
+                  {(["ertiga", "innova", "crysta"] as const).map((m) => {
+                    const labels = { ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const;
+                    const subs = { ertiga: "6 Seats · AC", innova: "7 Seats · AC", crysta: "Premium 7 Seats · AC" } as const;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => chooseLocalRental("suv", m)}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                          localModel === m ? "border-foreground" : "border-border"
+                        )}
+                      >
+                        <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
+                          <img src={suvImg} alt={labels[m]} className="h-full w-full object-contain scale-x-[-1]" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-base font-bold text-foreground">{labels[m]}</span>
+                            <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.suv : localFares.suv)}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">{subs[m]}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </>
               )}
             </div>
