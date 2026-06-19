@@ -18,12 +18,36 @@ interface Props {
   accent?: "green" | "red";
   /** Auto-detect device location on mount if no value is set. */
   autoDetect?: boolean;
+  /** Show "Choose on map" row inside the search dropdown. */
+  showChooseOnMap?: boolean;
+}
+
+const RECENT_PLACES_KEY = "luxury_recent_places";
+const MAX_RECENT = 5;
+
+function readRecentPlaces(): PlacePick[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_PLACES_KEY);
+    const arr: PlacePick[] = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.slice(0, MAX_RECENT) : [];
+  } catch { return []; }
+}
+function pushRecentPlace(p: PlacePick) {
+  if (typeof window === "undefined" || !p?.address) return;
+  const prev = readRecentPlaces().filter(
+    (x) => x.address !== p.address || Math.abs(x.lat - p.lat) > 1e-5 || Math.abs(x.lng - p.lng) > 1e-5
+  );
+  const next = [p, ...prev].slice(0, MAX_RECENT);
+  try { localStorage.setItem(RECENT_PLACES_KEY, JSON.stringify(next)); } catch {}
 }
 
 export function PlaceAutocomplete({
-  label, value, onChange, placeholder, accent = "green", autoDetect = false,
+  label, value, onChange, placeholder, accent = "green", autoDetect = false, showChooseOnMap = true,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [recent, setRecent] = useState<PlacePick[]>([]);
+  useEffect(() => { if (open) setRecent(readRecentPlaces()); }, [open]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
