@@ -167,7 +167,7 @@ function Booking() {
       let distance: number;
       let duration: number;
       let vehicleType: VehicleType = vehicle;
-      const LOCAL_LABELS: Record<typeof localModel, string> = {
+      const LOCAL_LABELS: Record<string, string> = {
         sedan: "Sedan", ciaz: "Ciaz", suv: "SUV",
         ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
       };
