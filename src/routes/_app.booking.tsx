@@ -478,20 +478,9 @@ function Booking() {
         </div>
 
         {canPickVehicle && (
-          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
-                <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
-              </div>
-              <button
-                type="button"
-                onClick={openSummary}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
-              >
-                Book Now <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3 text-center">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
+            <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
           </div>
         )}
       </div>
