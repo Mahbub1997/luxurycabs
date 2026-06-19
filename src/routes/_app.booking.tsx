@@ -469,7 +469,7 @@ function Booking() {
                 label="SUV"
                 seats={7}
                 fare={tab === "rental" ? rentalFares.suv : localFares.suv}
-                selected={vehicle === "suv"}
+                selected={vehicle === "suv" && localModel === "suv"}
                 disabled={false}
                 onSelect={() => chooseLocalRental("suv", "suv")}
               />
