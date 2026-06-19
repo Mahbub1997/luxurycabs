@@ -248,6 +248,7 @@ export function PlaceAutocomplete({
         initial={value ? { lat: value.lat, lng: value.lng } : null}
         onPick={(p) => {
           onChange(p);
+          pushRecentPlace(p);
           setPickerOpen(false);
           setOpen(false);
         }}
