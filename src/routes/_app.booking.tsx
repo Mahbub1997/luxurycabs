@@ -723,6 +723,39 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
+      {/* Map picker for top "Choose on map" button */}
+      <MapPicker
+        open={mapPickerFor !== null}
+        onClose={() => setMapPickerFor(null)}
+        initial={
+          mapPickerFor === "drop" && drop
+            ? { lat: drop.lat, lng: drop.lng }
+            : pickup
+              ? { lat: pickup.lat, lng: pickup.lng }
+              : null
+        }
+        onPick={(p) => {
+          if (mapPickerFor === "drop") setDrop(p);
+          else setPickup(p);
+          setMapPickerFor(null);
+        }}
+      />
+
+      {/* Floating Book Now button */}
+      {canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <button
+            type="button"
+            onClick={openSummary}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg"
+          >
+            Book Now · {formatINR(estimatedFare)} <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
