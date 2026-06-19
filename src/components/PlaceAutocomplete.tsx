@@ -114,16 +114,24 @@ export function PlaceAutocomplete({
     try {
       const place = s.placePrediction.toPlace();
       await place.fetchFields({ fields: ["formattedAddress", "location", "displayName"] });
-      onChange({
+      const picked: PlacePick = {
         address: place.formattedAddress ?? place.displayName ?? "",
         lat: place.location!.lat(),
         lng: place.location!.lng(),
-      });
+      };
+      onChange(picked);
+      pushRecentPlace(picked);
       setOpen(false);
       setQuery("");
       setSuggestions([]);
       tokenRef.current = null;
     } catch (e) { console.error(e); }
+  }
+  function pickRecent(p: PlacePick) {
+    onChange(p);
+    pushRecentPlace(p);
+    setOpen(false);
+    setQuery("");
   }
 
   const dotColor = accent === "red" ? "text-destructive" : "text-primary";
