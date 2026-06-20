@@ -746,23 +746,23 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Map picker for top "Choose on map" button */}
-      <MapPicker
+      {/* Unified pickup → drop → vehicle full-screen flow */}
+      <PickDropFlow
         open={mapPickerFor !== null}
+        initialPickup={pickup}
+        initialDrop={drop}
         onClose={() => setMapPickerFor(null)}
-        initial={
-          mapPickerFor === "drop" && drop
-            ? { lat: drop.lat, lng: drop.lng }
-            : pickup
-              ? { lat: pickup.lat, lng: pickup.lng }
-              : null
-        }
-        onPick={(p) => {
-          if (mapPickerFor === "drop") setDrop(p);
-          else setPickup(p);
+        onComplete={({ pickup: p, drop: d, vehicle: v }) => {
+          setPickup(p);
+          setDrop(d);
+          setVehicle(v);
+          setLocalModel(v === "sedan" ? "sedan" : "suv");
           setMapPickerFor(null);
+          // Jump straight to summary so the user can confirm & book.
+          setTimeout(() => setSummaryOpen(true), 50);
         }}
       />
+
 
       {/* Floating Book Now button */}
       {canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
