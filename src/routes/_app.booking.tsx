@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Crosshair,
+  Users, Snowflake, Search,
 } from "lucide-react";
 import { z } from "zod";
 import { type PlacePick } from "@/components/PlaceAutocomplete";
