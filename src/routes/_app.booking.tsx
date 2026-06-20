@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Crosshair,
+  Users, Snowflake, Search,
 } from "lucide-react";
 import { z } from "zod";
-import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
-import { MapPicker } from "@/components/MapPicker";
+import { type PlacePick } from "@/components/PlaceAutocomplete";
+import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
 import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
@@ -270,60 +270,57 @@ function Booking() {
         ))}
       </div>
 
-      {/* Choose on map (top, above pickup/drop) */}
+      {/* Single pickup/drop trigger — opens unified full-screen map flow */}
       <div className="mx-4">
-        <button
-          type="button"
-          onClick={() => setMapPickerFor(pickup ? "drop" : "pickup")}
-          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
-        >
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
-            <MapIcon className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Choose on map</div>
-            <div className="text-xs text-muted-foreground">Drop a pin for {pickup ? "drop" : "pickup"} location</div>
-          </div>
-        </button>
-      </div>
-
-      {/* Pickup + Drop search cards (tap to open full-screen search) */}
-      <div className="mx-4 space-y-2">
-        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
-          <div className="min-w-0 flex-1">
-            <PlaceAutocomplete
-              label="Pickup Location"
-              value={pickup}
-              onChange={setPickup}
-              placeholder="Search pickup"
-              autoDetect
-              showChooseOnMap={false}
-            />
-          </div>
-          <Crosshair className="h-4 w-4 shrink-0 text-primary" />
-        </div>
-        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 shadow-sm">
-          <div className="min-w-0 flex-1">
-            <PlaceAutocomplete
-              label="Drop Location"
-              value={drop}
-              onChange={setDrop}
-              placeholder="Enter Drop Location"
-              accent="green"
-              showChooseOnMap={false}
-            />
-          </div>
-        </div>
-        {!drop && (
-          <div className="px-1 text-[11px] font-medium text-primary">
+        {!pickup || !drop ? (
+          <button
+            type="button"
+            onClick={() => setMapPickerFor("pickup")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3.5 text-left shadow-sm hover:border-primary"
+          >
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
+              <Search className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">Enter pickup location</div>
+              <div className="text-xs text-muted-foreground">Pickup, drop & vehicle on one map</div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMapPickerFor("pickup")}
+            className="w-full space-y-1.5 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
+          >
+            <div className="flex items-start gap-2">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600" />
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Pickup</div>
+                <div className="truncate text-sm font-semibold">{pickup.address}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">Drop</div>
+                <div className="truncate text-sm font-semibold">{drop.address}</div>
+              </div>
+            </div>
+            <div className="text-right text-[11px] font-semibold text-primary">Tap to change</div>
+          </button>
+        )}
+        {(!pickup || !drop) && (
+          <div className="mt-1.5 px-1 text-[11px] font-medium text-primary">
             {tab === "rental"
-              ? "Enter Drop Location and select a rental duration package below."
+              ? "Choose pickup & drop, then select a rental package below."
               : tab === "outstation"
-                ? "Enter Drop Location — this is a round trip, also pick a return date below."
-                : "Enter Drop Location to see fare and available vehicles."}
+                ? "Round trip — choose pickup & drop, then pick a return date below."
+                : "One screen to pick locations and your ride."}
           </div>
         )}
       </div>
+
 
       {/* Map — compact so vehicle cards stay above the fold */}
       {pickup && drop && tab !== "rental" && (
@@ -749,23 +746,23 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Map picker for top "Choose on map" button */}
-      <MapPicker
+      {/* Unified pickup → drop → vehicle full-screen flow */}
+      <PickDropFlow
         open={mapPickerFor !== null}
+        initialPickup={pickup}
+        initialDrop={drop}
         onClose={() => setMapPickerFor(null)}
-        initial={
-          mapPickerFor === "drop" && drop
-            ? { lat: drop.lat, lng: drop.lng }
-            : pickup
-              ? { lat: pickup.lat, lng: pickup.lng }
-              : null
-        }
-        onPick={(p) => {
-          if (mapPickerFor === "drop") setDrop(p);
-          else setPickup(p);
+        onComplete={({ pickup: p, drop: d, vehicle: v }) => {
+          setPickup(p);
+          setDrop(d);
+          setVehicle(v);
+          setLocalModel(v === "sedan" ? "sedan" : "suv");
           setMapPickerFor(null);
+          // Jump straight to summary so the user can confirm & book.
+          setTimeout(() => setSummaryOpen(true), 50);
         }}
       />
+
 
       {/* Floating Book Now button */}
       {canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
