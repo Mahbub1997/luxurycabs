@@ -29,6 +29,7 @@ import { Route as AppBookingRouteImport } from './routes/_app.booking'
 import { Route as DriverTripIdRouteImport } from './routes/driver.trip.$id'
 import { Route as AuthenticatedAdminLocalFaresRouteImport } from './routes/_authenticated/admin.local-fares'
 import { Route as AuthenticatedAdminLiveRouteImport } from './routes/_authenticated/admin.live'
+import { Route as AuthenticatedAdminInvoicesRouteImport } from './routes/_authenticated/admin.invoices'
 import { Route as AuthenticatedAdminFaresRouteImport } from './routes/_authenticated/admin.fares'
 import { Route as AuthenticatedAdminDriversMapRouteImport } from './routes/_authenticated/admin.drivers-map'
 import { Route as AuthenticatedAdminDriversRouteImport } from './routes/_authenticated/admin.drivers'
@@ -136,6 +137,12 @@ const AuthenticatedAdminLiveRoute = AuthenticatedAdminLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminInvoicesRoute =
+  AuthenticatedAdminInvoicesRouteImport.update({
+    id: '/invoices',
+    path: '/invoices',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFaresRoute = AuthenticatedAdminFaresRouteImport.update({
   id: '/fares',
   path: '/fares',
@@ -201,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/admin/invoices': typeof AuthenticatedAdminInvoicesRoute
   '/admin/live': typeof AuthenticatedAdminLiveRoute
   '/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
@@ -228,6 +236,7 @@ export interface FileRoutesByTo {
   '/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/admin/invoices': typeof AuthenticatedAdminInvoicesRoute
   '/admin/live': typeof AuthenticatedAdminLiveRoute
   '/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
@@ -258,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/drivers': typeof AuthenticatedAdminDriversRoute
   '/_authenticated/admin/drivers-map': typeof AuthenticatedAdminDriversMapRoute
   '/_authenticated/admin/fares': typeof AuthenticatedAdminFaresRoute
+  '/_authenticated/admin/invoices': typeof AuthenticatedAdminInvoicesRoute
   '/_authenticated/admin/live': typeof AuthenticatedAdminLiveRoute
   '/_authenticated/admin/local-fares': typeof AuthenticatedAdminLocalFaresRoute
   '/driver/trip/$id': typeof DriverTripIdRoute
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/admin/drivers'
     | '/admin/drivers-map'
     | '/admin/fares'
+    | '/admin/invoices'
     | '/admin/live'
     | '/admin/local-fares'
     | '/driver/trip/$id'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/admin/drivers'
     | '/admin/drivers-map'
     | '/admin/fares'
+    | '/admin/invoices'
     | '/admin/live'
     | '/admin/local-fares'
     | '/driver/trip/$id'
@@ -343,6 +355,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/drivers'
     | '/_authenticated/admin/drivers-map'
     | '/_authenticated/admin/fares'
+    | '/_authenticated/admin/invoices'
     | '/_authenticated/admin/live'
     | '/_authenticated/admin/local-fares'
     | '/driver/trip/$id'
@@ -506,6 +519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLiveRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/invoices': {
+      id: '/_authenticated/admin/invoices'
+      path: '/invoices'
+      fullPath: '/admin/invoices'
+      preLoaderRoute: typeof AuthenticatedAdminInvoicesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/fares': {
       id: '/_authenticated/admin/fares'
       path: '/fares'
@@ -566,6 +586,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDriversRoute: typeof AuthenticatedAdminDriversRoute
   AuthenticatedAdminDriversMapRoute: typeof AuthenticatedAdminDriversMapRoute
   AuthenticatedAdminFaresRoute: typeof AuthenticatedAdminFaresRoute
+  AuthenticatedAdminInvoicesRoute: typeof AuthenticatedAdminInvoicesRoute
   AuthenticatedAdminLiveRoute: typeof AuthenticatedAdminLiveRoute
   AuthenticatedAdminLocalFaresRoute: typeof AuthenticatedAdminLocalFaresRoute
 }
@@ -578,6 +599,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDriversRoute: AuthenticatedAdminDriversRoute,
   AuthenticatedAdminDriversMapRoute: AuthenticatedAdminDriversMapRoute,
   AuthenticatedAdminFaresRoute: AuthenticatedAdminFaresRoute,
+  AuthenticatedAdminInvoicesRoute: AuthenticatedAdminInvoicesRoute,
   AuthenticatedAdminLiveRoute: AuthenticatedAdminLiveRoute,
   AuthenticatedAdminLocalFaresRoute: AuthenticatedAdminLocalFaresRoute,
 }
@@ -630,13 +652,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

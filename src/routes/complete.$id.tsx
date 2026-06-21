@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { getBooking, type Booking } from "@/lib/booking-store";
 import { formatINR, fareBreakdown, tariffFor } from "@/lib/fare";
 import { generateInvoice } from "@/lib/invoice";
+import { uploadInvoiceFor } from "@/lib/invoice-storage";
+
 import { formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/complete/$id")({
@@ -19,6 +21,16 @@ function Complete() {
   const [rating, setRating] = useState(5);
 
   useEffect(() => { getBooking(id).then(setB); }, [id]);
+
+  // Auto-generate and store the invoice once we have the booking and it isn't already saved.
+  useEffect(() => {
+    if (!b) return;
+    const anyB = b as any;
+    if (anyB.invoice_path) return;
+    if (b.status !== "completed") return;
+    uploadInvoiceFor(b).catch((err) => console.error("invoice upload failed", err));
+  }, [b]);
+
 
   if (!b) {
     return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
