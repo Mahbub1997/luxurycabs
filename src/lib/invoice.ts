@@ -305,5 +305,30 @@ export function buildInvoiceDoc(b: Booking) {
   doc.setFont("helvetica", "bold");
   doc.text("Thank you for riding with us!", W - M - 16, H - 30, { align: "right" });
 
-  doc.save(`LuxuryCabs-${b.id.slice(0, 8)}.pdf`);
+  return doc;
 }
+
+export function invoiceFileName(b: Booking) {
+  return `LuxuryCabs-${b.id.slice(0, 8)}.pdf`;
+}
+
+export function generateInvoice(b: Booking) {
+  const doc = buildInvoiceDoc(b);
+  doc.save(invoiceFileName(b));
+}
+
+/** Build PDF as a Blob for upload. */
+export function buildInvoiceBlob(b: Booking): Blob {
+  const doc = buildInvoiceDoc(b);
+  return doc.output("blob");
+}
+
+/** Storage path: YYYY-MM/YYYY-MM-DD_tripId.pdf */
+export function invoiceStoragePath(b: Booking): string {
+  const d = new Date(b.completed_at ?? b.scheduled_at ?? Date.now());
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}/${yyyy}-${mm}-${dd}_${b.id}.pdf`;
+}
+
