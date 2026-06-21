@@ -22,11 +22,13 @@ function AdminShell() {
     { to: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
     { to: "/admin/live", label: "Live Trips", Icon: Activity },
     { to: "/admin/drivers-map", label: "Live Map", Icon: MapIcon },
+    { to: "/admin/invoices", label: "Invoices", Icon: FileText },
     { to: "/admin/approvals", label: "Approvals", Icon: UserCheck },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
     { to: "/admin/customers", label: "Customers", Icon: UserCircle2 },
     { to: "/admin/add-admin", label: "Add Admin", Icon: ShieldPlus },
   ];
+
 
 
   return (
