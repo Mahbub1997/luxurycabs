@@ -37,6 +37,9 @@ export type Database = {
           duration_min: number
           fare: number
           id: string
+          invoice_generated_at: string | null
+          invoice_path: string | null
+          invoice_url: string | null
           otp: string
           package_label: string | null
           payment_method: string
@@ -77,6 +80,9 @@ export type Database = {
           duration_min?: number
           fare?: number
           id?: string
+          invoice_generated_at?: string | null
+          invoice_path?: string | null
+          invoice_url?: string | null
           otp?: string
           package_label?: string | null
           payment_method?: string
@@ -117,6 +123,9 @@ export type Database = {
           duration_min?: number
           fare?: number
           id?: string
+          invoice_generated_at?: string | null
+          invoice_path?: string | null
+          invoice_url?: string | null
           otp?: string
           package_label?: string | null
           payment_method?: string
