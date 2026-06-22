@@ -424,13 +424,6 @@ export type Database = {
             foreignKeyName: "wallet_transactions_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
-            referencedRelation: "booking_public_track"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wallet_transactions_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -489,92 +482,39 @@ export type Database = {
       }
     }
     Views: {
-      booking_public_track: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          distance_km: number | null
-          driver_lat: number | null
-          driver_lng: number | null
-          driver_name: string | null
-          driver_photo: string | null
-          driver_rating: number | null
-          driver_trips: number | null
-          drop_address: string | null
-          drop_lat: number | null
-          drop_lng: number | null
-          duration_min: number | null
-          id: string | null
-          pickup_address: string | null
-          pickup_lat: number | null
-          pickup_lng: number | null
-          route_polyline: string | null
-          scheduled_at: string | null
-          status: Database["public"]["Enums"]["booking_status"] | null
-          trip_type: Database["public"]["Enums"]["trip_type"] | null
-          updated_at: string | null
-          vehicle_model: string | null
-          vehicle_number: string | null
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"] | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          distance_km?: number | null
-          driver_lat?: number | null
-          driver_lng?: number | null
-          driver_name?: string | null
-          driver_photo?: string | null
-          driver_rating?: number | null
-          driver_trips?: number | null
-          drop_address?: string | null
-          drop_lat?: number | null
-          drop_lng?: number | null
-          duration_min?: number | null
-          id?: string | null
-          pickup_address?: string | null
-          pickup_lat?: number | null
-          pickup_lng?: number | null
-          route_polyline?: string | null
-          scheduled_at?: string | null
-          status?: Database["public"]["Enums"]["booking_status"] | null
-          trip_type?: Database["public"]["Enums"]["trip_type"] | null
-          updated_at?: string | null
-          vehicle_model?: string | null
-          vehicle_number?: string | null
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          distance_km?: number | null
-          driver_lat?: number | null
-          driver_lng?: number | null
-          driver_name?: string | null
-          driver_photo?: string | null
-          driver_rating?: number | null
-          driver_trips?: number | null
-          drop_address?: string | null
-          drop_lat?: number | null
-          drop_lng?: number | null
-          duration_min?: number | null
-          id?: string | null
-          pickup_address?: string | null
-          pickup_lat?: number | null
-          pickup_lng?: number | null
-          route_polyline?: string | null
-          scheduled_at?: string | null
-          status?: Database["public"]["Enums"]["booking_status"] | null
-          trip_type?: Database["public"]["Enums"]["trip_type"] | null
-          updated_at?: string | null
-          vehicle_model?: string | null
-          vehicle_number?: string | null
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_track_info: {
+        Args: { _booking_id: string }
+        Returns: {
+          completed_at: string
+          created_at: string
+          distance_km: number
+          driver_lat: number
+          driver_lng: number
+          driver_name: string
+          driver_photo: string
+          driver_rating: number
+          driver_trips: number
+          drop_address: string
+          drop_lat: number
+          drop_lng: number
+          duration_min: number
+          id: string
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          route_polyline: string
+          scheduled_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          trip_type: Database["public"]["Enums"]["trip_type"]
+          updated_at: string
+          vehicle_model: string
+          vehicle_number: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
