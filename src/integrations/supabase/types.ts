@@ -53,7 +53,7 @@ export type Database = {
           trip_mode: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
           vehicle_model: string | null
           vehicle_number: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -96,7 +96,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -139,7 +139,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
@@ -485,11 +485,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_track_info: {
+        Args: { _booking_id: string }
+        Returns: {
+          completed_at: string
+          created_at: string
+          distance_km: number
+          driver_lat: number
+          driver_lng: number
+          driver_name: string
+          driver_photo: string
+          driver_rating: number
+          driver_trips: number
+          drop_address: string
+          drop_lat: number
+          drop_lng: number
+          duration_min: number
+          id: string
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          route_polyline: string
+          scheduled_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          trip_type: Database["public"]["Enums"]["trip_type"]
+          updated_at: string
+          vehicle_model: string
+          vehicle_number: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_assigned_driver: {
+        Args: { _booking_driver_id: string }
         Returns: boolean
       }
     }

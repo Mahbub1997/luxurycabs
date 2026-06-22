@@ -5,15 +5,27 @@ export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 
 export async function createBooking(input: BookingInsert): Promise<Booking> {
-  const { data, error } = await supabase.from("bookings").insert(input).select().single();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("You must be signed in to book a ride.");
+  const withUser = { ...input, user_id: auth.user.id } as BookingInsert;
+  const { data, error } = await supabase.from("bookings").insert(withUser).select().single();
   if (error) throw error;
   return data;
 }
 
+/**
+ * Returns the full booking row if the caller is the owner / assigned driver / admin
+ * (RLS gates this). For anonymous or unauthorized callers, falls back to the public
+ * share-trip projection (`get_track_info`) which returns ONLY safe columns
+ * (no OTP, no phones, no fare, no customer name).
+ */
 export async function getBooking(id: string): Promise<Booking | null> {
   const { data, error } = await supabase.from("bookings").select("*").eq("id", id).maybeSingle();
-  if (error) throw error;
-  return data;
+  if (!error && data) return data as Booking;
+  const { data: pub, error: pubErr } = await supabase.rpc("get_track_info", { _booking_id: id });
+  if (pubErr) return null;
+  const row = Array.isArray(pub) ? pub[0] : pub;
+  return (row as Booking | undefined) ?? null;
 }
 
 export async function updateBooking(id: string, patch: Partial<Booking>) {
