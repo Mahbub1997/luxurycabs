@@ -16,7 +16,12 @@ function AppLayout() {
   useEffect(() => {
     let cancelled = false;
     supabase.auth.getUser().then(({ data }) => {
-      if (!cancelled) setUserId(data.user?.id ?? null);
+      if (cancelled) return;
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      if (!uid && typeof window !== "undefined") {
+        window.location.replace("/auth");
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (!cancelled) setUserId(s?.user?.id ?? null);
