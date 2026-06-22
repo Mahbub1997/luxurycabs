@@ -53,7 +53,7 @@ export type Database = {
           trip_mode: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
-          user_id: string | null
+          user_id: string
           vehicle_model: string | null
           vehicle_number: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -96,7 +96,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -139,7 +139,7 @@ export type Database = {
           trip_mode?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           vehicle_model?: string | null
           vehicle_number?: string | null
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
@@ -424,6 +424,13 @@ export type Database = {
             foreignKeyName: "wallet_transactions_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "booking_public_track"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -482,7 +489,90 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      booking_public_track: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          distance_km: number | null
+          driver_lat: number | null
+          driver_lng: number | null
+          driver_name: string | null
+          driver_photo: string | null
+          driver_rating: number | null
+          driver_trips: number | null
+          drop_address: string | null
+          drop_lat: number | null
+          drop_lng: number | null
+          duration_min: number | null
+          id: string | null
+          pickup_address: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          route_polyline: string | null
+          scheduled_at: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          trip_type: Database["public"]["Enums"]["trip_type"] | null
+          updated_at: string | null
+          vehicle_model: string | null
+          vehicle_number: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          distance_km?: number | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_photo?: string | null
+          driver_rating?: number | null
+          driver_trips?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          duration_min?: number | null
+          id?: string | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          route_polyline?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          trip_type?: Database["public"]["Enums"]["trip_type"] | null
+          updated_at?: string | null
+          vehicle_model?: string | null
+          vehicle_number?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          distance_km?: number | null
+          driver_lat?: number | null
+          driver_lng?: number | null
+          driver_name?: string | null
+          driver_photo?: string | null
+          driver_rating?: number | null
+          driver_trips?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          duration_min?: number | null
+          id?: string | null
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          route_polyline?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          trip_type?: Database["public"]["Enums"]["trip_type"] | null
+          updated_at?: string | null
+          vehicle_model?: string | null
+          vehicle_number?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -490,6 +580,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_assigned_driver: {
+        Args: { _booking_driver_id: string }
         Returns: boolean
       }
     }
