@@ -169,8 +169,8 @@ function DriverTrip() {
 
   async function verifyOtp() {
     if (!b) return;
-    if (otp.trim() !== b.otp) { toast.error("Wrong OTP"); return; }
-    await supabase.from("bookings").update({ status: "in_progress" }).eq("id", b.id);
+    const { error } = await supabase.rpc("verify_start_trip", { _booking_id: b.id, _otp: otp.trim() });
+    if (error) { toast.error(error.message || "Wrong OTP"); return; }
     setPhase("in_trip");
     toast.success("Trip started");
   }

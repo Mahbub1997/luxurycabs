@@ -55,7 +55,7 @@ function DriverSignup() {
         { file: selfie, path: `${user_id}/selfie-${Date.now()}.jpg`, field: "selfie_url" as const },
         { file: license, path: `${user_id}/license-${Date.now()}.jpg`, field: "license_photo_url" as const },
       ];
-      const patch: Record<string, string> = {};
+      const patch: { selfie_url?: string; license_photo_url?: string } = {};
       for (const u of uploads) {
         const { error } = await supabase.storage.from("driver-docs").upload(u.path, u.file, { upsert: true });
         if (error) throw error;

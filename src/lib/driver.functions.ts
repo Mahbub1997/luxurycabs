@@ -3,14 +3,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * Public signup for a new driver. Creates auth user + role + drivers row (pending).
- * Selfie / license photos are uploaded separately by the signed-in user.
+ * Driver registration for the CURRENTLY SIGNED-IN Google user.
+ * No email/password — identity comes from the bearer token.
  */
 export const signupDriver = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z.object({
       email: z.string().email(),
-      password: z.string().min(6).max(72),
       name: z.string().min(1).max(120),
       phone: z.string().min(7).max(20),
       license_number: z.string().min(1).max(60),
@@ -19,21 +19,23 @@ export const signupDriver = createServerFn({ method: "POST" })
       vehicle_number: z.string().max(40).optional(),
     }).parse(d)
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const created = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { name: data.name, role: "driver" },
-    });
-    if (created.error) throw new Error(created.error.message);
-    const uid = created.data.user!.id;
+    const uid = context.userId;
 
-    const { error: rErr } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: uid, role: "driver" });
-    if (rErr) throw new Error(rErr.message);
+    // Idempotent role insert.
+    const { data: existingRole } = await supabaseAdmin
+      .from("user_roles").select("id").eq("user_id", uid).eq("role", "driver").maybeSingle();
+    if (!existingRole) {
+      const { error: rErr } = await supabaseAdmin
+        .from("user_roles").insert({ user_id: uid, role: "driver" });
+      if (rErr) throw new Error(rErr.message);
+    }
+
+    // Idempotent drivers row.
+    const { data: existingDrv } = await supabaseAdmin
+      .from("drivers").select("id").eq("user_id", uid).maybeSingle();
+    if (existingDrv) return { ok: true, user_id: uid };
 
     const { error: dErr } = await supabaseAdmin.from("drivers").insert({
       user_id: uid,
@@ -108,6 +110,9 @@ export const completeRide = createServerFn({ method: "POST" })
       .from("bookings").select("*").eq("id", data.booking_id).single();
     if (bErr) throw new Error(bErr.message);
     if (booking.assigned_driver_id !== drv.id) throw new Error("Not your booking");
+    if (!["driver_assigned", "driver_arrived", "in_progress"].includes(booking.status)) {
+      throw new Error("Booking is not in a completable state");
+    }
 
     const fare = Number(booking.fare);
     const commission = Math.round(fare * 0.10 * 100) / 100;
