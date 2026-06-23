@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Car, Loader2, Camera, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { signupDriver } from "@/lib/driver.functions";
@@ -12,8 +12,10 @@ export const Route = createFileRoute("/driver/signup")({
 
 function DriverSignup() {
   const navigate = useNavigate();
+  const [uid, setUid] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>("");
   const [f, setF] = useState({
-    name: "", phone: "", email: "", password: "",
+    name: "", phone: "",
     license_number: "", vehicle_type: "sedan" as "sedan" | "suv",
     vehicle_model: "", vehicle_number: "",
   });
@@ -21,20 +23,39 @@ function DriverSignup() {
   const [license, setLicense] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user) {
+        navigate({ to: "/driver/login", replace: true });
+        return;
+      }
+      setUid(user.id);
+      setEmail(user.email ?? "");
+      setF((s) => ({
+        ...s,
+        name: s.name || user.user_metadata?.full_name || user.user_metadata?.name || "",
+      }));
+      // If they already have a driver profile, skip the form.
+      const { data: existing } = await supabase
+        .from("drivers").select("id").eq("user_id", user.id).maybeSingle();
+      if (existing) navigate({ to: "/driver", replace: true });
+    })();
+  }, [navigate]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!uid) return;
     if (!selfie || !license) { toast.error("Selfie and license photos required"); return; }
     setBusy(true);
     try {
-      const { user_id } = await signupDriver({ data: f });
-      // Sign in to upload under their own folder.
-      const { error: sErr } = await supabase.auth.signInWithPassword({ email: f.email, password: f.password });
-      if (sErr) throw sErr;
+      const { user_id } = await signupDriver({ data: { ...f, email } });
       const uploads = [
         { file: selfie, path: `${user_id}/selfie-${Date.now()}.jpg`, field: "selfie_url" as const },
         { file: license, path: `${user_id}/license-${Date.now()}.jpg`, field: "license_photo_url" as const },
       ];
-      const patch: any = {};
+      const patch: Record<string, string> = {};
       for (const u of uploads) {
         const { error } = await supabase.storage.from("driver-docs").upload(u.path, u.file, { upsert: true });
         if (error) throw error;
@@ -48,6 +69,10 @@ function DriverSignup() {
     } finally { setBusy(false); }
   }
 
+  if (!uid) {
+    return <div className="min-h-screen grid place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="mx-auto max-w-sm">
@@ -56,10 +81,11 @@ function DriverSignup() {
           <span className="font-display text-xl font-bold">Driver Registration</span>
         </div>
         <form onSubmit={submit} className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            Signed in as <span className="font-semibold">{email}</span>
+          </div>
           <Input label="Full Name" value={f.name} onChange={(v) => setF({ ...f, name: v })} required />
           <Input label="Phone Number" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} required />
-          <Input label="Email" type="email" value={f.email} onChange={(v) => setF({ ...f, email: v })} required />
-          <Input label="Password" type="password" value={f.password} onChange={(v) => setF({ ...f, password: v })} required minLength={6} />
           <Input label="Driving License Number" value={f.license_number} onChange={(v) => setF({ ...f, license_number: v })} required />
 
           <div>
@@ -78,7 +104,7 @@ function DriverSignup() {
           <button disabled={busy} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit for Approval"}
           </button>
-          <Link to="/driver/login" className="block text-center text-xs text-primary underline">Already registered? Sign in</Link>
+          <Link to="/driver/login" className="block text-center text-xs text-primary underline">Use a different account</Link>
         </form>
       </div>
     </div>
