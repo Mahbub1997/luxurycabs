@@ -485,6 +485,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_super_admin: { Args: never; Returns: boolean }
       get_track_info: {
         Args: { _booking_id: string }
         Returns: {
@@ -524,6 +525,10 @@ export type Database = {
       }
       is_assigned_driver: {
         Args: { _booking_driver_id: string }
+        Returns: boolean
+      }
+      verify_start_trip: {
+        Args: { _booking_id: string; _otp: string }
         Returns: boolean
       }
     }
