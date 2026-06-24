@@ -319,7 +319,7 @@ export const adminSetBookingStatus = createServerFn({ method: "POST" })
       patch.completed_at = new Date().toISOString();
       patch.payment_status = "paid";
     }
-    const { error } = await supabaseAdmin.from("bookings").update(patch).eq("id", data.booking_id);
+    const { error } = await supabaseAdmin.from("bookings").update(patch as any).eq("id", data.booking_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
