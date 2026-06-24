@@ -299,3 +299,27 @@ export const cancelBookingServer = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Admin: manually change booking status (override). */
+export const adminSetBookingStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    booking_id: z.string().uuid(),
+    status: z.enum(["pending", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ar } = await supabaseAdmin.from("user_roles")
+      .select("approved").eq("user_id", context.userId)
+      .in("role", ["admin", "super_admin"]).eq("approved", true).maybeSingle();
+    if (!ar) throw new Error("Not admin");
+
+    const patch: Record<string, any> = { status: data.status, updated_at: new Date().toISOString() };
+    if (data.status === "completed") {
+      patch.completed_at = new Date().toISOString();
+      patch.payment_status = "paid";
+    }
+    const { error } = await supabaseAdmin.from("bookings").update(patch as any).eq("id", data.booking_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2, Search, Phone, XCircle } from "lucide-react";
+import {
+  MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2,
+  Search, Phone, XCircle, ChevronDown, ChevronUp, RefreshCw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
-import { assignBookingToDriver, cancelBookingServer } from "@/lib/driver.functions";
+import { assignBookingToDriver, cancelBookingServer, adminSetBookingStatus } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { toast } from "sonner";
 
@@ -12,9 +15,13 @@ export const Route = createFileRoute("/_authenticated/admin/bookings")({
   component: AdminBookings,
 });
 
-
 const TABS = ["pending", "ongoing", "completed", "all"] as const;
 type Tab = (typeof TABS)[number];
+
+const STATUSES = [
+  "pending", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled",
+] as const;
+type Status = (typeof STATUSES)[number];
 
 function AdminBookings() {
   const [tab, setTab] = useState<Tab>("pending");
@@ -39,9 +46,7 @@ function AdminBookings() {
       .channel("admin-bookings")
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => load())
       .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
@@ -69,6 +74,7 @@ function AdminBookings() {
           className="w-full bg-transparent text-sm outline-none"
         />
         {query && <button onClick={() => setQuery("")}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>}
+        <button onClick={load} title="Refresh"><RefreshCw className="h-3.5 w-3.5 text-muted-foreground" /></button>
       </div>
 
       <div className="mb-3 flex gap-1">
@@ -144,24 +150,51 @@ function AssignModal({ booking, onClose }: { booking: any; onClose: () => void }
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const cls =
+    status === "completed" ? "bg-emerald-100 text-emerald-700"
+    : status === "cancelled" ? "bg-rose-100 text-rose-700"
+    : status === "pending" ? "bg-amber-100 text-amber-700"
+    : "bg-sky-100 text-sky-700";
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", cls)}>
+      {status}
+    </span>
+  );
+}
 
 function BookingCard({ b }: { b: any }) {
   const [assigning, setAssigning] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const statusColor =
+  const [expanded, setExpanded] = useState(false);
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [driverInfo, setDriverInfo] = useState<any>(null);
 
-    b.status === "completed" ? "bg-emerald-100 text-emerald-700"
-    : b.status === "cancelled" ? "bg-rose-100 text-rose-700"
-    : b.status === "pending" ? "bg-amber-100 text-amber-700"
-    : "bg-sky-100 text-sky-700";
   const isActive = ["pending", "driver_assigned", "driver_arrived", "in_progress"].includes(b.status);
+  const isFinal = b.status === "completed" || b.status === "cancelled";
+
+  useEffect(() => {
+    if (!expanded || !b.assigned_driver_id || driverInfo) return;
+    supabase.from("drivers")
+      .select("id, name, phone, email, vehicle_type, vehicle_model, vehicle_number, rating, total_trips, wallet_balance, is_online, current_lat, current_lng, status")
+      .eq("id", b.assigned_driver_id).maybeSingle()
+      .then(({ data }) => setDriverInfo(data));
+  }, [expanded, b.assigned_driver_id, driverInfo]);
+
+  async function changeStatus(next: Status) {
+    if (next === b.status) return;
+    if (next === "cancelled") { setCancelling(true); return; }
+    setSavingStatus(true);
+    try {
+      await adminSetBookingStatus({ data: { booking_id: b.id, status: next } });
+      toast.success(`Status changed to ${next}`);
+    } catch (e: any) { toast.error(e.message); } finally { setSavingStatus(false); }
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
       <div className="flex items-center justify-between">
-        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", statusColor)}>
-          {b.status}
-        </span>
+        <StatusBadge status={b.status} />
         <span className="text-[10px] text-muted-foreground">
           {new Date(b.created_at).toLocaleString()}
         </span>
@@ -198,10 +231,15 @@ function BookingCard({ b }: { b: any }) {
       {(b.driver_name || b.assigned_driver_id) && (
         <div className="mt-3 rounded-lg bg-muted/50 p-2.5 text-xs">
           <div className="mb-1 flex items-center gap-1 font-semibold text-foreground">
-            <Car className="h-3.5 w-3.5" /> Driver
+            <Car className="h-3.5 w-3.5" /> Assigned Driver
           </div>
           <div className="text-muted-foreground">
-            {b.driver_name || b.assigned_driver_id} {b.driver_phone && `· ${b.driver_phone}`}
+            {b.driver_name || b.assigned_driver_id}
+            {b.driver_phone && (
+              <a href={`tel:${b.driver_phone}`} className="ml-2 inline-flex items-center gap-1 text-primary">
+                <Phone className="h-3 w-3" />{b.driver_phone}
+              </a>
+            )}
           </div>
           {(b.vehicle_model || b.vehicle_number) && (
             <div className="text-muted-foreground">
@@ -216,7 +254,30 @@ function BookingCard({ b }: { b: any }) {
         </div>
       )}
 
-      {(b.status === "pending" || !b.assigned_driver_id) && b.status !== "completed" && b.status !== "cancelled" && (
+      {/* Status changer */}
+      {!isFinal && (
+        <div className="mt-3">
+          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Change Status
+          </label>
+          <div className="flex items-center gap-2">
+            <select
+              value={b.status}
+              disabled={savingStatus}
+              onChange={(e) => changeStatus(e.target.value as Status)}
+              className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            {savingStatus && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {(b.status === "pending" || !b.assigned_driver_id) && !isFinal && (
         <button
           onClick={() => setAssigning(true)}
           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-2 text-xs font-bold text-primary-foreground"
@@ -224,7 +285,14 @@ function BookingCard({ b }: { b: any }) {
           <UserPlus className="h-3.5 w-3.5" /> {b.assigned_driver_id ? "Reassign Driver" : "Assign Driver"}
         </button>
       )}
-
+      {b.assigned_driver_id && !isFinal && (
+        <button
+          onClick={() => setAssigning(true)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-xs font-bold"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Reassign Driver
+        </button>
+      )}
       {isActive && (
         <button
           onClick={() => setCancelling(true)}
@@ -237,6 +305,50 @@ function BookingCard({ b }: { b: any }) {
       {b.status === "cancelled" && b.cancellation_reason && (
         <div className="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">
           <span className="font-bold">Cancelled by {b.cancelled_by ?? "user"}:</span> {b.cancellation_reason}
+        </div>
+      )}
+
+      {/* Expand for full details */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-muted py-1.5 text-[11px] font-semibold text-muted-foreground"
+      >
+        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        {expanded ? "Hide details" : "Full details"}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-3 rounded-xl border border-border bg-background p-3 text-xs">
+          <Section title="Booking">
+            <KV k="ID" v={b.id} />
+            <KV k="Code" v={`LC${(b.id as string).replace(/-/g, "").slice(0, 8).toUpperCase()}`} />
+            <KV k="OTP" v={b.otp} />
+            <KV k="Scheduled" v={b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : "Now"} />
+            <KV k="Created" v={new Date(b.created_at).toLocaleString()} />
+            {b.completed_at && <KV k="Completed" v={new Date(b.completed_at).toLocaleString()} />}
+            {b.user_id && <KV k="User" v={b.user_id} />}
+          </Section>
+
+          {b.assigned_driver_id && (
+            <Section title="Driver (live)">
+              {!driverInfo && <p className="text-muted-foreground">Loading…</p>}
+              {driverInfo && (
+                <>
+                  <KV k="Name" v={driverInfo.name} />
+                  <KV k="Phone" v={driverInfo.phone} />
+                  <KV k="Email" v={driverInfo.email ?? "—"} />
+                  <KV k="Vehicle" v={`${driverInfo.vehicle_type} · ${driverInfo.vehicle_model ?? "—"} · ${driverInfo.vehicle_number ?? "—"}`} />
+                  <KV k="Online" v={driverInfo.is_online ? "🟢 Online" : "⚫ Offline"} />
+                  <KV k="Rating" v={`${driverInfo.rating ?? "—"} ★ · ${driverInfo.total_trips ?? 0} trips`} />
+                  <KV k="Wallet" v={`₹${driverInfo.wallet_balance ?? 0}`} />
+                  <KV k="Status" v={driverInfo.status} />
+                  {(driverInfo.current_lat || driverInfo.current_lng) && (
+                    <KV k="Location" v={`${driverInfo.current_lat?.toFixed(5)}, ${driverInfo.current_lng?.toFixed(5)}`} />
+                  )}
+                </>
+              )}
+            </Section>
+          )}
         </div>
       )}
 
@@ -268,7 +380,6 @@ function BookingCard({ b }: { b: any }) {
   );
 }
 
-
 function Row({ Icon, text, accent }: { Icon: any; text: string; accent?: string }) {
   return (
     <div className="flex items-start gap-2">
@@ -286,6 +397,24 @@ function Mini({ label, value, Icon }: { label: string; value: string; Icon?: any
         {Icon && <Icon className="h-3 w-3" />}
         {value}
       </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{title}</div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
+function KV({ k, v }: { k: string; v: any }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-muted-foreground">{k}</span>
+      <span className="break-all text-right font-medium text-foreground">{String(v ?? "—")}</span>
     </div>
   );
 }
