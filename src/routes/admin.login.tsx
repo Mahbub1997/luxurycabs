@@ -16,38 +16,41 @@ export const Route = createFileRoute("/admin/login")({
 function AdminLogin() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  // After Google sign-in: try to claim super-admin (one-time), then verify admin role.
-  useEffect(() => {
-    let cancelled = false;
-    async function gate() {
-      const { data } = await supabase.auth.getUser();
-      const uid = data.user?.id;
-      if (!uid) return;
-      try {
-        // Attempt to claim super-admin (no-op if one already exists).
-        try { await claimSuperAdmin(); } catch { /* ignore */ }
-        const r = await checkIsAdmin();
-        if (cancelled) return;
-        if (r.isAdmin) {
-          await claimSession("profiles", { column: "user_id", value: uid });
-          navigate({ to: "/admin/bookings", replace: true });
-        } else if (r.pending) {
-          toast.message("Your admin request is pending approval.");
-          await supabase.auth.signOut();
-        } else {
-          toast.error("This Google account is not registered as an admin.");
-          await supabase.auth.signOut();
-        }
-      } catch (e: any) {
-        toast.error(e?.message || "Sign-in failed");
+  async function gateOnce() {
+    const { data } = await supabase.auth.getUser();
+    const uid = data.user?.id;
+    if (!uid) return;
+    try {
+      try { await claimSuperAdmin(); } catch { /* ignore */ }
+      const r = await checkIsAdmin();
+      if (r.isAdmin) {
+        await claimSession("profiles", { column: "user_id", value: uid });
+        navigate({ to: "/admin/bookings", replace: true });
+      } else if (r.pending) {
+        toast.message("Your admin request is pending approval.");
+        await supabase.auth.signOut();
+      } else {
+        toast.error("This account is not registered as an admin.");
         await supabase.auth.signOut();
       }
+    } catch (e: any) {
+      toast.error(e?.message || "Sign-in failed");
+      await supabase.auth.signOut();
     }
-    void gate();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => { void gate(); });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
-  }, [navigate]);
+  }
+
+  // Auto-gate after redirects (Google) or existing session
+  useEffect(() => {
+    void gateOnce();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") void gateOnce();
+    });
+    return () => sub.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function signInWithGoogle() {
     setBusy(true);
@@ -65,8 +68,28 @@ function AdminLogin() {
     }
   }
 
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const uname = username.trim().toLowerCase();
+      const email = uname.includes("@") ? uname : `${uname.replace(/\s+/g, "")}@admin.local`;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(error.message);
+        setBusy(false);
+        return;
+      }
+      await gateOnce();
+    } catch (e: any) {
+      toast.error(e?.message || "Sign-in failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary-soft/40 to-background px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-primary-soft/40 to-background px-6 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-center gap-2 text-primary">
           <CredoomWordmark label="Luxury Cabs Admin" />
@@ -75,15 +98,44 @@ function AdminLogin() {
           <h1 className="flex items-center gap-2 text-lg font-bold">
             <Lock className="h-4 w-4 text-primary" /> Admin sign in
           </h1>
-          <p className="text-[11px] text-muted-foreground">
-            Sign in with the Google account registered as an admin. The first
-            Google sign-in here becomes the super-admin; further admins must be
-            added from inside the panel.
-          </p>
+
+          <form onSubmit={signInWithPassword} className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-muted-foreground">Username or email</label>
+            <input
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              placeholder="luxurycabs"
+              required
+            />
+            <label className="text-xs font-medium text-muted-foreground">Password</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              required
+            />
+            <button
+              type="submit"
+              disabled={busy}
+              className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+            </button>
+          </form>
+
+          <div className="my-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
+          </div>
+
           <button
             onClick={signInWithGoogle}
             disabled={busy}
-            className="flex items-center justify-center gap-3 rounded-xl border border-border bg-white py-3 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-60"
+            className="flex items-center justify-center gap-3 rounded-xl border border-border bg-white py-2.5 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -95,6 +147,12 @@ function AdminLogin() {
               Continue with Google
             </>}
           </button>
+
+          <p className="text-[11px] text-muted-foreground">
+            Use your admin username/password, or sign in with the Google account
+            registered as an admin. The first Google sign-in here becomes the
+            super-admin.
+          </p>
         </div>
         <Link to="/" className="mt-4 block text-center text-xs text-muted-foreground hover:text-foreground">
           ← Back to app
