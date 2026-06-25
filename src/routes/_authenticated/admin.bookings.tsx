@@ -170,7 +170,7 @@ function BookingCard({ b }: { b: any }) {
   const [savingStatus, setSavingStatus] = useState(false);
   const [driverInfo, setDriverInfo] = useState<any>(null);
 
-  const isActive = ["pending", "driver_assigned", "driver_arrived", "in_progress"].includes(b.status);
+  const isActive = ["pending", "driver_offered", "driver_assigned", "driver_arrived", "in_progress"].includes(b.status);
   const isFinal = b.status === "completed" || b.status === "cancelled";
 
   useEffect(() => {
