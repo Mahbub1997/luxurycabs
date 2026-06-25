@@ -235,23 +235,26 @@ export const assignBookingToDriver = createServerFn({ method: "POST" })
       photoUrl = signed?.signedUrl ?? null;
     }
 
+    // Send as OFFER only — do NOT copy driver_name/phone/photo into the
+    // booking yet. The customer must see "searching for driver" until the
+    // driver explicitly accepts. acceptRide will copy the snapshot.
     const { error } = await supabaseAdmin.from("bookings").update({
       assigned_driver_id: drv.id,
-      status: "driver_assigned",
-      driver_name: drv.name,
-      driver_phone: drv.phone,
-      driver_photo: photoUrl,
-
-      driver_rating: drv.rating,
-      driver_trips: drv.total_trips,
-      vehicle_model: drv.vehicle_model,
-      vehicle_number: drv.vehicle_number,
+      status: "driver_offered",
+      driver_name: null,
+      driver_phone: null,
+      driver_photo: null,
+      driver_rating: null,
+      driver_trips: null,
+      vehicle_model: null,
+      vehicle_number: null,
       driver_lat: drv.current_lat,
       driver_lng: drv.current_lng,
-    }).eq("id", data.booking_id);
+    } as any).eq("id", data.booking_id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /** Admin: hard-delete a driver (auth user + drivers row). Past bookings keep snapshot data. */
 export const deleteDriverAccount = createServerFn({ method: "POST" })
