@@ -86,7 +86,7 @@ function DriverHome() {
         { event: "UPDATE", schema: "public", table: "bookings", filter: `assigned_driver_id=eq.${driver.id}` },
         (p) => {
           const row: any = p.new;
-          if (row.status === "driver_assigned" && !seenRef.current.has(row.id)) {
+          if (row.status === "driver_offered" && !seenRef.current.has(row.id)) {
             seenRef.current.add(row.id);
             setIncoming(row);
           }
@@ -94,9 +94,9 @@ function DriverHome() {
       .subscribe();
 
     (async () => {
-      const { data } = await supabase.from("bookings").select("*").eq("assigned_driver_id", driver.id).in("status", ["driver_assigned"]).order("created_at", { ascending: false }).limit(1);
+      const { data } = await supabase.from("bookings").select("*").eq("assigned_driver_id", driver.id).in("status", ["driver_offered"]).order("created_at", { ascending: false }).limit(1);
       if (data && data[0]) { setIncoming(data[0]); }
-      const { data: active } = await supabase.from("bookings").select("id").eq("assigned_driver_id", driver.id).in("status", ["driver_arrived", "in_progress"]).limit(1);
+      const { data: active } = await supabase.from("bookings").select("id").eq("assigned_driver_id", driver.id).in("status", ["driver_assigned", "driver_arrived", "in_progress"]).limit(1);
       if (active && active[0]) navigate({ to: "/driver/trip/$id", params: { id: active[0].id } });
     })();
 
