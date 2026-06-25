@@ -326,7 +326,7 @@ export const adminSetBookingStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
     booking_id: z.string().uuid(),
-    status: z.enum(["pending", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled"]),
+    status: z.enum(["pending", "driver_offered", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled"]),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
