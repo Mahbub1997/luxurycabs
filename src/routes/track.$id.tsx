@@ -560,7 +560,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
       <div
         className={cn(
           "absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl bg-card shadow-2xl border-t border-border overflow-hidden transition-[max-height] duration-300",
-          sheetExpanded ? "max-h-[85vh]" : "max-h-[48vh]"
+          sheetExpanded ? "max-h-[85vh]" : "max-h-[35vh]"
         )}
       >
         <button
