@@ -52,24 +52,51 @@ export const signupDriver = createServerFn({ method: "POST" })
     return { ok: true, user_id: uid };
   });
 
-/** Driver accepts a ride assigned to them — keeps status as driver_assigned. */
+/** Driver accepts the offer — flips to driver_assigned and reveals snapshot to customer. */
 export const acceptRide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ booking_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: drv } = await supabaseAdmin.from("drivers").select("id").eq("user_id", context.userId).maybeSingle();
+    const { data: drv } = await supabaseAdmin
+      .from("drivers")
+      .select("id, name, phone, photo, selfie_url, vehicle_model, vehicle_number, rating, total_trips, current_lat, current_lng")
+      .eq("user_id", context.userId).maybeSingle();
     if (!drv) throw new Error("No driver profile");
+
+    // Resolve photo URL same way as assignment.
+    let photoUrl: string | null = null;
+    const raw = (drv as any).photo as string | null;
+    if (raw && /^https?:\/\//i.test(raw)) photoUrl = raw;
+    else if ((drv as any).selfie_url) {
+      const { data: signed } = await supabaseAdmin
+        .storage.from("driver-docs")
+        .createSignedUrl((drv as any).selfie_url, 60 * 60 * 24 * 7);
+      photoUrl = signed?.signedUrl ?? null;
+    }
+
     const { error } = await supabaseAdmin
       .from("bookings")
-      .update({ status: "driver_assigned" })
+      .update({
+        status: "driver_assigned",
+        driver_name: drv.name,
+        driver_phone: drv.phone,
+        driver_photo: photoUrl,
+        driver_rating: drv.rating,
+        driver_trips: drv.total_trips,
+        vehicle_model: drv.vehicle_model,
+        vehicle_number: drv.vehicle_number,
+        driver_lat: drv.current_lat,
+        driver_lng: drv.current_lng,
+      } as any)
       .eq("id", data.booking_id)
-      .eq("assigned_driver_id", drv.id);
+      .eq("assigned_driver_id", drv.id)
+      .in("status", ["driver_offered", "driver_assigned"]);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-/** Driver rejects assignment — clears assignment, back to pending. */
+/** Driver rejects offer — clears assignment, back to pending. */
 export const rejectRide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ booking_id: z.string().uuid() }).parse(d))
@@ -90,6 +117,7 @@ export const rejectRide = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 /** Mark trip complete and credit wallet with 90% (10% commission). */
 export const completeRide = createServerFn({ method: "POST" })
