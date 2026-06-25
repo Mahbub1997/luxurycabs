@@ -19,7 +19,7 @@ const TABS = ["pending", "ongoing", "completed", "all"] as const;
 type Tab = (typeof TABS)[number];
 
 const STATUSES = [
-  "pending", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled",
+  "pending", "driver_offered", "driver_assigned", "driver_arrived", "in_progress", "completed", "cancelled",
 ] as const;
 type Status = (typeof STATUSES)[number];
 
@@ -32,7 +32,7 @@ function AdminBookings() {
   async function load() {
     setLoading(true);
     let q = supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(200);
-    if (tab === "pending") q = q.in("status", ["pending"]);
+    if (tab === "pending") q = q.in("status", ["pending", "driver_offered"]);
     else if (tab === "ongoing") q = q.in("status", ["driver_assigned", "driver_arrived", "in_progress"]);
     else if (tab === "completed") q = q.in("status", ["completed", "cancelled"]);
     const { data } = await q;
