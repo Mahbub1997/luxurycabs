@@ -536,6 +536,7 @@ export type Database = {
       app_role: "admin" | "driver" | "customer" | "super_admin"
       booking_status:
         | "pending"
+        | "driver_offered"
         | "driver_assigned"
         | "driver_arrived"
         | "in_progress"
@@ -681,6 +682,7 @@ export const Constants = {
       app_role: ["admin", "driver", "customer", "super_admin"],
       booking_status: [
         "pending",
+        "driver_offered",
         "driver_assigned",
         "driver_arrived",
         "in_progress",

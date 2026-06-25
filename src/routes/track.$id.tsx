@@ -95,8 +95,11 @@ function Track() {
     return <CancelledBooking b={b} onHome={() => navigate({ to: "/booking", replace: true })} />;
   }
 
-  // Branch: until admin assigns a driver, show "Booking Confirmed" status page.
-  if (!b.driver_name) {
+  // Show driver details ONLY after the driver has accepted (status moves to
+  // driver_assigned). 'driver_offered' means admin assigned but driver hasn't
+  // accepted yet — keep the customer on the "searching" screen.
+  const driverAccepted = ["driver_assigned", "driver_arrived", "in_progress", "completed"].includes(b.status);
+  if (!driverAccepted) {
     return <AwaitingDriver b={b} onBack={exitToHome} onCancelled={setB} />;
   }
   return <LiveTracking b={b} onBack={exitToHome} onCancelled={setB} />;
@@ -557,7 +560,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
       <div
         className={cn(
           "absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl bg-card shadow-2xl border-t border-border overflow-hidden transition-[max-height] duration-300",
-          sheetExpanded ? "max-h-[85vh]" : "max-h-[48vh]"
+          sheetExpanded ? "max-h-[85vh]" : "max-h-[35vh]"
         )}
       >
         <button
