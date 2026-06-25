@@ -222,18 +222,8 @@ export const assignBookingToDriver = createServerFn({ method: "POST" })
     if (dErr) throw new Error(dErr.message);
     if (drv.status !== "approved") throw new Error("Driver not approved");
 
-    // Resolve a displayable photo URL. Prefer drivers.photo if it's already
-    // a full URL, otherwise sign the private selfie_url from driver-docs.
-    let photoUrl: string | null = null;
-    const raw = (drv as any).photo as string | null;
-    if (raw && /^https?:\/\//i.test(raw)) {
-      photoUrl = raw;
-    } else if ((drv as any).selfie_url) {
-      const { data: signed } = await supabaseAdmin
-        .storage.from("driver-docs")
-        .createSignedUrl((drv as any).selfie_url, 60 * 60 * 24 * 7);
-      photoUrl = signed?.signedUrl ?? null;
-    }
+    // Photo/snapshot is resolved when the driver accepts (see acceptRide).
+
 
     // Send as OFFER only — do NOT copy driver_name/phone/photo into the
     // booking yet. The customer must see "searching for driver" until the
