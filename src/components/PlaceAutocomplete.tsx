@@ -218,7 +218,7 @@ export function PlaceAutocomplete({
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
             )}
-            {!loading && suggestions.slice(0, MAX_RECENT).map((s, i) => {
+            {!loading && suggestions.map((s, i) => {
               const main = s.placePrediction?.mainText?.text ?? "";
               const sec = s.placePrediction?.secondaryText?.text ?? "";
               return (
