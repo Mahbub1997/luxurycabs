@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Clock, Loader2, MapPin, Search, Users, X } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, MapPin, Search, Users, X, ChevronRight } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { reverseGeocode } from "@/lib/maps/geocode.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
@@ -8,6 +8,7 @@ import type { PlacePick } from "@/components/PlaceAutocomplete";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
+import { VehicleCard } from "@/components/VehicleCard";
 
 type Stage = "pickup" | "drop" | "vehicle";
 
@@ -70,6 +71,8 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
+  const [showAllVehicles, setShowAllVehicles] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
   const { rates } = useFareRates();
 
   // Init map once when opened.
@@ -194,9 +197,8 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
     }
   }
 
-  // Search autocomplete
+  // Search autocomplete — runs whenever the inline search box has text.
   useEffect(() => {
-    if (!searchOpen) return;
     let cancelled = false;
     const t = setTimeout(async () => {
       if (!query.trim()) { setSuggestions([]); return; }
@@ -215,11 +217,11 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
         if (!cancelled) setSuggestions(suggestions);
       } catch (e) { console.error(e); }
       finally { if (!cancelled) setSearchLoading(false); }
-    }, 300);
+    }, 250);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [query, searchOpen]);
+  }, [query]);
 
-  useEffect(() => { if (searchOpen) setRecent(readRecent()); }, [searchOpen]);
+  useEffect(() => { setRecent(readRecent()); }, [stage]);
 
   async function pickSuggestion(s: any) {
     try {
@@ -237,6 +239,7 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
   function applySearchPick(p: PlacePick) {
     pushRecent(p);
     setSearchOpen(false);
+    setShowSuggest(false);
     setQuery("");
     setSuggestions([]);
     tokenRef.current = null;
@@ -354,23 +357,10 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           <button onClick={goBack} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          {stage !== "vehicle" ? (
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="flex flex-1 items-center gap-2 rounded-full bg-muted/60 px-3 py-2 text-left text-sm text-muted-foreground"
-            >
-              <Search className="h-4 w-4" />
-              <span className="truncate">{searchPlaceholder}</span>
-            </button>
-          ) : (
-            <div className="flex-1 text-sm font-semibold">{stageTitle}</div>
-          )}
-        </div>
-        {stage !== "vehicle" && (
-          <div className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-primary">
+          <div className="flex-1 text-center text-[12px] font-bold uppercase tracking-wide text-primary truncate pr-9">
             {stageTitle}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Map */}
@@ -391,8 +381,76 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
 
       {/* Bottom panel */}
       {stage !== "vehicle" ? (
-        <div className="border-t border-border bg-card p-3"
+        <div className="border-t border-border bg-card p-3 space-y-3"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          {/* Inline search box (suggestions pop ABOVE) */}
+          <div className="relative">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2.5">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
+                placeholder={searchPlaceholder}
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
+              {query && (
+                <button
+                  onClick={() => { setQuery(""); setSuggestions([]); }}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Clear"
+                ><X className="h-4 w-4" /></button>
+              )}
+            </div>
+
+            {showSuggest && (query.trim() || searchLoading || recent.length > 0) && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-xl">
+                {!query && recent.length > 0 && (
+                  <>
+                    <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Recent
+                    </div>
+                    {recent.map((r, i) => (
+                      <button
+                        key={`r-${i}`}
+                        onClick={() => applySearchPick(r)}
+                        className="flex w-full items-start gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-muted"
+                      >
+                        <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <div className="min-w-0 truncate text-sm font-semibold">{r.address}</div>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {searchLoading && (
+                  <div className="flex items-center justify-center p-4 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+                {!searchLoading && suggestions.map((s, i) => {
+                  const main = s.placePrediction?.mainText?.text ?? "";
+                  const sec = s.placePrediction?.secondaryText?.text ?? "";
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => pickSuggestion(s)}
+                      className="flex w-full items-start gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-muted"
+                    >
+                      <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">{main}</div>
+                        <div className="truncate text-xs text-muted-foreground">{sec}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+                {!searchLoading && query.trim() && suggestions.length === 0 && (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches</div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-start gap-2 text-sm">
             <MapPin className={stage === "pickup" ? "mt-0.5 h-4 w-4 text-emerald-600" : "mt-0.5 h-4 w-4 text-rose-600"} />
             <span className="flex-1 font-medium">
@@ -406,7 +464,7 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           <button
             disabled={!centerAddress || centerLoading}
             onClick={confirmCurrent}
-            className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {stage === "pickup" ? "Confirm Pickup" : "Confirm Drop"}
           </button>
@@ -427,30 +485,52 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
             ) : null}
           </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {([
-              { id: "sedan" as const, label: "Sedan", img: sedanImg, seats: 4, fare: fares.sedan },
-              { id: "suv" as const, label: "SUV", img: suvImg, seats: 7, fare: fares.suv },
-            ]).map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setVehicle(v.id)}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 text-center",
-                  vehicle === v.id ? "border-primary" : "border-border"
-                )}
-              >
-                <img src={v.img} alt={v.label} className="h-12 w-20 object-contain" />
-                <div className="text-sm font-bold">{v.label}</div>
-                <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Users className="h-3 w-3" /> {v.seats}
-                </div>
-                <div className="text-sm font-extrabold text-primary">
-                  {routeInfo ? formatINR(v.fare) : "—"}
-                </div>
-              </button>
-            ))}
-          </div>
+          {showAllVehicles ? (
+            <div className="mt-2 space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+              {(["sedan", "suv"] as const).map((id) => (
+                <VehicleCard
+                  key={id}
+                  type={id}
+                  fare={routeInfo ? (id === "sedan" ? fares.sedan : fares.suv) : 0}
+                  selected={vehicle === id}
+                  onSelect={() => setVehicle(id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: "sedan" as const, label: "Sedan", img: sedanImg, seats: 4, fare: fares.sedan },
+                { id: "suv" as const, label: "SUV", img: suvImg, seats: 7, fare: fares.suv },
+              ]).map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => setVehicle(v.id)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 text-center",
+                    vehicle === v.id ? "border-primary" : "border-border"
+                  )}
+                >
+                  <img src={v.img} alt={v.label} className="h-12 w-20 object-contain" />
+                  <div className="text-sm font-bold">{v.label}</div>
+                  <div className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Users className="h-3 w-3" /> {v.seats}
+                  </div>
+                  <div className="text-sm font-extrabold text-primary">
+                    {routeInfo ? formatINR(v.fare) : "—"}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowAllVehicles((v) => !v)}
+            className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft/40"
+          >
+            {showAllVehicles ? "Show less" : "View all vehicles"}
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showAllVehicles && "rotate-90")} />
+          </button>
 
           <button
             disabled={!routeInfo}
@@ -459,69 +539,6 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           >
             Book Now {routeInfo ? `· ${formatINR(vehicle === "sedan" ? fares.sedan : fares.suv)}` : ""}
           </button>
-        </div>
-      )}
-
-      {/* Full-screen search overlay */}
-      {searchOpen && (
-        <div className="absolute inset-0 z-30 flex flex-col bg-background">
-          <div className="flex items-center gap-2 border-b border-border p-3"
-            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
-            <button onClick={() => setSearchOpen(false)} className="rounded-md p-2 text-muted-foreground hover:bg-muted">
-              <X className="h-5 w-5" />
-            </button>
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {!query && recent.length > 0 && (
-              <>
-                <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Recent searches
-                </div>
-                {recent.slice(0, MAX_RECENT).map((r, i) => (
-                  <button
-                    key={`r-${i}`}
-                    onClick={() => applySearchPick(r)}
-                    className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left hover:bg-muted"
-                  >
-                    <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                    <div className="min-w-0 truncate text-sm font-semibold">{r.address}</div>
-                  </button>
-                ))}
-              </>
-            )}
-            {searchLoading && (
-              <div className="flex items-center justify-center p-6 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            )}
-            {!searchLoading && suggestions.slice(0, MAX_RECENT).map((s, i) => {
-              const main = s.placePrediction?.mainText?.text ?? "";
-              const sec = s.placePrediction?.secondaryText?.text ?? "";
-              return (
-                <button
-                  key={i}
-                  onClick={() => pickSuggestion(s)}
-                  className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left hover:bg-muted"
-                >
-                  <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold">{main}</div>
-                    <div className="truncate text-xs text-muted-foreground">{sec}</div>
-                  </div>
-                </button>
-              );
-            })}
-            {!searchLoading && query && suggestions.length === 0 && (
-              <div className="p-6 text-center text-sm text-muted-foreground">No matches</div>
-            )}
-          </div>
         </div>
       )}
     </div>
