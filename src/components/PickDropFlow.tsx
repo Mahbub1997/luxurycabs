@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Clock, Loader2, MapPin, Search, Users, X } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, MapPin, Search, Users, X, ChevronRight } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { reverseGeocode } from "@/lib/maps/geocode.functions";
 import { computeRoute } from "@/lib/maps/routes.functions";
@@ -8,6 +8,7 @@ import type { PlacePick } from "@/components/PlaceAutocomplete";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
+import { VehicleCard } from "@/components/VehicleCard";
 
 type Stage = "pickup" | "drop" | "vehicle";
 
