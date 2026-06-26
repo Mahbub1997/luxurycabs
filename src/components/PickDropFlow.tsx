@@ -197,9 +197,8 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
     }
   }
 
-  // Search autocomplete
+  // Search autocomplete — runs whenever the inline search box has text.
   useEffect(() => {
-    if (!searchOpen) return;
     let cancelled = false;
     const t = setTimeout(async () => {
       if (!query.trim()) { setSuggestions([]); return; }
@@ -218,11 +217,11 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
         if (!cancelled) setSuggestions(suggestions);
       } catch (e) { console.error(e); }
       finally { if (!cancelled) setSearchLoading(false); }
-    }, 300);
+    }, 250);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [query, searchOpen]);
+  }, [query]);
 
-  useEffect(() => { if (searchOpen) setRecent(readRecent()); }, [searchOpen]);
+  useEffect(() => { setRecent(readRecent()); }, [stage]);
 
   async function pickSuggestion(s: any) {
     try {
