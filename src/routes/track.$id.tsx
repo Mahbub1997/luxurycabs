@@ -429,6 +429,29 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   }, [phase]);
   const mmss = `${String(Math.floor(secsLeft / 60)).padStart(2, "0")}:${String(secsLeft % 60).padStart(2, "0")}`;
 
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
+
+  async function resendOtp() {
+    if (resending || resendCooldown > 0) return;
+    setResending(true);
+    try {
+      const newOtp = String(Math.floor(1000 + Math.random() * 9000));
+      await updateBooking(b.id, { otp: newOtp } as any);
+      setSecsLeft(300);
+      setResendCooldown(30);
+      toast.success("New OTP generated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to resend OTP");
+    } finally {
+      setResending(false);
+    }
+  }
+
   // React to live booking updates
   useEffect(() => {
     if (b.driver_lat && b.driver_lng) setDriver({ lat: b.driver_lat, lng: b.driver_lng });
