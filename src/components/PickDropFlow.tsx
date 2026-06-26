@@ -357,23 +357,10 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           <button onClick={goBack} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted" aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          {stage !== "vehicle" ? (
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="flex flex-1 items-center gap-2 rounded-full bg-muted/60 px-3 py-2 text-left text-sm text-muted-foreground"
-            >
-              <Search className="h-4 w-4" />
-              <span className="truncate">{searchPlaceholder}</span>
-            </button>
-          ) : (
-            <div className="flex-1 text-sm font-semibold">{stageTitle}</div>
-          )}
-        </div>
-        {stage !== "vehicle" && (
-          <div className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-primary">
+          <div className="flex-1 text-center text-[12px] font-bold uppercase tracking-wide text-primary truncate pr-9">
             {stageTitle}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Map */}
@@ -394,8 +381,76 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
 
       {/* Bottom panel */}
       {stage !== "vehicle" ? (
-        <div className="border-t border-border bg-card p-3"
+        <div className="border-t border-border bg-card p-3 space-y-3"
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          {/* Inline search box (suggestions pop ABOVE) */}
+          <div className="relative">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2.5">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
+                placeholder={searchPlaceholder}
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
+              {query && (
+                <button
+                  onClick={() => { setQuery(""); setSuggestions([]); }}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Clear"
+                ><X className="h-4 w-4" /></button>
+              )}
+            </div>
+
+            {showSuggest && (query.trim() || searchLoading || recent.length > 0) && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 max-h-72 overflow-y-auto rounded-2xl border border-border bg-card shadow-xl">
+                {!query && recent.length > 0 && (
+                  <>
+                    <div className="px-4 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Recent
+                    </div>
+                    {recent.map((r, i) => (
+                      <button
+                        key={`r-${i}`}
+                        onClick={() => applySearchPick(r)}
+                        className="flex w-full items-start gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-muted"
+                      >
+                        <Clock className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <div className="min-w-0 truncate text-sm font-semibold">{r.address}</div>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {searchLoading && (
+                  <div className="flex items-center justify-center p-4 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+                {!searchLoading && suggestions.map((s, i) => {
+                  const main = s.placePrediction?.mainText?.text ?? "";
+                  const sec = s.placePrediction?.secondaryText?.text ?? "";
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => pickSuggestion(s)}
+                      className="flex w-full items-start gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-muted"
+                    >
+                      <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">{main}</div>
+                        <div className="truncate text-xs text-muted-foreground">{sec}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+                {!searchLoading && query.trim() && suggestions.length === 0 && (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches</div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-start gap-2 text-sm">
             <MapPin className={stage === "pickup" ? "mt-0.5 h-4 w-4 text-emerald-600" : "mt-0.5 h-4 w-4 text-rose-600"} />
             <span className="flex-1 font-medium">
@@ -409,7 +464,7 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           <button
             disabled={!centerAddress || centerLoading}
             onClick={confirmCurrent}
-            className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
           >
             {stage === "pickup" ? "Confirm Pickup" : "Confirm Drop"}
           </button>
