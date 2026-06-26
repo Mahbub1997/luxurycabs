@@ -581,11 +581,11 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
         </a>
       </div>
 
-      {/* Bottom sheet (Uber-style) */}
+      {/* Bottom sheet (Uber-style) — collapsed = driver + share; pull up for OTP & details */}
       <div
         className={cn(
           "absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl bg-card shadow-2xl border-t border-border overflow-hidden transition-[max-height] duration-300",
-          sheetExpanded ? "max-h-[85vh]" : "max-h-[35vh]"
+          sheetExpanded ? "max-h-[85vh]" : "max-h-[32vh]"
         )}
       >
         <button
@@ -597,7 +597,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
         </button>
 
         <div className="px-4 pb-5 space-y-3 overflow-y-auto max-h-[calc(85vh-24px)]">
-          {/* Driver card */}
+          {/* Driver card — always visible */}
           <div className="flex items-center gap-3">
             <DriverPhoto src={b.driver_photo} name={b.driver_name} />
             <div className="flex-1 min-w-0">
@@ -620,76 +620,101 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             )}
           </div>
 
-          {/* Call / Chat */}
-          <div className="grid grid-cols-2 gap-2">
-            <a href={`tel:${b.driver_phone}`} className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold text-primary">
+          {/* Call / Chat / Share — always visible */}
+          <div className={cn("grid gap-2", shareView ? "grid-cols-2" : "grid-cols-3")}>
+            <a href={`tel:${b.driver_phone}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold text-primary">
               <Phone className="h-4 w-4" /> Call
             </a>
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-semibold">
+            <button className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold">
               <MessageSquare className="h-4 w-4" /> Chat
             </button>
-          </div>
-
-          {/* OTP block (only before in-trip, hidden in share view) */}
-          {!shareView && phase !== "in_trip" && phase !== "completing" && (
-            <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-primary">
-                <ShieldCheck className="h-4 w-4" /> Trip Start OTP
-              </div>
-              <div className="mt-2 flex justify-center gap-2">
-                {otpDigits.map((d, i) => (
-                  <div key={i} className="grid h-12 w-12 place-items-center rounded-xl border-2 border-primary/40 bg-card text-xl font-bold text-primary">
-                    {d.trim() || "•"}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 text-center text-[11px] text-muted-foreground">
-                {phase === "arrived" || phase === "otp"
-                  ? <>Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver</>
-                  : <>OTP timer starts when driver arrives</>}
-              </div>
-            </div>
-          )}
-
-          {/* Pickup / Drop */}
-          <div className="rounded-2xl border border-border bg-background p-3">
-            <div className="flex items-start gap-2">
-              <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-semibold uppercase text-primary">Pickup</div>
-                <div className="text-xs font-semibold">{b.pickup_address}</div>
-              </div>
-            </div>
-            <div className="my-1.5 ml-1 h-3 w-px border-l-2 border-dashed border-muted-foreground/40" />
-            <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-semibold uppercase text-destructive">Drop</div>
-                <div className="text-xs font-semibold">{b.drop_address}</div>
-              </div>
-            </div>
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
-              <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
-              {!shareView && <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>}
-            </div>
-          </div>
-
-          {/* Share / Cancel — hidden in share view */}
-          {!shareView && (
-            <div className="grid grid-cols-2 gap-2">
+            {!shareView && (
               <button
                 onClick={shareTrip}
-                className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 py-3 text-sm font-semibold text-primary"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground"
               >
                 <Share2 className="h-4 w-4" /> Share
               </button>
-              <button
-                onClick={() => setShowCancel(true)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
-              >
-                <XCircle className="h-4 w-4" /> Cancel
-              </button>
-            </div>
+            )}
+          </div>
+
+          {/* Pull-up hint when collapsed and OTP is pending */}
+          {!sheetExpanded && !shareView && phase !== "in_trip" && phase !== "completing" && (
+            <button
+              onClick={() => setSheetExpanded(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary-soft/40 py-2 text-xs font-semibold text-primary"
+            >
+              <ShieldCheck className="h-4 w-4" /> Pull up to view & share OTP
+            </button>
+          )}
+
+          {/* Everything below is revealed only when the sheet is expanded */}
+          {sheetExpanded && (
+            <>
+              {/* OTP block */}
+              {!shareView && phase !== "in_trip" && phase !== "completing" && (
+                <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                      <ShieldCheck className="h-4 w-4" /> Trip Start OTP
+                    </div>
+                    <button
+                      onClick={resendOtp}
+                      disabled={resending || resendCooldown > 0}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-card px-2.5 py-1 text-[11px] font-semibold text-primary disabled:opacity-50"
+                    >
+                      {resending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Resend"}
+                      {resendCooldown > 0 ? ` (${resendCooldown}s)` : ""}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex justify-center gap-2">
+                    {otpDigits.map((d, i) => (
+                      <div key={i} className="grid h-12 w-12 place-items-center rounded-xl border-2 border-primary/40 bg-card text-xl font-bold text-primary">
+                        {d.trim() || "•"}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-center text-[11px] text-muted-foreground">
+                    {phase === "arrived" || phase === "otp"
+                      ? <>Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver</>
+                      : <>OTP timer starts when driver arrives</>}
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup / Drop */}
+              <div className="rounded-2xl border border-border bg-background p-3">
+                <div className="flex items-start gap-2">
+                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-semibold uppercase text-primary">Pickup</div>
+                    <div className="text-xs font-semibold">{b.pickup_address}</div>
+                  </div>
+                </div>
+                <div className="my-1.5 ml-1 h-3 w-px border-l-2 border-dashed border-muted-foreground/40" />
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-semibold uppercase text-destructive">Drop</div>
+                    <div className="text-xs font-semibold">{b.drop_address}</div>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                  <span>{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</span>
+                  {!shareView && <span className="font-bold text-primary">{formatINR(Number(b.fare))}</span>}
+                </div>
+              </div>
+
+              {/* Cancel */}
+              {!shareView && (
+                <button
+                  onClick={() => setShowCancel(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 py-3 text-sm font-semibold text-destructive"
+                >
+                  <XCircle className="h-4 w-4" /> Cancel Ride
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
