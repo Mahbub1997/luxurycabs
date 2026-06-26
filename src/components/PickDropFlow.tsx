@@ -239,6 +239,7 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
   function applySearchPick(p: PlacePick) {
     pushRecent(p);
     setSearchOpen(false);
+    setShowSuggest(false);
     setQuery("");
     setSuggestions([]);
     tokenRef.current = null;
