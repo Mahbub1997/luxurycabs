@@ -71,6 +71,8 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
+  const [showAllVehicles, setShowAllVehicles] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
   const { rates } = useFareRates();
 
   // Init map once when opened.
