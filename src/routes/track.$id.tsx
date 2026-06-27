@@ -1,21 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
+  ArrowLeft, Phone, MessageSquare, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck, X,
-  Banknote, Wallet, CreditCard,
+  Crosshair, Clock as ClockIcon, ShieldCheck, X,
+  Banknote, Wallet,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
 import { PlateBadge } from "@/components/VehicleIcon";
-import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
-import { PaymentSheet } from "@/components/PaymentSheet";
-import { buildUpiUri } from "@/lib/payment";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import { formatDuration, formatTime12 } from "@/lib/utils";
