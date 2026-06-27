@@ -3,13 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Search,
+  Users, Snowflake,
 } from "lucide-react";
 import { z } from "zod";
 import { type PlacePick } from "@/components/PlaceAutocomplete";
 import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
-import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
