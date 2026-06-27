@@ -366,13 +366,13 @@ function DriverTrip() {
       {/* Payment phase — driver waits for / responds to customer choice */}
       {phase === "payment" && (() => {
         const pm = (b.payment_method ?? "").toLowerCase();
-        const ps = (b.payment_status ?? "").toLowerCase();
-        const isOnlinePaid = (pm === "upi" || pm === "card") && ps === "paid";
         const isCash = pm === "cash";
+        const isUpi = pm === "upi";
+        const upiUri = `upi://pay?pa=mabubbasha9791-1@oksbi&pn=Luxury%20Cabs&am=${Number(b.fare).toFixed(2)}&cu=INR&tn=Cab%20fare%20${b.id.slice(0, 8)}&tr=${b.id}`;
         return (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-            <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in">
-              {!pm && !isOnlinePaid && (
+            <div className="w-full max-w-md rounded-t-3xl bg-card p-6 text-center shadow-2xl sm:rounded-3xl animate-in slide-in-from-bottom-4 fade-in max-h-[92vh] overflow-y-auto">
+              {!pm && (
                 <>
                   <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft">
                     <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -380,7 +380,7 @@ function DriverTrip() {
                   <div className="mt-3 text-base font-bold">Waiting for customer</div>
                   <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
                   <div className="text-[12px] text-muted-foreground">
-                    Customer is choosing payment method (Cash / UPI / Card).
+                    Customer is choosing payment method (Cash / UPI).
                   </div>
                 </>
               )}
@@ -398,22 +398,36 @@ function DriverTrip() {
                     onClick={() => collectAndComplete("cash")}
                     className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
                   >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Payment Complete</>}
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Payment Received</>}
                   </button>
                 </>
               )}
 
-              {isOnlinePaid && (
+              {isUpi && (
                 <>
-                  <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
-                    <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                  <div className="text-base font-bold">Show this QR to the customer</div>
+                  <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+                  <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl border border-border bg-white p-3">
+                    <img
+                      alt="UPI QR"
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`}
+                      width={220}
+                      height={220}
+                    />
                   </div>
-                  <div className="mt-3 text-base font-bold">Payment Received</div>
-                  <div className="text-[12px] text-muted-foreground">
-                    Paid via {pm.toUpperCase()} · ₹{Number(b.fare).toFixed(2)}
+                  <div className="mt-2 text-[11px] text-muted-foreground">
+                    UPI ID: <span className="font-semibold text-foreground">mabubbasha9791-1@oksbi</span>
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">Completing trip…</div>
-                  {busy && <Loader2 className="mx-auto mt-3 h-5 w-5 animate-spin text-primary" />}
+                  <div className="mt-1 text-[11px] text-muted-foreground">
+                    After the customer pays and you see the credit notification, tap below to complete the trip.
+                  </div>
+                  <button
+                    disabled={busy}
+                    onClick={() => collectAndComplete("upi")}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Confirm Payment Received</>}
+                  </button>
                 </>
               )}
             </div>
