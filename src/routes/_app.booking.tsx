@@ -270,70 +270,17 @@ function Booking() {
         ))}
       </div>
 
-      {/* Single pickup/drop trigger — opens unified full-screen map flow */}
-      <div className="mx-4">
-        {!pickup || !drop ? (
-          <button
-            type="button"
-            onClick={() => setMapPickerFor("pickup")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3.5 text-left shadow-sm hover:border-primary"
-          >
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
-              <Search className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Enter pickup location</div>
-              <div className="text-xs text-muted-foreground">Pickup, drop & vehicle on one map</div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setMapPickerFor("pickup")}
-            className="w-full space-y-1.5 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
-          >
-            <div className="flex items-start gap-2">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600" />
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Pickup</div>
-                <div className="truncate text-sm font-semibold">{pickup.address}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">Drop</div>
-                <div className="truncate text-sm font-semibold">{drop.address}</div>
-              </div>
-            </div>
-            <div className="text-right text-[11px] font-semibold text-primary">Tap to change</div>
-          </button>
-        )}
-        {(!pickup || !drop) && (
-          <div className="mt-1.5 px-1 text-[11px] font-medium text-primary">
-            {tab === "rental"
-              ? "Choose pickup & drop, then select a rental package below."
-              : tab === "outstation"
-                ? "Round trip — choose pickup & drop, then pick a return date below."
-                : "One screen to pick locations and your ride."}
-          </div>
-        )}
-      </div>
-
-
-      {/* Map — compact so vehicle cards stay above the fold */}
-      {pickup && drop && tab !== "rental" && (
-        <div className="mx-4 overflow-hidden rounded-2xl border border-border">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo?.polyline ?? null}
-            height={160}
-            showMyLocation={false}
-          />
-        </div>
-      )}
+      {/* Pickup / Drop card — reference-style: route timeline + pills + recents */}
+      <PickDropPanel
+        pickup={pickup}
+        drop={drop}
+        onOpenMap={() => setMapPickerFor("pickup")}
+        onUseRecent={(p) => {
+          if (!pickup) setPickup(p);
+          else if (!drop) setDrop(p);
+          else setDrop(p);
+        }}
+      />
 
 
       {/* Pickup date & time */}
