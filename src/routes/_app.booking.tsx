@@ -3,13 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Calendar, Car, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
-  Users, Snowflake, Search,
+  Users, Snowflake,
 } from "lucide-react";
 import { z } from "zod";
 import { type PlacePick } from "@/components/PlaceAutocomplete";
 import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
-import { RouteMap } from "@/components/RouteMap";
 import { CrownCarLogo } from "@/components/Brand";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -270,70 +269,17 @@ function Booking() {
         ))}
       </div>
 
-      {/* Single pickup/drop trigger — opens unified full-screen map flow */}
-      <div className="mx-4">
-        {!pickup || !drop ? (
-          <button
-            type="button"
-            onClick={() => setMapPickerFor("pickup")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3.5 text-left shadow-sm hover:border-primary"
-          >
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
-              <Search className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">Enter pickup location</div>
-              <div className="text-xs text-muted-foreground">Pickup, drop & vehicle on one map</div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setMapPickerFor("pickup")}
-            className="w-full space-y-1.5 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
-          >
-            <div className="flex items-start gap-2">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600" />
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Pickup</div>
-                <div className="truncate text-sm font-semibold">{pickup.address}</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-600" />
-              <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">Drop</div>
-                <div className="truncate text-sm font-semibold">{drop.address}</div>
-              </div>
-            </div>
-            <div className="text-right text-[11px] font-semibold text-primary">Tap to change</div>
-          </button>
-        )}
-        {(!pickup || !drop) && (
-          <div className="mt-1.5 px-1 text-[11px] font-medium text-primary">
-            {tab === "rental"
-              ? "Choose pickup & drop, then select a rental package below."
-              : tab === "outstation"
-                ? "Round trip — choose pickup & drop, then pick a return date below."
-                : "One screen to pick locations and your ride."}
-          </div>
-        )}
-      </div>
-
-
-      {/* Map — compact so vehicle cards stay above the fold */}
-      {pickup && drop && tab !== "rental" && (
-        <div className="mx-4 overflow-hidden rounded-2xl border border-border">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo?.polyline ?? null}
-            height={160}
-            showMyLocation={false}
-          />
-        </div>
-      )}
+      {/* Pickup / Drop card — reference-style: route timeline + pills + recents */}
+      <PickDropPanel
+        pickup={pickup}
+        drop={drop}
+        onOpenMap={() => setMapPickerFor("pickup")}
+        onUseRecent={(p) => {
+          if (!pickup) setPickup(p);
+          else if (!drop) setDrop(p);
+          else setDrop(p);
+        }}
+      />
 
 
       {/* Pickup date & time */}
@@ -827,5 +773,136 @@ function InlineVehicleRow({
         {selected ? <span className="h-2 w-2 rounded-full bg-primary-foreground" /> : null}
       </span>
     </button>
+  );
+}
+
+const RECENT_PLACES_KEY = "luxury_recent_places";
+const FAV_PLACES_KEY = "luxury_fav_places";
+
+function readRecentPlaces(): PlacePick[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_PLACES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function readFavPlaces(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(FAV_PLACES_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function toggleFav(addr: string): string[] {
+  const list = readFavPlaces();
+  const next = list.includes(addr) ? list.filter((x) => x !== addr) : [addr, ...list];
+  try { localStorage.setItem(FAV_PLACES_KEY, JSON.stringify(next)); } catch {}
+  return next;
+}
+
+function PickDropPanel({
+  pickup, drop, onOpenMap, onUseRecent,
+}: {
+  pickup: PlacePick | null;
+  drop: PlacePick | null;
+  onOpenMap: () => void;
+  onUseRecent: (p: PlacePick) => void;
+}) {
+  const [recents, setRecents] = useState<PlacePick[]>([]);
+  const [favs, setFavs] = useState<string[]>([]);
+  useEffect(() => {
+    setRecents(readRecentPlaces());
+    setFavs(readFavPlaces());
+  }, [pickup, drop]);
+
+  return (
+    <div className="mx-4 space-y-3">
+      {/* Route timeline card */}
+      <button
+        type="button"
+        onClick={onOpenMap}
+        className="flex w-full items-stretch gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
+      >
+        <div className="flex flex-col items-center pt-1">
+          <span className="h-3 w-3 rounded-full border-2 border-emerald-600" />
+          <span className="my-1 h-6 w-px border-l border-dashed border-muted-foreground/50" />
+          <span className="h-3 w-3 rounded-sm border-2 border-rose-600" />
+        </div>
+        <div className="min-w-0 flex-1 divide-y divide-border">
+          <div className="pb-2">
+            <div className="truncate text-sm font-bold">
+              {pickup?.address ?? "Pickup location"}
+            </div>
+          </div>
+          <div className="pt-2">
+            <div className={cn("truncate text-sm font-bold", !drop && "text-muted-foreground")}>
+              {drop?.address ?? "Drop location"}
+            </div>
+          </div>
+        </div>
+      </button>
+
+      {/* Action pills */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onOpenMap}
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-semibold shadow-sm hover:border-primary"
+        >
+          <MapIcon className="h-4 w-4 text-primary" /> Select on map
+        </button>
+        <button
+          type="button"
+          onClick={onOpenMap}
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-semibold shadow-sm hover:border-primary"
+        >
+          <span className="grid h-4 w-4 rotate-45 place-items-center rounded-sm bg-foreground text-background text-[10px] font-bold">+</span>
+          Add stops
+        </button>
+      </div>
+
+      {/* Recent / favorite list */}
+      {recents.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card">
+          {recents.slice(0, 6).map((r, i) => {
+            const isFav = favs.includes(r.address);
+            const main = r.address.split(",")[0]?.trim() || r.address;
+            const sec = r.address.split(",").slice(1).join(",").trim();
+            return (
+              <div
+                key={`${r.address}-${i}`}
+                className="flex items-center gap-3 border-b border-dashed border-border px-3 py-2.5 last:border-b-0"
+              >
+                <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <button
+                  type="button"
+                  onClick={() => onUseRecent(r)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="truncate text-sm font-bold">{main}</div>
+                  {sec && <div className="truncate text-xs text-muted-foreground">{sec}</div>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFavs(toggleFav(r.address))}
+                  className="shrink-0 p-1"
+                  aria-label={isFav ? "Remove favorite" : "Add favorite"}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={cn("h-5 w-5", isFav ? "fill-rose-500 stroke-rose-500" : "fill-none stroke-muted-foreground")}
+                    strokeWidth="2"
+                  >
+                    <path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

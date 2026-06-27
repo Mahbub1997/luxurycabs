@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin/bookings")({
   component: AdminBookings,
 });
 
-const TABS = ["pending", "ongoing", "completed", "all"] as const;
+const TABS = ["offers", "pending", "ongoing", "completed", "all"] as const;
 type Tab = (typeof TABS)[number];
 
 const STATUSES = [
@@ -32,7 +32,8 @@ function AdminBookings() {
   async function load() {
     setLoading(true);
     let q = supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(200);
-    if (tab === "pending") q = q.in("status", ["pending", "driver_offered"]);
+    if (tab === "offers") q = q.eq("status", "driver_offered");
+    else if (tab === "pending") q = q.in("status", ["pending", "driver_offered"]);
     else if (tab === "ongoing") q = q.in("status", ["driver_assigned", "driver_arrived", "in_progress"]);
     else if (tab === "completed") q = q.in("status", ["completed", "cancelled"]);
     const { data } = await q;

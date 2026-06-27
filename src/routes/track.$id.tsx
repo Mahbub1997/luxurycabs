@@ -1,21 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, Phone, MessageSquare, Shield, Star, Loader2,
+  ArrowLeft, Phone, MessageSquare, Star, Loader2,
   CheckCircle2, Copy, MapPin, Headphones, XCircle, Share2, UserRound,
-  Sparkles, Crosshair, Car, Clock as ClockIcon, ShieldCheck, X,
-  Banknote, Wallet, CreditCard,
+  Crosshair, Clock as ClockIcon, ShieldCheck, X,
+  Banknote, Wallet,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { clearMinimizedActiveBooking, getBooking, updateBooking, bookingCode, minimizeActiveBooking, type Booking } from "@/lib/booking-store";
 import { RouteMap } from "@/components/RouteMap";
 import { PlateBadge } from "@/components/VehicleIcon";
-import { CrownCarLogo } from "@/components/Brand";
 import { computeRoute } from "@/lib/maps/routes.functions";
 import { cancelBookingServer } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
-import { PaymentSheet } from "@/components/PaymentSheet";
-import { buildUpiUri } from "@/lib/payment";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import { formatDuration, formatTime12 } from "@/lib/utils";
@@ -734,18 +731,15 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
 
 function UserPaymentOverlay({ b }: { b: Booking }) {
   const [busy, setBusy] = useState(false);
-  const [openCard, setOpenCard] = useState(false);
   const pStatus = (b.payment_status ?? "").toLowerCase();
   const pMethod = (b.payment_method ?? "").toLowerCase();
 
   // Driver has reached the drop and is waiting for the customer to pick a method.
   const needsChoice = pStatus === "awaiting" && !pMethod;
-  // Customer picked Cash — waiting for the driver to confirm cash received.
+  // Customer picked Cash — waiting for driver to confirm cash received.
   const cashWaiting = pMethod === "cash" && b.status !== "completed";
-  // UPI intent launched — waiting for payment-gateway confirmation.
-  const upiPending = pMethod === "upi" && pStatus === "awaiting_gateway" && b.status !== "completed";
-  // Card paid — waiting for the driver to confirm completion.
-  const cardPaid = pMethod === "card" && pStatus === "paid" && b.status !== "completed";
+  // Customer picked UPI — waiting for driver to confirm UPI received.
+  const upiWaiting = pMethod === "upi" && b.status !== "completed";
 
   async function pickCash() {
     if (busy) return;
@@ -760,38 +754,15 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
     if (busy) return;
     setBusy(true);
     try {
-      // Mark as awaiting gateway confirmation BEFORE launching the intent so the
-      // overlay locks into the "verifying" state — there is no manual confirm.
       await updateBooking(b.id, {
         payment_method: "upi",
-        payment_status: "awaiting_gateway",
+        payment_status: "upi_pending",
       } as any);
-      const uri = buildUpiUri({
-        amount: Number(b.fare),
-        note: `Cab fare ${bookingCode(b.id)}`,
-        txnRef: b.id,
-      });
-      // Trigger UPI app intent immediately (no Confirm button).
-      window.location.href = uri;
     } catch (e: any) { toast.error(e.message || "Failed"); }
     finally { setBusy(false); }
   }
 
-  async function pickCard() {
-    setOpenCard(true);
-  }
-
-  async function confirmCard() {
-    setBusy(true);
-    try {
-      await updateBooking(b.id, { payment_method: "card", payment_status: "paid" } as any);
-      setOpenCard(false);
-      toast.success("Payment sent. Waiting for driver to confirm…");
-    } catch (e: any) { toast.error(e.message || "Failed"); }
-    finally { setBusy(false); }
-  }
-
-  if (!needsChoice && !cashWaiting && !upiPending && !cardPaid) return null;
+  if (!needsChoice && !cashWaiting && !upiWaiting) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
@@ -804,13 +775,12 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="mt-3 text-center text-lg font-extrabold">You've reached your drop</div>
             <div className="text-center text-3xl font-extrabold text-primary mt-1">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
-            <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="mt-5 grid grid-cols-2 gap-2">
               <PayBtn I={Banknote} l="Cash" onClick={pickCash} disabled={busy} />
               <PayBtn I={Wallet} l="UPI" onClick={pickUpi} disabled={busy} />
-              <PayBtn I={CreditCard} l="Card" onClick={pickCard} disabled={busy} />
             </div>
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              UPI opens your payment app instantly. Trip completes only after gateway confirmation.
+              For UPI, scan the QR shown by the driver and pay. Driver will confirm receipt.
             </div>
           </>
         )}
@@ -829,61 +799,22 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
           </div>
         )}
 
-        {upiPending && (
+        {upiWaiting && (
           <div className="text-center">
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft">
               <Wallet className="h-7 w-7 text-primary" />
             </div>
-            <div className="mt-3 text-lg font-extrabold">Verifying UPI payment…</div>
+            <div className="mt-3 text-lg font-extrabold">Pay via UPI</div>
             <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-[12px] text-muted-foreground">
-              Complete the payment in your UPI app. Trip will auto-complete once the gateway confirms.
+              Scan the QR code shown by your driver and complete payment in your UPI app.
             </div>
             <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for gateway confirmation…
-            </div>
-            <button
-              onClick={() => {
-                const uri = buildUpiUri({
-                  amount: Number(b.fare),
-                  note: `Cab fare ${bookingCode(b.id)}`,
-                  txnRef: b.id,
-                });
-                window.location.href = uri;
-              }}
-              className="mt-4 text-xs font-semibold text-primary underline"
-            >
-              Reopen UPI app
-            </button>
-          </div>
-        )}
-
-        {cardPaid && (
-          <div className="text-center">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100">
-              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-            </div>
-            <div className="mt-3 text-lg font-extrabold">Payment sent</div>
-            <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
-            <div className="text-[12px] text-muted-foreground">Paid via Card. Waiting for driver to confirm.</div>
-            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Completing trip…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for driver to confirm receipt…
             </div>
           </div>
         )}
       </div>
-
-      {openCard && (
-        <PaymentSheet
-          amount={Number(b.fare)}
-          note={`Cab fare ${bookingCode(b.id)}`}
-          title="Pay via Card"
-          hideCash
-          busy={busy}
-          onClose={() => setOpenCard(false)}
-          onConfirm={() => confirmCard()}
-        />
-      )}
     </div>
   );
 }
@@ -893,9 +824,9 @@ function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () =>
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex flex-col items-center gap-1 rounded-xl border-2 border-border bg-background p-3 text-xs font-semibold transition hover:border-primary disabled:opacity-50"
+      className="flex flex-col items-center gap-1 rounded-xl border-2 border-border bg-background p-4 text-sm font-semibold transition hover:border-primary disabled:opacity-50"
     >
-      <I className="h-5 w-5 text-primary" /> {l}
+      <I className="h-6 w-6 text-primary" /> {l}
     </button>
   );
 }
