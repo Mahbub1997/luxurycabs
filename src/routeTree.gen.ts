@@ -17,6 +17,7 @@ import { Route as DriverIndexRouteImport } from './routes/driver.index'
 import { Route as TrackIdRouteImport } from './routes/track.$id'
 import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as DriverSignupRouteImport } from './routes/driver.signup'
+import { Route as DriverRequestsRouteImport } from './routes/driver.requests'
 import { Route as DriverLoginRouteImport } from './routes/driver.login'
 import { Route as DriverBookingsRouteImport } from './routes/driver.bookings'
 import { Route as CompleteIdRouteImport } from './routes/complete.$id'
@@ -74,6 +75,11 @@ const DriverWalletRoute = DriverWalletRouteImport.update({
 const DriverSignupRoute = DriverSignupRouteImport.update({
   id: '/driver/signup',
   path: '/driver/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DriverRequestsRoute = DriverRequestsRouteImport.update({
+  id: '/driver/requests',
+  path: '/driver/requests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DriverLoginRoute = DriverLoginRouteImport.update({
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/complete/$id': typeof CompleteIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
+  '/driver/requests': typeof DriverRequestsRoute
   '/driver/signup': typeof DriverSignupRoute
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/complete/$id': typeof CompleteIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
+  '/driver/requests': typeof DriverRequestsRoute
   '/driver/signup': typeof DriverSignupRoute
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/complete/$id': typeof CompleteIdRoute
   '/driver/bookings': typeof DriverBookingsRoute
   '/driver/login': typeof DriverLoginRoute
+  '/driver/requests': typeof DriverRequestsRoute
   '/driver/signup': typeof DriverSignupRoute
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/complete/$id'
     | '/driver/bookings'
     | '/driver/login'
+    | '/driver/requests'
     | '/driver/signup'
     | '/driver/wallet'
     | '/track/$id'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/complete/$id'
     | '/driver/bookings'
     | '/driver/login'
+    | '/driver/requests'
     | '/driver/signup'
     | '/driver/wallet'
     | '/track/$id'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/complete/$id'
     | '/driver/bookings'
     | '/driver/login'
+    | '/driver/requests'
     | '/driver/signup'
     | '/driver/wallet'
     | '/track/$id'
@@ -370,6 +382,7 @@ export interface RootRouteChildren {
   CompleteIdRoute: typeof CompleteIdRoute
   DriverBookingsRoute: typeof DriverBookingsRoute
   DriverLoginRoute: typeof DriverLoginRoute
+  DriverRequestsRoute: typeof DriverRequestsRoute
   DriverSignupRoute: typeof DriverSignupRoute
   DriverWalletRoute: typeof DriverWalletRoute
   TrackIdRoute: typeof TrackIdRoute
@@ -433,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/driver/signup'
       fullPath: '/driver/signup'
       preLoaderRoute: typeof DriverSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver/requests': {
+      id: '/driver/requests'
+      path: '/driver/requests'
+      fullPath: '/driver/requests'
+      preLoaderRoute: typeof DriverRequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/driver/login': {
@@ -643,6 +663,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompleteIdRoute: CompleteIdRoute,
   DriverBookingsRoute: DriverBookingsRoute,
   DriverLoginRoute: DriverLoginRoute,
+  DriverRequestsRoute: DriverRequestsRoute,
   DriverSignupRoute: DriverSignupRoute,
   DriverWalletRoute: DriverWalletRoute,
   TrackIdRoute: TrackIdRoute,
