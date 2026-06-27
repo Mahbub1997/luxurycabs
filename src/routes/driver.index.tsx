@@ -204,7 +204,8 @@ function DriverHome() {
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <NavCard to="/driver/requests" Icon={Car} label="Ride Requests" />
           <NavCard to="/driver/bookings" Icon={ClipboardList} label="My Bookings" />
           <NavCard to="/driver/wallet" Icon={Wallet} label={`Wallet ₹${Number(driver.wallet_balance).toFixed(0)}`} />
         </div>
