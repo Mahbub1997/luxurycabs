@@ -135,13 +135,8 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
     }
   }
 
-  function shareTrip() {
-    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
-    const text = encodeURIComponent(
-      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
+
+
 
   return (
     <div className="app-shell flex flex-col bg-muted/30 pb-10">
@@ -255,21 +250,16 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
         </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+      {/* Bottom actions — Share Trip is intentionally hidden until a driver is assigned */}
+      <div className="mx-4 mt-4">
         <a
           href="tel:+919791298406"
           className="flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary"
         >
           <Phone className="h-4 w-4" /> Contact Support
         </a>
-        <button
-          onClick={shareTrip}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
-        >
-          <Share2 className="h-4 w-4" /> Share Trip
-        </button>
       </div>
+
 
       <button
         onClick={() => setShowCancel(true)}
@@ -622,9 +612,15 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             <a href={`tel:${b.driver_phone}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold text-primary">
               <Phone className="h-4 w-4" /> Call
             </a>
-            <button className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold">
+            <a
+              href={b.driver_phone ? `https://wa.me/${String(b.driver_phone).replace(/[^\d]/g, "")}?text=${encodeURIComponent(`Hi, this is your Luxury Cabs customer for booking ${code}.`)}` : "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold"
+            >
               <MessageSquare className="h-4 w-4" /> Chat
-            </button>
+            </a>
+
             {!shareView && (
               <button
                 onClick={shareTrip}
