@@ -255,21 +255,16 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
         </div>
       </div>
 
-      {/* Bottom actions */}
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-3">
+      {/* Bottom actions — Share Trip is intentionally hidden until a driver is assigned */}
+      <div className="mx-4 mt-4">
         <a
           href="tel:+919791298406"
           className="flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary"
         >
           <Phone className="h-4 w-4" /> Contact Support
         </a>
-        <button
-          onClick={shareTrip}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
-        >
-          <Share2 className="h-4 w-4" /> Share Trip
-        </button>
       </div>
+
 
       <button
         onClick={() => setShowCancel(true)}
