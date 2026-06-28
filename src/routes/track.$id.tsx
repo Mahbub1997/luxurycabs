@@ -612,9 +612,15 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
             <a href={`tel:${b.driver_phone}`} className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold text-primary">
               <Phone className="h-4 w-4" /> Call
             </a>
-            <button className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold">
+            <a
+              href={b.driver_phone ? `https://wa.me/${String(b.driver_phone).replace(/[^\d]/g, "")}?text=${encodeURIComponent(`Hi, this is your Luxury Cabs customer for booking ${code}.`)}` : "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold"
+            >
               <MessageSquare className="h-4 w-4" /> Chat
-            </button>
+            </a>
+
             {!shareView && (
               <button
                 onClick={shareTrip}
