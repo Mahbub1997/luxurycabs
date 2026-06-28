@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin/bookings")({
   component: AdminBookings,
 });
 
-const TABS = ["offers", "pending", "ongoing", "completed", "all"] as const;
+const TABS = ["offers", "pending", "ongoing", "rejected", "completed", "all"] as const;
 type Tab = (typeof TABS)[number];
 
 const STATUSES = [
@@ -35,6 +35,7 @@ function AdminBookings() {
     if (tab === "offers") q = q.eq("status", "driver_offered");
     else if (tab === "pending") q = q.in("status", ["pending", "driver_offered"]);
     else if (tab === "ongoing") q = q.in("status", ["driver_assigned", "driver_arrived", "in_progress"]);
+    else if (tab === "rejected") q = q.not("rejected_driver_ids" as any, "eq", "{}");
     else if (tab === "completed") q = q.in("status", ["completed", "cancelled"]);
     const { data } = await q;
     setRows(data ?? []);
