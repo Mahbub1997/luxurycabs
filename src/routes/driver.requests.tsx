@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Loader2, Car } from "lucide-react";
+import { ArrowLeft, MapPin, Loader2, Car, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { acceptRide, rejectRide } from "@/lib/driver.functions";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ function DriverRequests() {
   const navigate = useNavigate();
   const [driverId, setDriverId] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
+  const [rejected, setRejected] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
