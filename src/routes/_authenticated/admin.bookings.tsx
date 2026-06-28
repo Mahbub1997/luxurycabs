@@ -193,10 +193,18 @@ function BookingCard({ b }: { b: any }) {
     } catch (e: any) { toast.error(e.message); } finally { setSavingStatus(false); }
   }
 
+  const rejectedCount: number = Array.isArray(b.rejected_driver_ids) ? b.rejected_driver_ids.length : 0;
   return (
     <div className="rounded-2xl border border-border bg-card p-4 text-sm shadow-sm">
       <div className="flex items-center justify-between">
-        <StatusBadge status={b.status} />
+        <div className="flex items-center gap-1.5">
+          <StatusBadge status={b.status} />
+          {rejectedCount > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+              <XCircle className="h-3 w-3" /> {rejectedCount} rejected
+            </span>
+          )}
+        </div>
         <span className="text-[10px] text-muted-foreground">
           {new Date(b.created_at).toLocaleString()}
         </span>
