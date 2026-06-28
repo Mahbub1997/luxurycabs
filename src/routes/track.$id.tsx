@@ -135,13 +135,8 @@ function AwaitingDriver({ b, onBack, onCancelled }: { b: Booking; onBack: () => 
     }
   }
 
-  function shareTrip() {
-    const url = typeof window !== "undefined" ? `${window.location.origin}/track/${b.id}` : "";
-    const text = encodeURIComponent(
-      `My Luxury Cabs booking ${code}\nFrom: ${b.pickup_address}\nTo: ${b.drop_address}\nTrack live: ${url}`
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
+
+
 
   return (
     <div className="app-shell flex flex-col bg-muted/30 pb-10">
