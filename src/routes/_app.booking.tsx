@@ -541,6 +541,27 @@ function Booking() {
           </div>
 
           <div className="px-4 pb-8 pt-4">
+            {/* Trip type chooser — moved here from home page */}
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              {([
+                { id: "local", label: "Local", I: Car },
+                { id: "rental", label: "Rental", I: Clock },
+                { id: "outstation", label: "Outstation", I: MapIcon },
+              ] as const).map(({ id, label, I }) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-full border-2 px-2 py-2 text-xs font-semibold transition",
+                    tab === id ? "border-primary bg-primary-soft text-primary" : "border-border bg-card text-muted-foreground"
+                  )}
+                >
+                  <I className="h-3.5 w-3.5" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Route */}
             <div className="rounded-2xl border border-border bg-card p-4">
               <div className="flex">
