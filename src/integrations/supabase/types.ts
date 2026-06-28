@@ -47,6 +47,7 @@ export type Database = {
           pickup_address: string
           pickup_lat: number
           pickup_lng: number
+          rejected_driver_ids: string[]
           route_polyline: string | null
           scheduled_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -90,6 +91,7 @@ export type Database = {
           pickup_address: string
           pickup_lat: number
           pickup_lng: number
+          rejected_driver_ids?: string[]
           route_polyline?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -133,6 +135,7 @@ export type Database = {
           pickup_address?: string
           pickup_lat?: number
           pickup_lng?: number
+          rejected_driver_ids?: string[]
           route_polyline?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["booking_status"]

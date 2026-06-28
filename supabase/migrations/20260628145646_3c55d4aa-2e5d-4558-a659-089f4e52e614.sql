@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS rejected_driver_ids uuid[] NOT NULL DEFAULT '{}'::uuid[];
