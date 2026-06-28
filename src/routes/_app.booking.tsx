@@ -248,38 +248,13 @@ function Booking() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="mx-4 grid grid-cols-3 gap-2">
-        {([
-          { id: "local", label: "Local", I: Car },
-          { id: "rental", label: "Rental", I: Clock },
-          { id: "outstation", label: "Outstation", I: MapIcon },
-        ] as const).map(({ id, label, I }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "flex items-center justify-center gap-1.5 rounded-full border-2 px-2 py-2.5 text-xs font-semibold transition",
-              tab === id ? "border-primary bg-primary-soft text-primary" : "border-border bg-card text-muted-foreground"
-            )}
-          >
-            <I className="h-4 w-4" />
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Pickup / Drop card — reference-style: route timeline + pills + recents */}
+      {/* Pickup / Drop card — clean: route timeline + pills, no recents */}
       <PickDropPanel
         pickup={pickup}
         drop={drop}
         onOpenMap={() => setMapPickerFor("pickup")}
-        onUseRecent={(p) => {
-          if (!pickup) setPickup(p);
-          else if (!drop) setDrop(p);
-          else setDrop(p);
-        }}
       />
+
 
 
       {/* Pickup date & time */}
