@@ -773,31 +773,8 @@ function InlineVehicleRow({
   );
 }
 
-const RECENT_PLACES_KEY = "luxury_recent_places";
-const FAV_PLACES_KEY = "luxury_fav_places";
 
-function readRecentPlaces(): PlacePick[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(RECENT_PLACES_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-function readFavPlaces(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(FAV_PLACES_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-function toggleFav(addr: string): string[] {
-  const list = readFavPlaces();
-  const next = list.includes(addr) ? list.filter((x) => x !== addr) : [addr, ...list];
-  try { localStorage.setItem(FAV_PLACES_KEY, JSON.stringify(next)); } catch {}
-  return next;
-}
+
 
 function PickDropPanel({
   pickup, drop, onOpenMap,
