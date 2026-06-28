@@ -30,10 +30,17 @@ function DriverRequests() {
 
   async function load(id: string) {
     setLoading(true);
-    const { data } = await supabase.from("bookings").select("*")
-      .eq("assigned_driver_id", id).eq("status", "driver_offered")
-      .order("created_at", { ascending: false });
-    setRows(data ?? []);
+    const [{ data: pending }, { data: rej }] = await Promise.all([
+      supabase.from("bookings").select("*")
+        .eq("assigned_driver_id", id).eq("status", "driver_offered")
+        .order("created_at", { ascending: false }),
+      supabase.from("bookings").select("*")
+        .contains("rejected_driver_ids" as any, [id] as any)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+    setRows(pending ?? []);
+    setRejected(rej ?? []);
     setLoading(false);
   }
 
@@ -42,7 +49,7 @@ function DriverRequests() {
     load(driverId);
     const ch = supabase.channel(`driver-req-${driverId}`)
       .on("postgres_changes",
-        { event: "*", schema: "public", table: "bookings", filter: `assigned_driver_id=eq.${driverId}` },
+        { event: "*", schema: "public", table: "bookings" },
         () => load(driverId))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
