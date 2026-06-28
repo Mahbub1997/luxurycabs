@@ -746,7 +746,7 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
     finally { setBusy(false); }
   }
 
-  async function pickUpi() {
+  async function pickUpi(app?: "gpay" | "phonepe" | "paytm" | "any") {
     if (busy) return;
     setBusy(true);
     try {
@@ -754,6 +754,21 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
         payment_method: "upi",
         payment_status: "upi_pending",
       } as any);
+      // Open the chosen UPI app with merchant VPA + amount prefilled.
+      const amount = Number(b.fare).toFixed(2);
+      const pa = "mabubbasha9791-1@oksbi";
+      const pn = encodeURIComponent("Luxury Cabs");
+      const tn = encodeURIComponent(`Cab fare ${b.id.slice(0, 8)}`);
+      const tr = b.id;
+      const qs = `pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tn=${tn}&tr=${tr}`;
+      const scheme =
+        app === "gpay" ? "tez://upi/pay" :
+        app === "phonepe" ? "phonepe://pay" :
+        app === "paytm" ? "paytmmp://pay" :
+        "upi://pay";
+      if (typeof window !== "undefined") {
+        window.location.href = `${scheme}?${qs}`;
+      }
     } catch (e: any) { toast.error(e.message || "Failed"); }
     finally { setBusy(false); }
   }
@@ -773,10 +788,15 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <PayBtn I={Banknote} l="Cash" onClick={pickCash} disabled={busy} />
-              <PayBtn I={Wallet} l="UPI" onClick={pickUpi} disabled={busy} />
+              <PayBtn I={Wallet} l="UPI" onClick={() => pickUpi("any")} disabled={busy} />
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
+              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
+              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
             </div>
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              For UPI, scan the QR shown by the driver and pay. Driver will confirm receipt.
+              For UPI, your selected app will open with the amount prefilled. The driver confirms once payment is received.
             </div>
           </>
         )}
@@ -803,7 +823,12 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="mt-3 text-lg font-extrabold">Pay via UPI</div>
             <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-[12px] text-muted-foreground">
-              Scan the QR code shown by your driver and complete payment in your UPI app.
+              Open your UPI app to complete the payment. The driver will confirm receipt.
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
+              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
+              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
             </div>
             <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for driver to confirm receipt…
@@ -812,6 +837,18 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
         )}
       </div>
     </div>
+  );
+}
+
+function UpiAppBtn({ label, color, onClick, disabled }: { label: string; color: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn("rounded-xl border-2 py-2.5 text-xs font-bold transition disabled:opacity-50", color)}
+    >
+      {label}
+    </button>
   );
 }
 

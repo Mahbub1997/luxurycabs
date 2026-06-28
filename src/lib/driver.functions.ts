@@ -96,7 +96,7 @@ export const acceptRide = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Driver rejects offer — clears assignment, back to pending. */
+/** Driver rejects offer — clears assignment, back to pending, and records this driver in rejected_driver_ids. */
 export const rejectRide = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ booking_id: z.string().uuid() }).parse(d))
@@ -104,6 +104,11 @@ export const rejectRide = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: drv } = await supabaseAdmin.from("drivers").select("id").eq("user_id", context.userId).maybeSingle();
     if (!drv) throw new Error("No driver profile");
+    // Append driver id into rejected_driver_ids (de-duped) via SQL.
+    const { data: cur } = await supabaseAdmin
+      .from("bookings").select("rejected_driver_ids" as any).eq("id", data.booking_id).maybeSingle();
+    const existing: string[] = ((cur as any)?.rejected_driver_ids ?? []) as string[];
+    const nextIds = existing.includes(drv.id) ? existing : [...existing, drv.id];
     const { error } = await supabaseAdmin
       .from("bookings")
       .update({
@@ -111,7 +116,8 @@ export const rejectRide = createServerFn({ method: "POST" })
         assigned_driver_id: null,
         driver_name: null, driver_phone: null, driver_photo: null,
         driver_lat: null, driver_lng: null,
-      })
+        rejected_driver_ids: nextIds,
+      } as any)
       .eq("id", data.booking_id)
       .eq("assigned_driver_id", drv.id);
     if (error) throw new Error(error.message);
