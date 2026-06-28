@@ -123,6 +123,30 @@ function DriverRequests() {
             </div>
           </div>
         ))}
+
+        {!loading && rejected.length > 0 && (
+          <>
+            <div className="pt-4 flex items-center gap-2 text-sm font-bold text-rose-700">
+              <XCircle className="h-4 w-4" /> Rejected by you
+              <span className="ml-auto rounded-full bg-rose-100 px-2 py-0.5 text-[11px]">{rejected.length}</span>
+            </div>
+            {rejected.map((b) => (
+              <div key={b.id} className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4 space-y-2 opacity-90">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-bold">{b.trip_type} · {Number(b.distance_km).toFixed(1)} km</div>
+                  <div className="text-base font-extrabold text-rose-700">₹{b.fare}</div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <div className="truncate"><span className="font-semibold text-emerald-700">From: </span>{b.pickup_address}</div>
+                  <div className="truncate"><span className="font-semibold text-rose-700">To: </span>{b.drop_address}</div>
+                </div>
+                <div className="text-[11px] font-semibold text-rose-700">
+                  Status: {b.status === "cancelled" ? "Cancelled" : b.assigned_driver_id ? "Reassigned to another driver" : "Awaiting reassignment"}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
