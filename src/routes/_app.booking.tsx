@@ -7,10 +7,11 @@ import {
 } from "lucide-react";
 
 import { z } from "zod";
-import { type PlacePick } from "@/components/PlaceAutocomplete";
+import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
 import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
 import { CrownCarLogo } from "@/components/Brand";
+import { RouteMap } from "@/components/RouteMap";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import {
