@@ -7,10 +7,11 @@ import {
 } from "lucide-react";
 
 import { z } from "zod";
-import { type PlacePick } from "@/components/PlaceAutocomplete";
+import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
 import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
 import { CrownCarLogo } from "@/components/Brand";
+import { RouteMap } from "@/components/RouteMap";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import {
@@ -249,12 +250,59 @@ function Booking() {
         </div>
       )}
 
-      {/* Pickup / Drop card — clean: route timeline + pills, no recents */}
-      <PickDropPanel
-        pickup={pickup}
-        drop={drop}
-        onOpenMap={() => setMapPickerFor("pickup")}
-      />
+      {/* Pickup / Drop — direct text inputs on the home screen.
+          "Select on map" opens the single full-screen map flow. */}
+      <div className="mx-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="mt-1 flex flex-col items-center pt-1">
+            <span className="h-3 w-3 rounded-full border-2 border-emerald-600" />
+            <span className="my-1 h-6 w-px border-l border-dashed border-muted-foreground/50" />
+            <span className="h-3 w-3 rounded-sm border-2 border-rose-600" />
+          </div>
+          <div className="min-w-0 flex-1 divide-y divide-border">
+            <div className="pb-2">
+              <PlaceAutocomplete
+                label="Pickup"
+                value={pickup}
+                onChange={setPickup}
+                placeholder="Enter pickup location"
+                accent="green"
+                autoDetect
+              />
+            </div>
+            <div className="pt-2">
+              <PlaceAutocomplete
+                label="Drop"
+                value={drop}
+                onChange={setDrop}
+                placeholder="Enter drop location"
+                accent="red"
+              />
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMapPickerFor("pickup")}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold hover:border-primary"
+        >
+          <MapIcon className="h-3.5 w-3.5 text-primary" /> Select on map
+        </button>
+      </div>
+
+      {/* Auto-fit route map — only after both pickup & drop are set */}
+      {pickup && drop && tab !== "rental" && (
+        <div className="mx-4 overflow-hidden rounded-2xl border border-border bg-card">
+          <RouteMap
+            pickup={{ lat: pickup.lat, lng: pickup.lng }}
+            drop={{ lat: drop.lat, lng: drop.lng }}
+            polyline={routeInfo?.polyline ?? null}
+            interactive={false}
+            height={180}
+            fitKey={`${pickup.lat},${pickup.lng}-${drop.lat},${drop.lng}`}
+          />
+        </div>
+      )}
 
 
 
@@ -689,7 +737,7 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Unified pickup → drop → vehicle full-screen flow */}
+      {/* Unified pickup → drop full-screen flow (single map). */}
       <PickDropFlow
         open={mapPickerFor !== null}
         initialPickup={pickup}
@@ -701,8 +749,8 @@ function Booking() {
           setVehicle(v);
           setLocalModel(v === "sedan" ? "sedan" : "suv");
           setMapPickerFor(null);
-          // Jump straight to summary so the user can confirm & book.
-          setTimeout(() => setSummaryOpen(true), 50);
+          // Stay on the home screen — the map preview and vehicle picker
+          // appear inline. User taps "Book Now" to open the trip summary.
         }}
       />
 

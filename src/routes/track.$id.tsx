@@ -407,14 +407,28 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [b.assigned_driver_id]);
 
-  // OTP countdown
+  // OTP countdown — starts ONCE when driver arrives. Do not reset on phase
+  // changes. After it hits 0 we show "waiting charges started" instead of
+  // restarting another 5 minutes.
+  const otpStartedRef = useRef(false);
   useEffect(() => {
     if (phase !== "arrived" && phase !== "otp") return;
-    setSecsLeft(300);
+    if (!otpStartedRef.current) {
+      otpStartedRef.current = true;
+      setSecsLeft(300);
+    }
     const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [phase]);
   const mmss = `${String(Math.floor(secsLeft / 60)).padStart(2, "0")}:${String(secsLeft % 60).padStart(2, "0")}`;
+  const waitingChargesActive = otpStartedRef.current && secsLeft === 0 && (phase === "arrived" || phase === "otp");
+
+  // Auto-expand the bottom sheet the moment the driver arrives so the OTP is
+  // immediately visible. Auto-collapse once the trip starts (OTP entered).
+  useEffect(() => {
+    if (phase === "arrived" || phase === "otp") setSheetExpanded(true);
+    if (phase === "in_trip" || phase === "completing") setSheetExpanded(false);
+  }, [phase]);
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -667,10 +681,18 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 text-center text-[11px] text-muted-foreground">
-                    {phase === "arrived" || phase === "otp"
-                      ? <>Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver</>
-                      : <>OTP timer starts when driver arrives</>}
+                  <div className="mt-2 text-center text-[11px]">
+                    {waitingChargesActive ? (
+                      <span className="font-semibold text-amber-700">
+                        OTP expired · Waiting charges have started
+                      </span>
+                    ) : phase === "arrived" || phase === "otp" ? (
+                      <span className="text-muted-foreground">
+                        Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">OTP timer starts when driver arrives</span>
+                    )}
                   </div>
                 </div>
               )}

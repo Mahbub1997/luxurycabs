@@ -284,8 +284,9 @@ export function PickDropFlow({ open, initialPickup, initialDrop, onClose, onComp
           scale: 8, fillColor: "#dc2626", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2,
         },
       });
-      setStage("vehicle");
-      if (pickup) void drawRoute(pickup, p);
+      // Single-map flow — return straight to home with both points; vehicle is
+      // selected on the home screen (rectangular row cards) instead of here.
+      if (pickup) onComplete({ pickup, drop: p, vehicle });
     }
   }
 
