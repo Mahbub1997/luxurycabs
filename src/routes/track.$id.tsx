@@ -681,10 +681,18 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 text-center text-[11px] text-muted-foreground">
-                    {phase === "arrived" || phase === "otp"
-                      ? <>Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver</>
-                      : <>OTP timer starts when driver arrives</>}
+                  <div className="mt-2 text-center text-[11px]">
+                    {waitingChargesActive ? (
+                      <span className="font-semibold text-amber-700">
+                        OTP expired · Waiting charges have started
+                      </span>
+                    ) : phase === "arrived" || phase === "otp" ? (
+                      <span className="text-muted-foreground">
+                        Expires in <span className="font-semibold text-foreground">{mmss}</span> · Share with your driver
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">OTP timer starts when driver arrives</span>
+                    )}
                   </div>
                 </div>
               )}
