@@ -737,7 +737,7 @@ function Booking() {
         </SheetContent>
       </Sheet>
 
-      {/* Unified pickup → drop → vehicle full-screen flow */}
+      {/* Unified pickup → drop full-screen flow (single map). */}
       <PickDropFlow
         open={mapPickerFor !== null}
         initialPickup={pickup}
@@ -749,8 +749,8 @@ function Booking() {
           setVehicle(v);
           setLocalModel(v === "sedan" ? "sedan" : "suv");
           setMapPickerFor(null);
-          // Jump straight to summary so the user can confirm & book.
-          setTimeout(() => setSummaryOpen(true), 50);
+          // Stay on the home screen — the map preview and vehicle picker
+          // appear inline. User taps "Book Now" to open the trip summary.
         }}
       />
 
