@@ -8,7 +8,6 @@ import {
 
 import { z } from "zod";
 import { PlaceAutocomplete, type PlacePick } from "@/components/PlaceAutocomplete";
-import { PickDropFlow } from "@/components/PickDropFlow";
 import { VehicleCard } from "@/components/VehicleCard";
 import { CrownCarLogo } from "@/components/Brand";
 import { RouteMap } from "@/components/RouteMap";
@@ -34,14 +33,19 @@ const searchSchema = z.object({ tab: z.enum(["local", "outstation", "rental"]).o
 export const Route = createFileRoute("/_app/booking")({
   head: () => ({ meta: [{ title: "Book a Ride — Luxury Cabs" }] }),
   validateSearch: searchSchema,
-  component: Booking,
+  component: () => <BookingPage forcedTab={null} />,
 });
 
-function Booking() {
-  const search = Route.useSearch();
+interface BookingPageProps {
+  forcedTab: TripType | null;
+}
+
+export function BookingPage({ forcedTab }: BookingPageProps) {
   const navigate = useNavigate();
   const { rates } = useFareRates();
-  const [tab, setTab] = useState<TripType>(search.tab ?? "local");
+  const [tab, setTab] = useState<TripType>(forcedTab ?? "local");
+  useEffect(() => { if (forcedTab) setTab(forcedTab); }, [forcedTab]);
+
   const [pickup, setPickup] = useState<PlacePick | null>(null);
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
@@ -60,10 +64,8 @@ function Booking() {
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [mapPickerFor, setMapPickerFor] = useState<null | "pickup" | "drop">(null);
 
-  // If user already has an active trip (app was closed and reopened, or they
-  // navigated back here), bounce them to the live tracking screen.
+  // Bounce to active trip
   useEffect(() => {
     let cancelled = false;
     findActiveBookingId().then((activeId) => {
@@ -74,11 +76,7 @@ function Booking() {
     return () => { cancelled = true; };
   }, [navigate]);
 
-  
-
-  // Note: routeInfo is overwritten by the route-fetch effect below; don't
-  // null it here or the map polyline flickers off/on between picks.
-
+  // Compute route whenever both endpoints set (and not rental)
   useEffect(() => {
     if (!pickup || !drop || tab === "rental") return;
     let cancelled = false;
@@ -94,16 +92,12 @@ function Booking() {
     () => OUTSTATION_VEHICLES.find((v) => v.id === outVehicleId) ?? OUTSTATION_VEHICLES[0],
     [outVehicleId]
   );
-
   const outDays = useMemo(() => (returnAt ? diffDays(scheduledAt, returnAt) : 1), [scheduledAt, returnAt]);
-
   const outBreakdown = useMemo(() => {
     if (tab !== "outstation" || !routeInfo) return null;
-    const km = routeInfo.distanceKm * 2; // round trip only
+    const km = routeInfo.distanceKm * 2;
     return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
   }, [tab, routeInfo, outVehicle, outDays]);
-
-  // Inline vehicle rows are shown below the map; no auto-open sheet needed.
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
@@ -112,84 +106,63 @@ function Booking() {
       suv: calcLocalFare("suv", routeInfo.distanceKm, routeInfo.durationMin, rates),
     };
   }, [tab, routeInfo, rates]);
-
   const rentalFares = useMemo(() => {
     if (tab !== "rental") return { sedan: 0, suv: 0 };
     const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId)!;
     return { sedan: pkg.sedan, suv: pkg.suv };
   }, [tab, pkgId]);
-
   const estimatedFare = useMemo(() => {
     if (tab === "outstation") return outBreakdown?.total ?? 0;
     if (tab === "rental") return vehicle === "sedan" ? rentalFares.sedan : rentalFares.suv;
     return vehicle === "sedan" ? localFares.sedan : localFares.suv;
   }, [tab, outBreakdown, rentalFares, localFares, vehicle]);
 
-  function swap() { setPickup(drop); setDrop(pickup); }
-
   const canPickVehicle = (() => {
-    if (!pickup || !drop) return tab === "rental";
-    if (tab === "rental") return true;
+    if (tab === "rental") return !!pickup;
+    if (!pickup || !drop) return false;
     if (tab === "outstation" && !returnAt) return false;
     return !!routeInfo && !routeLoading;
   })();
 
-
-
-
-  function openVehicleSheet() {
-    if (!canPickVehicle) return;
-    setSummaryOpen(false);
-    setVehicleSheetOpen(true);
-  }
-  function openSummary() {
-    if (!canPickVehicle) return;
-    setVehicleSheetOpen(false);
-    setSummaryOpen(true);
-  }
-
   function chooseLocalRental(v: VehicleType, model: "sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta" = v as any) {
-    setVehicle(v);
-    setLocalModel(model);
-    setVehicleSheetOpen(false);
+    setVehicle(v); setLocalModel(model); setVehicleSheetOpen(false);
   }
-  function chooseOutstation(id: string) {
-    setOutVehicleId(id);
-    setVehicleSheetOpen(false);
+  function chooseOutstation(id: string) { setOutVehicleId(id); setVehicleSheetOpen(false); }
+
+  function switchTab(next: TripType) {
+    if (next === tab) return;
+    if (next === "rental") navigate({ to: "/booking/rental" as any });
+    else if (next === "outstation") navigate({ to: "/booking/outstation" as any });
+    else navigate({ to: "/booking" });
   }
 
   async function handleBook() {
     if (submitting) return;
     if (tab !== "rental" && (!pickup || !drop || !routeInfo)) return;
-    if (tab === "rental" && (!pickup || !drop)) return;
+    if (tab === "rental" && !pickup) return;
     setSubmitting(true);
     try {
       const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId);
-      let distance: number;
-      let duration: number;
+      let distance: number, duration: number;
       let vehicleType: VehicleType = vehicle;
       const LOCAL_LABELS: Record<string, string> = {
-        sedan: "Sedan", ciaz: "Ciaz", suv: "SUV",
-        ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
+        sedan: "Sedan", ciaz: "Ciaz", suv: "SUV", ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
       };
       let vehicleModel: string = LOCAL_LABELS[localModel] ?? (vehicle === "sedan" ? "Sedan" : "SUV");
 
       if (tab === "rental") {
-        distance = pkg!.km;
-        duration = pkg!.hours * 60;
+        distance = pkg!.km; duration = pkg!.hours * 60;
       } else if (tab === "outstation") {
         distance = routeInfo!.distanceKm * 2;
         duration = routeInfo!.durationMin * 2;
         vehicleType = outVehicle.tier;
         vehicleModel = outVehicle.label;
       } else {
-        distance = routeInfo!.distanceKm;
-        duration = routeInfo!.durationMin;
+        distance = routeInfo!.distanceKm; duration = routeInfo!.durationMin;
       }
 
       const profile = getProfile();
       const { data: authData } = await supabase.auth.getUser();
-      // Payment method is chosen by the customer AT DROP, not during booking.
       const booking = await createBooking({
         trip_type: tab,
         trip_mode: tab === "outstation" ? "round" : null,
@@ -197,9 +170,9 @@ function Booking() {
         pickup_address: pickup!.address,
         pickup_lat: pickup!.lat,
         pickup_lng: pickup!.lng,
-        drop_address: drop!.address,
-        drop_lat: drop!.lat,
-        drop_lng: drop!.lng,
+        drop_address: drop?.address ?? pickup!.address,
+        drop_lat: drop?.lat ?? pickup!.lat,
+        drop_lng: drop?.lng ?? pickup!.lng,
         scheduled_at: new Date(scheduledAt).toISOString(),
         vehicle_type: vehicleType,
         vehicle_model: vehicleModel,
@@ -222,45 +195,193 @@ function Booking() {
     } finally { setSubmitting(false); }
   }
 
-
   const tariffLabel =
-    tab === "outstation"
-      ? outVehicle.label
+    tab === "outstation" ? outVehicle.label
       : ({ sedan: "Sedan", ciaz: "Ciaz", suv: "SUV", ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const)[localModel];
   const carImg = (tab === "outstation" ? outVehicle.tier : vehicle) === "sedan" ? sedanImg : suvImg;
 
-  // Hide app header + bottom nav once both pickup & drop are selected so the
-  // vehicle picker fits on-screen without scrolling.
-  const hideChrome = !!(pickup && drop);
+  // FULL-SCREEN MAP STAGE: when local/outstation have both endpoints set.
+  const mapStage = tab !== "rental" && !!pickup && !!drop;
+
+  // Hide app chrome on the map stage
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    if (hideChrome) root.classList.add("chrome-hidden");
+    if (mapStage) root.classList.add("chrome-hidden");
     else root.classList.remove("chrome-hidden");
     return () => { root.classList.remove("chrome-hidden"); };
-  }, [hideChrome]);
+  }, [mapStage]);
 
+  // ===== MAP STAGE =====
+  if (mapStage) {
+    return (
+      <div className="fixed inset-0 z-30 flex flex-col bg-background">
+        {/* Top address card */}
+        <div className="absolute left-3 right-3 top-3 z-20 rounded-2xl border border-border bg-card p-3 shadow-lg"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+          <div className="flex items-start gap-2">
+            <button
+              onClick={() => { setDrop(null); }}
+              className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-muted"
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start gap-2">
+                <span className="mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-emerald-600 shrink-0" />
+                <div className="min-w-0 flex-1 truncate text-xs font-medium">{pickup!.address}</div>
+              </div>
+              <div className="my-1 ml-1.5 h-3 w-px border-l border-dashed border-muted-foreground/40" />
+              <div className="flex items-start gap-2">
+                <span className="mt-1.5 h-2.5 w-2.5 rounded-sm border-2 border-rose-600 shrink-0" />
+                <div className="min-w-0 flex-1 truncate text-xs font-medium">{drop!.address}</div>
+                <button
+                  onClick={() => setDrop(null)}
+                  className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+          {routeInfo && (
+            <div className="mt-2 flex items-center justify-center gap-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">{routeInfo.distanceKm.toFixed(1)} km</span>
+              <span>·</span>
+              <span>{formatDuration(routeInfo.durationMin)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Map */}
+        <div className="absolute inset-0">
+          <RouteMap
+            pickup={{ lat: pickup!.lat, lng: pickup!.lng }}
+            drop={{ lat: drop!.lat, lng: drop!.lng }}
+            polyline={routeInfo?.polyline ?? null}
+            height="100%"
+            showMyLocation
+            fitKey={`${pickup!.lat},${pickup!.lng}-${drop!.lat},${drop!.lng}`}
+          />
+        </div>
+
+        {/* Bottom sheet — vehicles + CTA */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-border bg-card p-4 shadow-2xl"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+          {tab === "outstation" && !returnAt && (
+            <div className="mb-3 rounded-xl border border-primary/40 bg-primary-soft p-3">
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-primary">Return Date & Time (required)</label>
+              <input
+                type="datetime-local"
+                value={returnAt}
+                min={scheduledAt}
+                onChange={(e) => setReturnAt(e.target.value)}
+                className="mt-1 w-full rounded-lg bg-background px-2 py-1.5 text-sm outline-none"
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold">Select Vehicle</h3>
+            <button
+              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+              disabled={!canPickVehicle}
+              className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary disabled:opacity-50"
+            >
+              View All <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="mt-2 space-y-2">
+            {tab === "outstation" ? (
+              OUTSTATION_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
+                const km = (routeInfo?.distanceKm ?? 0) * 2;
+                const bd = routeInfo && canPickVehicle
+                  ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
+                  : null;
+                return (
+                  <InlineVehicleRow
+                    key={v.id}
+                    img={v.tier === "sedan" ? sedanImg : suvImg}
+                    label={v.label} seats={v.seats}
+                    fare={bd?.total ?? 0}
+                    selected={outVehicleId === v.id}
+                    onSelect={() => chooseOutstation(v.id)}
+                  />
+                );
+              })
+            ) : (
+              <>
+                <InlineVehicleRow img={sedanImg} label="Sedan" seats={4}
+                  fare={localFares.sedan}
+                  selected={vehicle === "sedan" && localModel === "sedan"}
+                  onSelect={() => chooseLocalRental("sedan", "sedan")} />
+                <InlineVehicleRow img={suvImg} label="SUV" seats={7}
+                  fare={localFares.suv}
+                  selected={vehicle === "suv" && localModel === "suv"}
+                  onSelect={() => chooseLocalRental("suv", "suv")} />
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            disabled={!canPickVehicle}
+            onClick={() => setSummaryOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg disabled:opacity-50"
+          >
+            {routeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Review and Book · {formatINR(estimatedFare)} <ArrowRight className="h-4 w-4" /></>}
+          </button>
+        </div>
+
+        {renderVehicleSheet()}
+        {renderSummarySheet()}
+      </div>
+    );
+  }
+
+  // ===== HOME (Local) / RENTAL / OUTSTATION entry =====
   return (
     <div className="flex flex-col gap-3 pb-40">
-      {/* Header with crown */}
-      {!hideChrome && (
-        <div data-app-chrome className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
-          <CrownCarLogo className="h-6 w-6 text-green-600" />
-          <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
-        </div>
-      )}
+      <div data-app-chrome className="sticky top-0 z-30 flex h-14 items-center justify-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur">
+        <CrownCarLogo className="h-6 w-6 text-green-600" />
+        <div className="font-display text-lg font-bold tracking-tight text-primary">Luxury Cabs</div>
+      </div>
 
-      {/* Pickup / Drop — direct text inputs on the home screen.
-          "Select on map" opens the single full-screen map flow. */}
+      {/* Trip type chips — at TOP of home */}
+      <div className="mx-4 grid grid-cols-3 gap-2">
+        {([
+          { id: "local", label: "Local", I: Car },
+          { id: "rental", label: "Rental", I: Clock },
+          { id: "outstation", label: "Outstation", I: MapIcon },
+        ] as const).map(({ id, label, I }) => (
+          <button
+            key={id}
+            onClick={() => switchTab(id)}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-full border-2 px-2 py-2 text-xs font-semibold transition",
+              tab === id ? "border-primary bg-primary-soft text-primary" : "border-border bg-card text-muted-foreground"
+            )}
+          >
+            <I className="h-3.5 w-3.5" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Pickup / Drop inputs (drop hidden for rental) */}
       <div className="mx-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="mt-1 flex flex-col items-center pt-1">
             <span className="h-3 w-3 rounded-full border-2 border-emerald-600" />
-            <span className="my-1 h-6 w-px border-l border-dashed border-muted-foreground/50" />
-            <span className="h-3 w-3 rounded-sm border-2 border-rose-600" />
+            {tab !== "rental" && <>
+              <span className="my-1 h-6 w-px border-l border-dashed border-muted-foreground/50" />
+              <span className="h-3 w-3 rounded-sm border-2 border-rose-600" />
+            </>}
           </div>
           <div className="min-w-0 flex-1 divide-y divide-border">
-            <div className="pb-2">
+            <div className={tab === "rental" ? "" : "pb-2"}>
               <PlaceAutocomplete
                 label="Pickup"
                 value={pickup}
@@ -270,188 +391,71 @@ function Booking() {
                 autoDetect
               />
             </div>
-            <div className="pt-2">
-              <PlaceAutocomplete
-                label="Drop"
-                value={drop}
-                onChange={setDrop}
-                placeholder="Enter drop location"
-                accent="red"
-              />
-            </div>
+            {tab !== "rental" && (
+              <div className="pt-2">
+                <PlaceAutocomplete
+                  label="Drop"
+                  value={drop}
+                  onChange={setDrop}
+                  placeholder="Enter drop location"
+                  accent="red"
+                />
+              </div>
+            )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setMapPickerFor("pickup")}
-          className="mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold hover:border-primary"
-        >
-          <MapIcon className="h-3.5 w-3.5 text-primary" /> Select on map
-        </button>
       </div>
 
-      {/* Auto-fit route map — only after both pickup & drop are set */}
-      {pickup && drop && tab !== "rental" && (
-        <div className="mx-4 overflow-hidden rounded-2xl border border-border bg-card">
-          <RouteMap
-            pickup={{ lat: pickup.lat, lng: pickup.lng }}
-            drop={{ lat: drop.lat, lng: drop.lng }}
-            polyline={routeInfo?.polyline ?? null}
-            interactive={false}
-            height={180}
-            fitKey={`${pickup.lat},${pickup.lng}-${drop.lat},${drop.lng}`}
-          />
-        </div>
-      )}
-
-
-
-      {/* Pickup date & time */}
-      <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3">
-        <Calendar className="h-4 w-4 text-primary" />
-        <span className="text-sm font-medium">{tab === "outstation" ? "Pickup Date & Time" : "Date & Time"}</span>
-        <input
-          type="datetime-local"
-          value={scheduledAt}
-          onChange={(e) => setScheduledAt(e.target.value)}
-          className="ml-auto bg-transparent text-sm text-foreground outline-none"
-        />
-      </div>
-
-      {/* Outstation return date & time — same box style, shown after pickup */}
-      {tab === "outstation" && (
+      {/* Rental: packages + vehicle inline */}
+      {tab === "rental" && (
         <>
-          <div className={cn(
-            "mx-4 flex items-center gap-2 rounded-xl border bg-card px-3 py-3",
-            returnAt ? "border-border" : "border-primary"
-          )}>
-            <Calendar className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">Return Date & Time</span>
-            <input
-              type="datetime-local"
-              required
-              value={returnAt}
-              min={scheduledAt}
-              onChange={(e) => setReturnAt(e.target.value)}
-              className="ml-auto bg-transparent text-sm text-foreground outline-none"
-            />
-          </div>
-          <div className="mx-4 flex items-center gap-2 text-xs">
-            <MapIcon className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold text-primary">Round Trip</span>
-            <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-primary">
-              {returnAt ? `${outDays} day${outDays > 1 ? "s" : ""}` : "Select return"}
-            </span>
-          </div>
-          {!returnAt && (
-            <div className="mx-4 -mt-1 text-[11px] font-medium text-primary">
-              Return date & time is required for outstation trips.
+          <div className="mx-4">
+            <div className="text-sm font-semibold">Choose a Package</div>
+            <div className="mt-2 space-y-2">
+              {RENTAL_PACKAGES.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPkgId(p.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left",
+                    pkgId === p.id ? "border-primary" : "border-border"
+                  )}
+                >
+                  <span className={cn("grid h-5 w-5 place-items-center rounded-full border-2",
+                    pkgId === p.id ? "border-primary bg-primary" : "border-muted-foreground/40")}>
+                    {pkgId === p.id && <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                  </span>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">{p.label}</div>
+                    <div className="text-xs text-muted-foreground">{p.sub}</div>
+                  </div>
+                  <div className="font-bold text-foreground">
+                    {formatINR(vehicle === "sedan" ? p.sedan : p.suv)}
+                  </div>
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+          <div className="mx-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold">Select Vehicle</h3>
+              <button onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+                className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
+                disabled={!canPickVehicle}>
+                View All <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-2 space-y-2">
+              <InlineVehicleRow img={sedanImg} label="Sedan" seats={4} fare={rentalFares.sedan}
+                selected={vehicle === "sedan" && localModel === "sedan"}
+                onSelect={() => chooseLocalRental("sedan", "sedan")} />
+              <InlineVehicleRow img={suvImg} label="SUV" seats={7} fare={rentalFares.suv}
+                selected={vehicle === "suv" && localModel === "suv"}
+                onSelect={() => chooseLocalRental("suv", "suv")} />
+            </div>
+          </div>
         </>
       )}
-
-      {/* Rental packages */}
-      {tab === "rental" && (
-        <div className="mx-4">
-          <div className="text-sm font-semibold">Choose a Package</div>
-          <div className="mt-2 space-y-2">
-            {RENTAL_PACKAGES.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPkgId(p.id)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-xl border-2 bg-card p-3 text-left",
-                  pkgId === p.id ? "border-primary" : "border-border"
-                )}
-              >
-                <span className={cn("grid h-5 w-5 place-items-center rounded-full border-2",
-                  pkgId === p.id ? "border-primary bg-primary" : "border-muted-foreground/40")}>
-                  {pkgId === p.id && <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
-                </span>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">{p.label}</div>
-                  <div className="text-xs text-muted-foreground">{p.sub}</div>
-                </div>
-                <div className="font-bold text-foreground">
-                  {formatINR(vehicle === "sedan" ? p.sedan : p.suv)}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {routeLoading && tab !== "rental" && (
-        <div className="mx-4 flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Calculating route & fare…
-        </div>
-      )}
-
-      {/* Select Vehicle — always visible directly under the map */}
-      <div className="mx-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold">Select Vehicle</h3>
-          <button
-            onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
-            className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
-            disabled={!canPickVehicle}
-          >
-            View All <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="mt-2 space-y-2">
-          {tab === "outstation" ? (
-            OUTSTATION_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
-              const km = (routeInfo?.distanceKm ?? 0) * 2;
-              const bd = routeInfo && canPickVehicle
-                ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
-                : null;
-              return (
-                <InlineVehicleRow
-                  key={v.id}
-                  img={v.tier === "sedan" ? sedanImg : suvImg}
-                  label={v.label}
-                  seats={v.seats}
-                  fare={bd?.total ?? 0}
-                  selected={outVehicleId === v.id}
-                  disabled={false}
-                  onSelect={() => chooseOutstation(v.id)}
-                />
-              );
-            })
-          ) : (
-            <>
-              <InlineVehicleRow
-                img={sedanImg}
-                label="Sedan"
-                seats={4}
-                fare={tab === "rental" ? rentalFares.sedan : localFares.sedan}
-                selected={vehicle === "sedan" && localModel === "sedan"}
-                disabled={false}
-                onSelect={() => chooseLocalRental("sedan", "sedan")}
-              />
-              <InlineVehicleRow
-                img={suvImg}
-                label="SUV"
-                seats={7}
-                fare={tab === "rental" ? rentalFares.suv : localFares.suv}
-                selected={vehicle === "suv" && localModel === "suv"}
-                disabled={false}
-                onSelect={() => chooseLocalRental("suv", "suv")}
-              />
-            </>
-          )}
-        </div>
-
-        {canPickVehicle && (
-          <div className="mt-3 rounded-2xl border border-primary/25 bg-primary-soft p-3 text-center">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Step 3 of 4</div>
-            <div className="mt-1 text-sm font-semibold">Review your trip summary and confirm booking.</div>
-          </div>
-        )}
-      </div>
-
 
       {/* Trust strip */}
       <div className="mx-4 mt-2 grid grid-cols-4 gap-2 border-t border-border pt-4 text-center">
@@ -469,10 +473,25 @@ function Booking() {
         ))}
       </div>
 
+      {renderVehicleSheet()}
+      {renderSummarySheet()}
 
+      {/* Floating Review and Book — only for rental (local/outstation get it on map stage) */}
+      {tab === "rental" && canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          <button type="button" onClick={() => setSummaryOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg">
+            Review and Book · {formatINR(estimatedFare)} <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
-
-      {/* Vehicle picker Sheet */}
+  // ---- helper renderers ----
+  function renderVehicleSheet() {
+    return (
       <Sheet open={vehicleSheetOpen} onOpenChange={setVehicleSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl border-0 p-0 max-h-[85vh] overflow-y-auto">
           <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/30 mt-3" />
@@ -486,11 +505,8 @@ function Booking() {
                     ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
                     : null;
                   return (
-                    <button
-                      key={v.id}
-                      onClick={() => chooseOutstation(v.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left hover:border-primary"
-                    >
+                    <button key={v.id} onClick={() => chooseOutstation(v.id)}
+                      className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-3 text-left hover:border-primary">
                       <div className="grid h-16 w-24 shrink-0 place-items-center">
                         <img src={v.tier === "sedan" ? sedanImg : suvImg} alt={v.label} className="h-full w-full object-contain scale-x-[-1]" />
                       </div>
@@ -511,14 +527,9 @@ function Booking() {
               ) : (
                 <>
                   <VehicleCard type="sedan" fare={tab === "rental" ? rentalFares.sedan : localFares.sedan} selected={vehicle === "sedan" && localModel === "sedan"} onSelect={() => chooseLocalRental("sedan", "sedan")} />
-                  <button
-                    type="button"
-                    onClick={() => chooseLocalRental("sedan", "ciaz")}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
-                      localModel === "ciaz" ? "border-foreground" : "border-border"
-                    )}
-                  >
+                  <button type="button" onClick={() => chooseLocalRental("sedan", "ciaz")}
+                    className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                      localModel === "ciaz" ? "border-foreground" : "border-border")}>
                     <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
                       <img src={sedanImg} alt="Ciaz" className="h-full w-full object-contain scale-x-[-1]" />
                     </div>
@@ -535,15 +546,9 @@ function Booking() {
                     const labels = { ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const;
                     const subs = { ertiga: "6 Seats · AC", innova: "7 Seats · AC", crysta: "Premium 7 Seats · AC" } as const;
                     return (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => chooseLocalRental("suv", m)}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
-                          localModel === m ? "border-foreground" : "border-border"
-                        )}
-                      >
+                      <button key={m} type="button" onClick={() => chooseLocalRental("suv", m)}
+                        className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                          localModel === m ? "border-foreground" : "border-border")}>
                         <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
                           <img src={suvImg} alt={labels[m]} className="h-full w-full object-contain scale-x-[-1]" />
                         </div>
@@ -563,87 +568,70 @@ function Booking() {
           </div>
         </SheetContent>
       </Sheet>
+    );
+  }
 
-      {/* Trip Summary Sheet — full screen */}
+  function renderSummarySheet() {
+    return (
       <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
         <SheetContent side="bottom" className="rounded-none border-0 p-0 h-[100dvh] max-h-[100dvh] w-full overflow-y-auto bg-background">
           <div className="sticky top-0 z-10 flex items-center gap-3 bg-background border-b border-border px-4 py-4"
             style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
-            <button
-              type="button"
-              onClick={() => setSummaryOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-full hover:bg-background/60"
-              aria-label="Back"
-            >
+            <button type="button" onClick={() => setSummaryOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-full hover:bg-background/60" aria-label="Back">
               <ArrowLeft className="h-5 w-5" />
             </button>
             <h2 className="flex-1 text-xl font-bold">Trip Summary</h2>
-            <button
-              type="button"
-              onClick={() => setSummaryOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background"
-              aria-label="Close"
-            >
+            <button type="button" onClick={() => setSummaryOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           <div className="px-4 pb-8 pt-4">
-            {/* Trip type chooser — moved here from home page */}
-            <div className="mb-3 grid grid-cols-3 gap-2">
-              {([
-                { id: "local", label: "Local", I: Car },
-                { id: "rental", label: "Rental", I: Clock },
-                { id: "outstation", label: "Outstation", I: MapIcon },
-              ] as const).map(({ id, label, I }) => (
-                <button
-                  key={id}
-                  onClick={() => setTab(id)}
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-full border-2 px-2 py-2 text-xs font-semibold transition",
-                    tab === id ? "border-primary bg-primary-soft text-primary" : "border-border bg-card text-muted-foreground"
-                  )}
-                >
-                  <I className="h-3.5 w-3.5" />
-                  <span>{label}</span>
-                </button>
-              ))}
+            {/* Trip type — display only */}
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+              {tab === "local" && <><Car className="h-3.5 w-3.5" /> Local Trip</>}
+              {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</>}
+              {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
             </div>
 
-            {/* Route */}
+            {/* Route card */}
             <div className="rounded-2xl border border-border bg-card p-4">
               <div className="flex">
                 <div className="mr-3 flex flex-col items-center pt-1">
                   <span className="h-3.5 w-3.5 rounded-full border-2 border-primary" />
-                  <span className="my-1 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
-                  <MapIcon className="h-4 w-4 text-rose-500" />
+                  {tab !== "rental" && <>
+                    <span className="my-1 h-10 w-px border-l-2 border-dashed border-muted-foreground/40" />
+                    <MapIcon className="h-4 w-4 text-rose-500" />
+                  </>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 text-sm font-medium">{pickup?.address}</div>
-                    <button
-                      type="button"
-                      onClick={() => setSummaryOpen(false)}
-                      className="shrink-0 rounded-lg border border-primary/40 px-3 py-1 text-xs font-semibold text-primary"
-                    >
-                      Edit
-                    </button>
+                    {/* No edit on pickup — only drop is editable */}
                   </div>
-                  <div className="mt-6 flex items-start justify-between gap-2">
-                    <div className="min-w-0 text-sm font-medium">{drop?.address}</div>
-                    {routeInfo && (
-                      <div className="text-right text-xs text-muted-foreground shrink-0">
-                        <div className="font-bold text-foreground">
-                          {(tab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm).toFixed(1)} km
-                        </div>
-                        <div>{formatDuration(tab === "outstation" ? routeInfo.durationMin * 2 : routeInfo.durationMin)}</div>
-                      </div>
-                    )}
-                  </div>
+                  {tab !== "rental" && (
+                    <div className="mt-6 flex items-start justify-between gap-2">
+                      <div className="min-w-0 text-sm font-medium">{drop?.address}</div>
+                      <button type="button" onClick={() => { setSummaryOpen(false); setDrop(null); }}
+                        className="shrink-0 rounded-lg border border-primary/40 px-3 py-1 text-xs font-semibold text-primary">
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                  {routeInfo && tab !== "rental" && (
+                    <div className="mt-2 text-right text-xs text-muted-foreground">
+                      <span className="font-bold text-foreground">
+                        {(tab === "outstation" ? routeInfo.distanceKm * 2 : routeInfo.distanceKm).toFixed(1)} km
+                      </span>
+                      <span className="mx-1">·</span>
+                      <span>{formatDuration(tab === "outstation" ? routeInfo.durationMin * 2 : routeInfo.durationMin)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
 
             {/* Selected vehicle + fare */}
             <div className="relative mt-3 rounded-2xl border border-border bg-card p-4">
@@ -652,16 +640,8 @@ function Booking() {
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Selected Vehicle</div>
                   <div className="text-base font-bold">{tariffLabel}</div>
-                  {tab === "outstation" && (
-                    <div className="text-[11px] text-muted-foreground">
-                      {outDays} day{outDays > 1 ? "s" : ""}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={openVehicleSheet}
-                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
-                  >
+                  <button type="button" onClick={() => { setSummaryOpen(false); setVehicleSheetOpen(true); }}
+                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline">
                     <Pencil className="h-3 w-3" /> Change vehicle
                   </button>
                 </div>
@@ -669,8 +649,6 @@ function Booking() {
                   <div className="text-lg font-extrabold text-primary">{formatINR(estimatedFare)}</div>
                 </div>
               </div>
-
-
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
                   <div className="text-sm font-semibold text-primary">Total Fare</div>
@@ -680,15 +658,11 @@ function Booking() {
               </div>
             </div>
 
+            {/* Date & Time editor (lives in summary now) */}
             <div className="mt-3 rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold">Date & Time</div>
-                  <div className="text-[11px] text-muted-foreground">Adjust your schedule before confirming.</div>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-                  <Pencil className="h-3 w-3" /> Change
-                </span>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <div className="text-sm font-semibold">{tab === "outstation" ? "Pickup Date & Time" : "Date & Time"}</div>
               </div>
               <input
                 type="datetime-local"
@@ -696,17 +670,8 @@ function Booking() {
                 onChange={(e) => setScheduledAt(e.target.value)}
                 className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
               />
-              {tab === "outstation" && (
-                <input
-                  type="date"
-                  value={returnAt}
-                  min={scheduledAt.slice(0, 10)}
-                  onChange={(e) => setReturnAt(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
-                />
-              )}
+              {/* No return-date picker on outstation summary — user sets it on the booking screen */}
             </div>
-
 
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-primary" /> No surge pricing</span>
@@ -719,68 +684,19 @@ function Booking() {
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setSummaryOpen(false)}
-                className="rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary"
-              >
+              <button onClick={() => setSummaryOpen(false)} className="rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary">
                 Cancel
               </button>
-              <button
-                disabled={submitting}
-                onClick={() => handleBook()}
-                className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
+              <button disabled={submitting} onClick={() => handleBook()}
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Confirm Booking <ArrowRight className="h-4 w-4" /></>}
               </button>
             </div>
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Unified pickup → drop full-screen flow (single map). */}
-      <PickDropFlow
-        open={mapPickerFor !== null}
-        initialPickup={pickup}
-        initialDrop={drop}
-        onClose={() => setMapPickerFor(null)}
-        onComplete={({ pickup: p, drop: d, vehicle: v }) => {
-          setPickup(p);
-          setDrop(d);
-          setVehicle(v);
-          setLocalModel(v === "sedan" ? "sedan" : "suv");
-          setMapPickerFor(null);
-          // Stay on the home screen — the map preview and vehicle picker
-          // appear inline. User taps "Book Now" to open the trip summary.
-        }}
-      />
-
-
-      {/* Floating Book Now button */}
-      {canPickVehicle && !summaryOpen && !vehicleSheetOpen && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
-          <button
-            type="button"
-            onClick={openSummary}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg"
-          >
-            Book Now · {formatINR(estimatedFare)} <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground">{value}</span>
-    </div>
-  );
+    );
+  }
 }
 
 function InlineVehicleRow({
@@ -792,83 +708,23 @@ function InlineVehicleRow({
       onClick={onSelect}
       disabled={disabled}
       className={cn(
-        "flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition disabled:opacity-60",
-        selected ? "border-primary bg-primary-soft/40" : "border-border hover:border-primary"
+        "flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition disabled:opacity-50",
+        selected ? "border-primary" : "border-border hover:border-primary/40"
       )}
     >
-      <div className="grid h-16 w-24 shrink-0 place-items-center rounded-xl bg-white">
+      <div className="grid h-14 w-20 shrink-0 place-items-center">
         <img src={img} alt={label} className="h-full w-full object-contain scale-x-[-1]" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-base font-bold">{label}</div>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {seats} Seats</span>
-          <span className="inline-flex items-center gap-1"><Snowflake className="h-3 w-3" /> AC</span>
+        <div className="text-sm font-bold">{label}</div>
+        <div className="mt-0.5 inline-flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Users className="h-3 w-3" /> {seats}
+          <Snowflake className="h-3 w-3" /> AC
         </div>
-        <div className="mt-0.5 text-[11px] text-primary">Best for {seats} People</div>
       </div>
       <div className="text-right">
-        <div className="text-base font-extrabold text-primary">{fare > 0 ? formatINR(fare) : "—"}</div>
-        <div className="text-[10px] text-muted-foreground">Estimated Fare</div>
+        <div className="text-sm font-extrabold text-primary">{fare ? formatINR(fare) : "—"}</div>
       </div>
-      <span className={cn(
-        "ml-1 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 bg-card",
-        selected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
-      )}>
-        {selected ? <span className="h-2 w-2 rounded-full bg-primary-foreground" /> : null}
-      </span>
     </button>
   );
 }
-
-
-
-
-function PickDropPanel({
-  pickup, drop, onOpenMap,
-}: {
-  pickup: PlacePick | null;
-  drop: PlacePick | null;
-  onOpenMap: () => void;
-}) {
-  return (
-    <div className="mx-4 space-y-3">
-      {/* Route timeline card */}
-      <button
-        type="button"
-        onClick={onOpenMap}
-        className="flex w-full items-stretch gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left shadow-sm hover:border-primary"
-      >
-        <div className="flex flex-col items-center pt-1">
-          <span className="h-3 w-3 rounded-full border-2 border-emerald-600" />
-          <span className="my-1 h-6 w-px border-l border-dashed border-muted-foreground/50" />
-          <span className="h-3 w-3 rounded-sm border-2 border-rose-600" />
-        </div>
-        <div className="min-w-0 flex-1 divide-y divide-border">
-          <div className="pb-2">
-            <div className="truncate text-sm font-bold">
-              {pickup?.address ?? "Pickup location"}
-            </div>
-          </div>
-          <div className="pt-2">
-            <div className={cn("truncate text-sm font-bold", !drop && "text-muted-foreground")}>
-              {drop?.address ?? "Drop location"}
-            </div>
-          </div>
-        </div>
-      </button>
-
-      {/* Action pill */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onOpenMap}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-semibold shadow-sm hover:border-primary"
-        >
-          <MapIcon className="h-4 w-4 text-primary" /> Select on map
-        </button>
-      </div>
-    </div>
-  );
-}
-
