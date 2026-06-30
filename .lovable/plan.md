@@ -1,81 +1,47 @@
+## Goal
+One reusable map screen used end-to-end, no duplicate map pickers, dedicated pages for Rental and Outstation, simplified Local flow.
 
-## Scope
+## Home screen (`/booking`) — Local only
+- Keep the trip-type chips (Local / Rental / Outstation) AT THE TOP of home.
+  - Tapping Rental → `navigate({ to: "/booking/rental" })`.
+  - Tapping Outstation → `navigate({ to: "/booking/outstation" })`.
+- Remove the "Select on map" pill button and the small inline RouteMap preview.
+- Remove the Date & Time card from home (moved to summary only).
+- Pickup/Drop inputs stay (autocomplete). As soon as both pickup AND drop are set:
+  - Open the full-screen single map (state-based, not a separate route). Reuse the same map component the driver trip uses (`RouteMap` already wraps Google Maps; we'll add the live ETA overlay used in `driver.trip.$id.tsx`).
+  - UI layers: small top card showing pickup + drop addresses with a back chevron, bottom sheet with vehicle list, persistent "Use current location" FAB.
+- Bottom-sheet vehicle picker shows Sedan / SUV with fares.
+- Primary CTA renamed from "Book Now" → **"Review and Book"**, opens the Trip Summary sheet.
 
-Multi-area update across user / driver / admin apps. All changes frontend + existing tables (no new schema unless noted).
+## Trip Summary (Local)
+- Read-only chip row showing the trip type (Local).
+- Route card: Drop has an **Edit** button (returns to home map to re-pick drop); Pickup is read-only here.
+- Date & Time editor (this is where the date picker now lives).
+- Vehicle + fare.
+- Confirm Booking.
 
----
+## Dedicated Rental page (`/booking/rental`)
+- New route file `src/routes/_app.booking.rental.tsx`.
+- Shows pickup input only (no drop), package picker (existing `RENTAL_PACKAGES`), vehicle picker, schedule, Review and Book → summary → confirm.
 
-### 1. Payment options on trip-complete (User)
+## Dedicated Outstation page (`/booking/outstation`)
+- New route file `src/routes/_app.booking.outstation.tsx`.
+- Pickup + Drop, vehicle picker, pickup date.
+- **No return-date picker on the trip summary** — return date stays only on this page (or hidden, single date model). Trip summary just shows the chosen date with an Edit link back to this page.
 
-- Add **UPI** and **Card** to existing Cash on `complete.$id.tsx` (and driver complete flow).
-- UPI ID: `mabubbasha9791-1@oksbi` (constant in `src/lib/payment.ts`).
-- "Pay via UPI" → opens `upi://pay?pa=mabubbasha9791-1@oksbi&pn=Luxury%20Cabs&am=<fare>&cu=INR&tn=Trip%20<id>`.
-- "Pay via Card" → Lovable-style sheet with card number / expiry / CVV fields (UI only, no gateway). On submit just marks payment_method=card, payment_status=paid (mock confirmation toast).
-- `completeRide` server fn already accepts `cash|upi|card` — no backend change.
+## Shared map screen
+- Extract `src/components/BookingMap.tsx` from the patterns already in `driver.trip.$id.tsx`:
+  - Auto-fit pickup→drop with the route polyline.
+  - Live "Driver arrives in X minutes · Y km away" overlay (only relevant on track screen; on booking screen it shows trip distance/duration instead).
+  - "Recenter to my location" FAB using `navigator.geolocation`.
+- Replace any ad-hoc map UI on `/track/$id` user view to use the same component so user + driver see identical map behavior.
 
-### 2. Cancel-with-reason (User + Admin)
+## Files
+- Edit: `src/routes/_app.booking.tsx` (gut Local home flow, remove date+map-pill, add map state, rename CTA, move trip chips, navigate on rental/outstation).
+- Add: `src/routes/_app.booking.rental.tsx`, `src/routes/_app.booking.outstation.tsx`.
+- Add: `src/components/BookingMap.tsx` (current-location FAB + ETA overlay reused by booking + track).
+- Edit: `src/routes/track.$id.tsx` to use `BookingMap`.
+- Remove `PickDropFlow` usage from booking (the inline map state replaces it).
 
-- `src/lib/booking-store.ts` + new server fn `cancelBookingWithReason` (or extend existing) that writes `status='cancelled'`, `cancellation_reason`, `cancelled_by` (`user`|`admin`).
-- Migration: add `cancellation_reason text`, `cancelled_by text` columns to `bookings` if not present.
-- **User**: cancel button on tracking screen opens a free-text reason modal → confirm → cancels.
-- **Admin**: in `admin.bookings.tsx`, "Cancel" action on active bookings → reason modal → cancels. The reason is shown on the user's tracking screen (cancelled state) with "Cancelled by admin: <reason>".
-
-### 3. Admin: delete driver (soft + hard)
-
-- `admin.drivers.tsx`: add row actions **Deactivate** (soft) and **Delete permanently** (hard, confirm modal).
-- Server fns `deactivateDriver` (set `status='inactive'`) and `deleteDriver` (delete row + auth user via `supabaseAdmin.auth.admin.deleteUser`). Both admin-gated via `has_role(admin)`.
-- Deleted driver's past bookings retain snapshotted name/phone/vehicle (already stored on booking row).
-
-### 4. Admin manual assign driver
-
-- Already exists (`assignBookingToDriver`). Surface it in `admin.bookings.tsx` for pending bookings: "Assign driver" dropdown listing approved drivers, then assign.
-
-### 5. Unified live driver location across all 3 apps
-
-- Driver app already writes `driver_lat/lng` to `bookings` and `current_lat/lng` to `drivers` via location watch on `driver.trip.$id.tsx`.
-- Confirm/ensure realtime is enabled on `bookings`. If not, migration: `ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;`
-- User `track.$id.tsx`, driver `driver.trip.$id.tsx`, admin `admin.live.tsx` all subscribe to the same booking row → same coords → same marker.
-
-### 6. Customer tracking: full-screen map + bottom sheet (Uber/Ola)
-
-- Rewrite `src/routes/track.$id.tsx` layout:
-  - `RouteMap` fills viewport (`h-screen`).
-  - Floating top bar: back + status badge.
-  - Bottom sheet (drag-collapsible or fixed) showing: driver photo, name, rating, vehicle model + number, **OTP (large)**, ETA "Driver reaching in X min" (updates every 60s using Routes API ETA from driver coords to pickup, or by `eta_to_pickup_seconds` stored on booking), call button, cancel button.
-- Remove pickup/drop address text from the map overlay; show them in the sheet (small icons).
-- Map still shows pickup pin, drop pin, driver car icon, polyline.
-
-### 7. ETA refresh every minute
-
-- `track.$id.tsx` + driver app: every 60s call `getRoute` server fn (already exists in `src/lib/maps/routes.functions.ts`) with driver→pickup (before pickup) or driver→drop (after pickup). Display `duration_text`.
-
-### 8. Driver app pickup-page flicker fix
-
-- Investigate `driver.trip.$id.tsx`. Likely cause: same `RouteMap`-effect dependency loop. Fix: stable deps in map effect, throttle GPS writes (already 5s), avoid re-fitting bounds on every coord update — `RouteMap` already handles this after last fix but the driver page may be re-rendering map with new `pickup`/`drop` object identities each render → wrap in `useMemo`.
-
-### 9. Additional items I'd like to add (for your approval — see end)
-
----
-
-## Technical Notes
-
-- New file: `src/lib/payment.ts` (UPI constant, helpers).
-- New component: `src/components/PaymentSheet.tsx` (Cash / UPI / Card tabs).
-- New component: `src/components/CancelReasonModal.tsx`.
-- New component: `src/components/TrackingBottomSheet.tsx`.
-- Server fn additions in `src/lib/booking.functions.ts` (new file): `cancelBooking({booking_id, reason, by})`.
-- Server fn additions in `src/lib/driver.functions.ts`: `deactivateDriver`, `deleteDriver`.
-- Migration: add `cancellation_reason`, `cancelled_by`, `eta_minutes` columns to `bookings`; add `bookings` + `drivers` to `supabase_realtime` publication if missing.
-- `useMemo` pickup/drop objects in `driver.trip.$id.tsx` and `track.$id.tsx` to stop RouteMap reinit loop.
-
----
-
-## Items to approve (additional, not yet built)
-
-1. **Auto-cancel if no driver in 5 min** during searching → user gets "No drivers available, please try again" instead of infinite spinner.
-2. **In-app driver↔user chat** (simple text, realtime) on tracking screen.
-3. **Show fare breakdown** in bottom sheet (base + distance + GST).
-4. **"Share live trip" button** that copies a public tracking link to clipboard (read-only view for family).
-5. **Cancellation fee** (₹0 free if cancel within 2 min of assign, else ₹25 deducted from next ride).
-
-Reply approve 1 / 2 / 3 / 4 / 5 (or "skip") after the main implementation.
+## Out of scope
+No backend/schema changes. No fare logic changes.
