@@ -39,6 +39,7 @@ import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 import { Route as AuthenticatedAdminAddAdminRouteImport } from './routes/_authenticated/admin.add-admin'
 import { Route as AppBookingRentalRouteImport } from './routes/_app.booking.rental'
+import { Route as AppBookingOutstationRouteImport } from './routes/_app.booking.outstation'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -196,6 +197,11 @@ const AppBookingRentalRoute = AppBookingRentalRouteImport.update({
   path: '/rental',
   getParentRoute: () => AppBookingRoute,
 } as any)
+const AppBookingOutstationRoute = AppBookingOutstationRouteImport.update({
+  id: '/outstation',
+  path: '/outstation',
+  getParentRoute: () => AppBookingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/booking/outstation': typeof AppBookingOutstationRoute
   '/booking/rental': typeof AppBookingRentalRoute
   '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver': typeof DriverIndexRoute
+  '/booking/outstation': typeof AppBookingOutstationRoute
   '/booking/rental': typeof AppBookingRentalRoute
   '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/_app/booking/outstation': typeof AppBookingOutstationRoute
   '/_app/booking/rental': typeof AppBookingRentalRoute
   '/_authenticated/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/booking/outstation'
     | '/booking/rental'
     | '/admin/add-admin'
     | '/admin/approvals'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver'
+    | '/booking/outstation'
     | '/booking/rental'
     | '/admin/add-admin'
     | '/admin/approvals'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/_app/booking/outstation'
     | '/_app/booking/rental'
     | '/_authenticated/admin/add-admin'
     | '/_authenticated/admin/approvals'
@@ -614,6 +626,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBookingRentalRouteImport
       parentRoute: typeof AppBookingRoute
     }
+    '/_app/booking/outstation': {
+      id: '/_app/booking/outstation'
+      path: '/outstation'
+      fullPath: '/booking/outstation'
+      preLoaderRoute: typeof AppBookingOutstationRouteImport
+      parentRoute: typeof AppBookingRoute
+    }
   }
 }
 
@@ -658,10 +677,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AppBookingRouteChildren {
+  AppBookingOutstationRoute: typeof AppBookingOutstationRoute
   AppBookingRentalRoute: typeof AppBookingRentalRoute
 }
 
 const AppBookingRouteChildren: AppBookingRouteChildren = {
+  AppBookingOutstationRoute: AppBookingOutstationRoute,
   AppBookingRentalRoute: AppBookingRentalRoute,
 }
 
