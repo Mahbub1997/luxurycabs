@@ -44,23 +44,20 @@ export function AppDrawer() {
 
             <nav className="flex-1 overflow-y-auto p-3 text-sm">
               <DrawerLink to="/" Icon={Home} label="Home" onClick={() => setOpen(false)} />
-              {showStaffLinks && (
-                <>
-                  <DrawerLink to="/admin/login" Icon={Shield} label="Admin" onClick={() => setOpen(false)} />
-                  <DrawerLink to="/driver/login" Icon={Car} label="Driver" onClick={() => setOpen(false)} />
-                </>
-              )}
+              <DrawerLink to="/admin/login" Icon={Shield} label="Admin" onClick={() => setOpen(false)} />
+              <DrawerLink to="/driver/login" Icon={Car} label="Driver" onClick={() => setOpen(false)} />
               <a
                 href={`tel:${HELP_PHONE}`}
                 className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted"
               >
                 <Phone className="h-4 w-4 text-primary" />
                 <div className="flex flex-col">
-                  <span className="font-medium">Help Center</span>
+                  <span className="font-medium">Contact Support</span>
                   <span className="text-[11px] text-muted-foreground">{HELP_PHONE}</span>
                 </div>
               </a>
             </nav>
+
 
             <div className="border-t border-border px-5 py-3 text-[10px] text-muted-foreground">
               v1.0 — Luxury Cabs
