@@ -23,14 +23,13 @@ interface Props {
 }
 
 const RECENT_PLACES_KEY = "luxury_recent_places";
-const MAX_RECENT = 5;
 
 function readRecentPlaces(): PlacePick[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(RECENT_PLACES_KEY);
     const arr: PlacePick[] = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.slice(0, MAX_RECENT) : [];
+    return Array.isArray(arr) ? arr : [];
   } catch { return []; }
 }
 function pushRecentPlace(p: PlacePick) {
@@ -38,9 +37,10 @@ function pushRecentPlace(p: PlacePick) {
   const prev = readRecentPlaces().filter(
     (x) => x.address !== p.address || Math.abs(x.lat - p.lat) > 1e-5 || Math.abs(x.lng - p.lng) > 1e-5
   );
-  const next = [p, ...prev].slice(0, MAX_RECENT);
+  const next = [p, ...prev];
   try { localStorage.setItem(RECENT_PLACES_KEY, JSON.stringify(next)); } catch {}
 }
+
 
 export function PlaceAutocomplete({
   label, value, onChange, placeholder, accent = "green", autoDetect = false, showChooseOnMap = true,
