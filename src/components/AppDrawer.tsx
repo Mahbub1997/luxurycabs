@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Menu, Home, Shield, Car, Phone, X } from "lucide-react";
-import { getProfile } from "@/lib/profile";
 import { CredoomWordmark } from "@/components/Brand";
+
 
 const HELP_PHONE = "9791298406";
 
