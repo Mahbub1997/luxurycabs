@@ -403,53 +403,9 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
     })();
   }, [driver?.lat, driver?.lng, followDriver]);
 
-  // My current location (crosshair / aim icon)
-  useEffect(() => {
-    if (!showMyLocation) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    let watchId: number | null = null;
-    let cancelled = false;
-    (async () => {
-      try {
-        const g = await loadGoogleMaps();
-        if (cancelled || !mapRef.current) return;
-        const aimIcon: google.maps.Symbol = {
-          // Crosshair / aim: outer ring + cross lines + center dot
-          path: "M 0 -12 L 0 -6 M 0 6 L 0 12 M -12 0 L -6 0 M 6 0 L 12 0 M 0 0 m -10 0 a 10 10 0 1 0 20 0 a 10 10 0 1 0 -20 0 M 0 0 m -2 0 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0",
-          strokeColor: "#0f3a22",
-          strokeWeight: 2.2,
-          strokeOpacity: 1,
-          fillColor: "#0f3a22",
-          fillOpacity: 1,
-          scale: 1,
-          anchor: new g.maps.Point(0, 0),
-        };
-        const update = (pos: GeolocationPosition) => {
-          if (!mapRef.current) return;
-          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          if (!meMarkerRef.current) {
-            meMarkerRef.current = new g.maps.Marker({
-              map: mapRef.current,
-              position: p,
-              zIndex: 9999,
-              icon: aimIcon,
-            });
-          } else {
-            meMarkerRef.current.setPosition(p);
-          }
-        };
-        watchId = navigator.geolocation.watchPosition(update, () => {}, {
-          enableHighAccuracy: true, maximumAge: 5000, timeout: 15000,
-        });
-      } catch { /* ignore */ }
-    })();
-    return () => {
-      cancelled = true;
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      meMarkerRef.current?.setMap(null);
-      meMarkerRef.current = null;
-    };
-  }, [showMyLocation, status]);
+  // Current-location marker on the map was removed by design.
+  // The "recenter to me" button on the right side is the only affordance.
+
 
 
 
