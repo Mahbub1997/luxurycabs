@@ -36,7 +36,11 @@ function Complete() {
     return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  const isOutstation = b.trip_type === "outstation";
   const fb = fareBreakdown(b.vehicle_type as "sedan" | "suv", Number(b.distance_km), b.duration_min);
+  const outV = OUTSTATION_VEHICLES.find(v => v.tier === (b.vehicle_type as "sedan" | "suv")) ?? OUTSTATION_VEHICLES[0];
+  const outBd = isOutstation ? calcOutstationBreakdown(outV, { distanceKm: Number(b.distance_km), days: 1 }) : null;
+
   const tariff = tariffFor(b.vehicle_type as "sedan" | "suv");
 
   return (
