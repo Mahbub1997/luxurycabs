@@ -183,15 +183,16 @@ export function PlaceAutocomplete({
                 className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
               >
                 <div className={`grid h-9 w-9 place-items-center rounded-full ${dotBg} ${dotColor}`}>
-                  <MapIcon className="h-4 w-4" />
+                  <MapPin className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold">Choose on map</div>
+                  <div className="text-sm font-semibold">Select on map</div>
                   <div className="text-xs text-muted-foreground">Drop a pin anywhere</div>
                 </div>
               </button>
             </div>
           )}
+
 
           <div className="flex-1 overflow-y-auto">
             {!query && recent.length > 0 && (
