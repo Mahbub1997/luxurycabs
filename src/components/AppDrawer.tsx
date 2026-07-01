@@ -8,8 +8,8 @@ const HELP_PHONE = "9791298406";
 
 export function AppDrawer() {
   const [open, setOpen] = useState(false);
-  const profile = typeof window !== "undefined" ? getProfile() : null;
-  const showStaffLinks = !profile;
+
+
 
   return (
     <>
