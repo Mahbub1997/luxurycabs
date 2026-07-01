@@ -477,11 +477,12 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
           type="button"
           onClick={recenterToMe}
           aria-label="Center on my location"
-          className="absolute bottom-3 right-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-border bg-card text-primary shadow-lg active:scale-95"
+          className="absolute bottom-3 right-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-foreground/20 bg-white text-foreground shadow-lg active:scale-95"
         >
-          <LocateFixed className="h-5 w-5" />
+          <Crosshair className="h-5 w-5" strokeWidth={2.2} />
         </button>
       )}
+
       {status === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted/80 animate-pulse">
           <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
