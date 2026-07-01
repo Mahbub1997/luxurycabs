@@ -96,15 +96,29 @@ function Complete() {
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
         <div className="text-sm font-semibold">Fare Breakdown</div>
         <div className="mt-2 space-y-1 text-sm">
-          <Row k="Base fare" v={formatINR(fb.base)} />
-          <Row k="Distance" v={formatINR(fb.distance)} />
-          <Row k="Time" v={formatINR(fb.time)} />
-          <Row k="Taxes & fees" v={formatINR(fb.taxes)} />
+          {isOutstation && outBd ? (
+            <>
+              <Row k={`Distance (${outBd.chargedKm} km × ₹${outBd.perKm})`} v={formatINR(outBd.distance)} />
+              <Row k="Driver bata" v={formatINR(outBd.driverBata)} />
+              {outBd.nightHalt > 0 && <Row k="Night halt" v={formatINR(outBd.nightHalt)} />}
+              <Row k="Tolls (est.)" v={formatINR(outBd.tolls)} />
+              <Row k="Taxes & fees" v={formatINR(outBd.taxes)} />
+            </>
+          ) : (
+            <>
+              <Row k="Base fare" v={formatINR(fb.base)} />
+              <Row k="Distance" v={formatINR(fb.distance)} />
+              <Row k="Time" v={formatINR(fb.time)} />
+              <Row k="Tolls (est.)" v={formatINR(0)} />
+              <Row k="Taxes & fees" v={formatINR(fb.taxes)} />
+            </>
+          )}
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <span className="font-bold">Total Paid</span>
           <span className="text-xl font-bold text-primary">{formatINR(Number(b.fare))}</span>
         </div>
+
         <div className="mt-1 text-right text-xs text-muted-foreground">via {b.payment_method.toUpperCase()}</div>
       </div>
 
