@@ -389,7 +389,6 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 placeholder="Enter pickup location"
                 accent="green"
                 autoDetect
-                showChooseOnMap={false}
               />
             </div>
             {tab !== "rental" && (
@@ -400,10 +399,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                   onChange={setDrop}
                   placeholder="Enter drop location"
                   accent="red"
-                  showChooseOnMap={false}
                 />
               </div>
             )}
+
           </div>
         </div>
       </div>
