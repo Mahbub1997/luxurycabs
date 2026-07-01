@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed } from "lucide-react";
+import { Crosshair } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import { decode } from "@googlemaps/polyline-codec";
 import { realisticCarTop } from "@/components/VehicleIcon";
+
 
 interface Props {
   pickup: { lat: number; lng: number };
