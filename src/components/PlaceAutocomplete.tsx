@@ -199,7 +199,7 @@ export function PlaceAutocomplete({
                 <div className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Recent searches
                 </div>
-                {recent.slice(0, MAX_RECENT).map((r, i) => (
+                {recent.map((r, i) => (
                   <button
                     key={`r-${i}`}
                     onClick={() => pickRecent(r)}
