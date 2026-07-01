@@ -131,10 +131,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
 
   function switchTab(next: TripType) {
     if (next === tab) return;
-    if (next === "rental") navigate({ to: "/booking/rental" as any });
-    else if (next === "outstation") navigate({ to: "/booking/outstation" as any });
-    else navigate({ to: "/booking" });
+    setTab(next);
+    if (next === "rental") setDrop(null);
   }
+
 
   async function handleBook() {
     if (submitting) return;
