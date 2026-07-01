@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Star, Home as HomeIcon, Loader2, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, type Booking } from "@/lib/booking-store";
-import { formatINR, fareBreakdown, tariffFor } from "@/lib/fare";
+import { formatINR, fareBreakdown, tariffFor, OUTSTATION_VEHICLES, calcOutstationBreakdown } from "@/lib/fare";
 import { generateInvoice } from "@/lib/invoice";
 import { uploadInvoiceFor } from "@/lib/invoice-storage";
 
