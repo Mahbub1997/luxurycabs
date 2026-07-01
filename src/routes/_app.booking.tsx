@@ -131,10 +131,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
 
   function switchTab(next: TripType) {
     if (next === tab) return;
-    if (next === "rental") navigate({ to: "/booking/rental" as any });
-    else if (next === "outstation") navigate({ to: "/booking/outstation" as any });
-    else navigate({ to: "/booking" });
+    setTab(next);
+    if (next === "rental") setDrop(null);
   }
+
 
   async function handleBook() {
     if (submitting) return;
@@ -389,7 +389,6 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 placeholder="Enter pickup location"
                 accent="green"
                 autoDetect
-                showChooseOnMap={false}
               />
             </div>
             {tab !== "rental" && (
@@ -400,10 +399,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                   onChange={setDrop}
                   placeholder="Enter drop location"
                   accent="red"
-                  showChooseOnMap={false}
                 />
               </div>
             )}
+
           </div>
         </div>
       </div>
@@ -611,7 +610,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 text-sm font-medium">{pickup?.address}</div>
-                    {/* No edit on pickup — only drop is editable */}
+                    <button type="button" onClick={() => { setSummaryOpen(false); setPickup(null); }}
+                      className="shrink-0 rounded-lg border border-primary/40 px-3 py-1 text-xs font-semibold text-primary">
+                      Edit
+                    </button>
                   </div>
                   {tab !== "rental" && (
                     <div className="mt-6 flex items-start justify-between gap-2">
@@ -635,6 +637,30 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
               </div>
             </div>
 
+            {/* Rental package — edit inline */}
+            {tab === "rental" && (
+              <div className="mt-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Rental Package</div>
+                    <div className="text-sm font-bold">{RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</div>
+                  </div>
+                  <button type="button" onClick={() => setSummaryOpen(false)}
+                    className="rounded-lg border border-primary/40 px-3 py-1 text-xs font-semibold text-primary">
+                    Change
+                  </button>
+                </div>
+                {(() => {
+                  const p = RENTAL_PACKAGES.find(x => x.id === pkgId)!;
+                  return (
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      Above {p.hours}h: ₹{p.extraPerHour}/hr · Above {p.km}km: ₹{p.extraPerKm}/km
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Selected vehicle + fare */}
             <div className="relative mt-3 rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center gap-3">
@@ -651,12 +677,31 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                   <div className="text-lg font-extrabold text-primary">{formatINR(estimatedFare)}</div>
                 </div>
               </div>
+
+              {/* Fare breakdown */}
+              {tab === "outstation" && outBreakdown ? (
+                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
+                  <FareRow k={`Distance (${outBreakdown.chargedKm} km × ₹${outBreakdown.perKm})`} v={formatINR(outBreakdown.distance)} />
+                  <FareRow k={`Driver bata (${outBreakdown.days} day${outBreakdown.days > 1 ? "s" : ""})`} v={formatINR(outBreakdown.driverBata)} />
+                  {outBreakdown.nightHalt > 0 && <FareRow k={`Night halt (${outBreakdown.nightHalts})`} v={formatINR(outBreakdown.nightHalt)} />}
+                  {outBreakdown.tolls > 0 && <FareRow k="Tolls (est.)" v={formatINR(outBreakdown.tolls)} />}
+                  <FareRow k="Taxes & fees" v={formatINR(outBreakdown.taxes)} />
+                </div>
+              ) : tab === "local" && routeInfo && (routeInfo.tollInr ?? 0) > 0 ? (
+                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
+                  <FareRow k="Tolls (est.)" v={formatINR(routeInfo.tollInr)} />
+                </div>
+              ) : null}
+
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
-                  <div className="text-sm font-semibold text-primary">Total Fare</div>
+                  <div className="text-sm font-semibold text-primary">Estimated Fare</div>
                   <div className="text-[11px] text-muted-foreground">Inclusive of all taxes</div>
                 </div>
                 <div className="text-xl font-extrabold text-primary">{formatINR(estimatedFare)}</div>
+              </div>
+              <div className="mt-2 rounded-lg bg-primary-soft/60 px-2 py-1.5 text-[10px] text-foreground/70">
+                Final bill is calculated from driver's live GPS km &amp; time at trip end.
               </div>
             </div>
 
@@ -672,7 +717,21 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 onChange={(e) => setScheduledAt(e.target.value)}
                 className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
               />
-              {/* No return-date picker on outstation summary — user sets it on the booking screen */}
+              {tab === "outstation" && (
+                <>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <div className="text-sm font-semibold">Return Date &amp; Time</div>
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={returnAt}
+                    min={scheduledAt}
+                    onChange={(e) => setReturnAt(e.target.value)}
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none"
+                  />
+                </>
+              )}
             </div>
 
             <div className="mt-3 flex items-center justify-around rounded-2xl bg-primary-soft px-3 py-3 text-[12px] text-foreground/80">
@@ -684,6 +743,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
             <div className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
               Choose your payment method (Cash / UPI / Card) after the driver reaches the drop location.
             </div>
+
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <button onClick={() => setSummaryOpen(false)} className="rounded-xl border-2 border-primary py-3.5 text-sm font-bold text-primary">
@@ -730,3 +790,13 @@ function InlineVehicleRow({
     </button>
   );
 }
+
+function FareRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{k}</span>
+      <span className="font-medium text-foreground">{v}</span>
+    </div>
+  );
+}
+

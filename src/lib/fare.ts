@@ -32,10 +32,11 @@ const DEFAULT_RATE: Record<VehicleType, Rate> = {
 export type RatesMap = Record<TripType, Partial<Record<VehicleType, Rate>>>;
 
 export const RENTAL_PACKAGES = [
-  { id: "4h40", label: "4 Hours / 40 KM", hours: 4, km: 40, sedan: 999, suv: 1499, sub: "Best for short trips" },
-  { id: "8h80", label: "8 Hours / 80 KM", hours: 8, km: 80, sedan: 1899, suv: 2799, sub: "Ideal for half-day trips" },
-  { id: "12h120", label: "12 Hours / 120 KM", hours: 12, km: 120, sedan: 2799, suv: 3999, sub: "Best for full-day trips" },
+  { id: "4h40", label: "4 Hours / 40 KM", hours: 4, km: 40, sedan: 999, suv: 1499, sub: "Best for short trips", extraPerHour: 150, extraPerKm: 12 },
+  { id: "8h80", label: "8 Hours / 80 KM", hours: 8, km: 80, sedan: 1899, suv: 2799, sub: "Ideal for half-day trips", extraPerHour: 180, extraPerKm: 14 },
+  { id: "12h120", label: "12 Hours / 120 KM", hours: 12, km: 120, sedan: 2799, suv: 3999, sub: "Best for full-day trips", extraPerHour: 200, extraPerKm: 16 },
 ] as const;
+
 
 function rateFor(v: VehicleType, trip: TripType, rates?: RatesMap): Rate {
   return rates?.[trip]?.[v] ?? DEFAULT_RATE[v];

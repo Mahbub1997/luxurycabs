@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Download, Star, Home as HomeIcon, Loader2, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBooking, type Booking } from "@/lib/booking-store";
-import { formatINR, fareBreakdown, tariffFor } from "@/lib/fare";
+import { formatINR, fareBreakdown, tariffFor, OUTSTATION_VEHICLES, calcOutstationBreakdown } from "@/lib/fare";
 import { generateInvoice } from "@/lib/invoice";
 import { uploadInvoiceFor } from "@/lib/invoice-storage";
 
@@ -36,7 +36,11 @@ function Complete() {
     return <div className="app-shell grid place-items-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  const isOutstation = b.trip_type === "outstation";
   const fb = fareBreakdown(b.vehicle_type as "sedan" | "suv", Number(b.distance_km), b.duration_min);
+  const outV = OUTSTATION_VEHICLES.find(v => v.tier === (b.vehicle_type as "sedan" | "suv")) ?? OUTSTATION_VEHICLES[0];
+  const outBd = isOutstation ? calcOutstationBreakdown(outV, { distanceKm: Number(b.distance_km), days: 1 }) : null;
+
   const tariff = tariffFor(b.vehicle_type as "sedan" | "suv");
 
   return (
@@ -92,15 +96,29 @@ function Complete() {
       <div className="mx-4 mt-4 rounded-2xl border border-border bg-card p-4">
         <div className="text-sm font-semibold">Fare Breakdown</div>
         <div className="mt-2 space-y-1 text-sm">
-          <Row k="Base fare" v={formatINR(fb.base)} />
-          <Row k="Distance" v={formatINR(fb.distance)} />
-          <Row k="Time" v={formatINR(fb.time)} />
-          <Row k="Taxes & fees" v={formatINR(fb.taxes)} />
+          {isOutstation && outBd ? (
+            <>
+              <Row k={`Distance (${outBd.chargedKm} km × ₹${outBd.perKm})`} v={formatINR(outBd.distance)} />
+              <Row k="Driver bata" v={formatINR(outBd.driverBata)} />
+              {outBd.nightHalt > 0 && <Row k="Night halt" v={formatINR(outBd.nightHalt)} />}
+              <Row k="Tolls (est.)" v={formatINR(outBd.tolls)} />
+              <Row k="Taxes & fees" v={formatINR(outBd.taxes)} />
+            </>
+          ) : (
+            <>
+              <Row k="Base fare" v={formatINR(fb.base)} />
+              <Row k="Distance" v={formatINR(fb.distance)} />
+              <Row k="Time" v={formatINR(fb.time)} />
+              <Row k="Tolls (est.)" v={formatINR(0)} />
+              <Row k="Taxes & fees" v={formatINR(fb.taxes)} />
+            </>
+          )}
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
           <span className="font-bold">Total Paid</span>
           <span className="text-xl font-bold text-primary">{formatINR(Number(b.fare))}</span>
         </div>
+
         <div className="mt-1 text-right text-xs text-muted-foreground">via {b.payment_method.toUpperCase()}</div>
       </div>
 
