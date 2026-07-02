@@ -62,7 +62,9 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string; tollInr: number } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
+  const [showAllVehicles, setShowAllVehicles] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [tripTypePopupOpen, setTripTypePopupOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Bounce to active trip
