@@ -811,12 +811,5 @@ function InlineVehicleRow({
   );
 }
 
-function FareRow({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="font-medium text-foreground">{v}</span>
-    </div>
-  );
-}
+
 
