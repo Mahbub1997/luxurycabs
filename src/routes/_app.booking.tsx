@@ -289,11 +289,11 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">Select Vehicle</h3>
             <button
-              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+              onClick={() => { if (canPickVehicle) { setShowAllVehicles(false); setVehicleSheetOpen(true); } }}
               disabled={!canPickVehicle}
               className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary disabled:opacity-50"
             >
-              View All <ChevronRight className="h-3.5 w-3.5" />
+              Change vehicle <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="mt-2 space-y-2">
