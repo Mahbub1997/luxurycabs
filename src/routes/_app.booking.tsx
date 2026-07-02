@@ -62,7 +62,9 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string; tollInr: number } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
+  const [showAllVehicles, setShowAllVehicles] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [tripTypePopupOpen, setTripTypePopupOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Bounce to active trip
@@ -287,11 +289,11 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">Select Vehicle</h3>
             <button
-              onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+              onClick={() => { if (canPickVehicle) { setShowAllVehicles(false); setVehicleSheetOpen(true); } }}
               disabled={!canPickVehicle}
               className="inline-flex items-center gap-0.5 text-xs font-semibold text-primary disabled:opacity-50"
             >
-              View All <ChevronRight className="h-3.5 w-3.5" />
+              Change vehicle <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="mt-2 space-y-2">
@@ -440,10 +442,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           <div className="mx-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold">Select Vehicle</h3>
-              <button onClick={() => canPickVehicle && setVehicleSheetOpen(true)}
+              <button onClick={() => { if (canPickVehicle) { setShowAllVehicles(false); setVehicleSheetOpen(true); } }}
                 className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary disabled:opacity-50"
                 disabled={!canPickVehicle}>
-                View All <ChevronRight className="h-4 w-4" />
+                Change vehicle <ChevronRight className="h-4 w-4" />
               </button>
             </div>
             <div className="mt-2 space-y-2">
@@ -528,41 +530,51 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
               ) : (
                 <>
                   <VehicleCard type="sedan" fare={tab === "rental" ? rentalFares.sedan : localFares.sedan} selected={vehicle === "sedan" && localModel === "sedan"} onSelect={() => chooseLocalRental("sedan", "sedan")} />
-                  <button type="button" onClick={() => chooseLocalRental("sedan", "ciaz")}
-                    className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
-                      localModel === "ciaz" ? "border-foreground" : "border-border")}>
-                    <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
-                      <img src={sedanImg} alt="Ciaz" className="h-full w-full object-contain scale-x-[-1]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-base font-bold text-foreground">Ciaz</span>
-                        <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.sedan : localFares.sedan)}</span>
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">Premium sedan · 4 Seats · AC</div>
-                    </div>
-                  </button>
                   <VehicleCard type="suv" fare={tab === "rental" ? rentalFares.suv : localFares.suv} selected={vehicle === "suv" && localModel === "suv"} onSelect={() => chooseLocalRental("suv", "suv")} />
-                  {(["ertiga", "innova", "crysta"] as const).map((m) => {
-                    const labels = { ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const;
-                    const subs = { ertiga: "6 Seats · AC", innova: "7 Seats · AC", crysta: "Premium 7 Seats · AC" } as const;
-                    return (
-                      <button key={m} type="button" onClick={() => chooseLocalRental("suv", m)}
+                  {!showAllVehicles && (
+                    <button type="button" onClick={() => setShowAllVehicles(true)}
+                      className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border-2 border-dashed border-primary/40 py-2.5 text-xs font-semibold text-primary">
+                      Change vehicle · Show all vehicles <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {showAllVehicles && (
+                    <>
+                      <button type="button" onClick={() => chooseLocalRental("sedan", "ciaz")}
                         className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
-                          localModel === m ? "border-foreground" : "border-border")}>
+                          localModel === "ciaz" ? "border-foreground" : "border-border")}>
                         <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
-                          <img src={suvImg} alt={labels[m]} className="h-full w-full object-contain scale-x-[-1]" />
+                          <img src={sedanImg} alt="Ciaz" className="h-full w-full object-contain scale-x-[-1]" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-base font-bold text-foreground">{labels[m]}</span>
-                            <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.suv : localFares.suv)}</span>
+                            <span className="text-base font-bold text-foreground">Ciaz</span>
+                            <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.sedan : localFares.sedan)}</span>
                           </div>
-                          <div className="mt-1 text-xs text-muted-foreground">{subs[m]}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">Premium sedan · 4 Seats · AC</div>
                         </div>
                       </button>
-                    );
-                  })}
+                      {(["ertiga", "innova", "crysta"] as const).map((m) => {
+                        const labels = { ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta" } as const;
+                        const subs = { ertiga: "6 Seats · AC", innova: "7 Seats · AC", crysta: "Premium 7 Seats · AC" } as const;
+                        return (
+                          <button key={m} type="button" onClick={() => chooseLocalRental("suv", m)}
+                            className={cn("flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 text-left",
+                              localModel === m ? "border-foreground" : "border-border")}>
+                            <div className="grid h-20 w-28 shrink-0 place-items-center rounded-xl bg-white">
+                              <img src={suvImg} alt={labels[m]} className="h-full w-full object-contain scale-x-[-1]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-base font-bold text-foreground">{labels[m]}</span>
+                                <span className="text-sm font-bold text-foreground">{formatINR(tab === "rental" ? rentalFares.suv : localFares.suv)}</span>
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">{subs[m]}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -590,12 +602,39 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           </div>
 
           <div className="px-4 pb-8 pt-4">
-            {/* Trip type — display only */}
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+            {/* Trip type — click to change */}
+            <button
+              type="button"
+              onClick={() => setTripTypePopupOpen((v) => !v)}
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/15"
+            >
               {tab === "local" && <><Car className="h-3.5 w-3.5" /> Local Trip</>}
               {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</>}
               {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
-            </div>
+              <Pencil className="h-3 w-3" />
+            </button>
+            {tripTypePopupOpen && (
+              <div className="mb-3 rounded-2xl border border-border bg-card p-2 shadow-lg">
+                {([
+                  { id: "local", label: "Local", I: Car },
+                  { id: "rental", label: "Rental", I: Clock },
+                  { id: "outstation", label: "Outstation", I: MapIcon },
+                ] as const).map(({ id, label, I }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => { setTripTypePopupOpen(false); setSummaryOpen(false); switchTab(id); }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                      tab === id ? "bg-primary-soft text-primary" : "text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <I className="h-4 w-4" /> {label}
+                    {tab === id && <span className="ml-auto text-[10px] uppercase tracking-wide">Current</span>}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Route card */}
             <div className="rounded-2xl border border-border bg-card p-4">
@@ -650,14 +689,9 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                     Change
                   </button>
                 </div>
-                {(() => {
-                  const p = RENTAL_PACKAGES.find(x => x.id === pkgId)!;
-                  return (
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      Above {p.hours}h: ₹{p.extraPerHour}/hr · Above {p.km}km: ₹{p.extraPerKm}/km
-                    </div>
-                  );
-                })()}
+                <div className="mt-2 text-[11px] text-muted-foreground">
+                  Additional hours and additional km will be charged.
+                </div>
               </div>
             )}
 
@@ -668,7 +702,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Selected Vehicle</div>
                   <div className="text-base font-bold">{tariffLabel}</div>
-                  <button type="button" onClick={() => { setSummaryOpen(false); setVehicleSheetOpen(true); }}
+                  <button type="button" onClick={() => { setShowAllVehicles(false); setSummaryOpen(false); setVehicleSheetOpen(true); }}
                     className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline">
                     <Pencil className="h-3 w-3" /> Change vehicle
                   </button>
@@ -678,20 +712,6 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 </div>
               </div>
 
-              {/* Fare breakdown */}
-              {tab === "outstation" && outBreakdown ? (
-                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-                  <FareRow k={`Distance (${outBreakdown.chargedKm} km × ₹${outBreakdown.perKm})`} v={formatINR(outBreakdown.distance)} />
-                  <FareRow k={`Driver bata (${outBreakdown.days} day${outBreakdown.days > 1 ? "s" : ""})`} v={formatINR(outBreakdown.driverBata)} />
-                  {outBreakdown.nightHalt > 0 && <FareRow k={`Night halt (${outBreakdown.nightHalts})`} v={formatINR(outBreakdown.nightHalt)} />}
-                  {outBreakdown.tolls > 0 && <FareRow k="Tolls (est.)" v={formatINR(outBreakdown.tolls)} />}
-                  <FareRow k="Taxes & fees" v={formatINR(outBreakdown.taxes)} />
-                </div>
-              ) : tab === "local" && routeInfo && (routeInfo.tollInr ?? 0) > 0 ? (
-                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-                  <FareRow k="Tolls (est.)" v={formatINR(routeInfo.tollInr)} />
-                </div>
-              ) : null}
 
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
@@ -791,12 +811,5 @@ function InlineVehicleRow({
   );
 }
 
-function FareRow({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="font-medium text-foreground">{v}</span>
-    </div>
-  );
-}
+
 
