@@ -602,12 +602,39 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           </div>
 
           <div className="px-4 pb-8 pt-4">
-            {/* Trip type — display only */}
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+            {/* Trip type — click to change */}
+            <button
+              type="button"
+              onClick={() => setTripTypePopupOpen((v) => !v)}
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/15"
+            >
               {tab === "local" && <><Car className="h-3.5 w-3.5" /> Local Trip</>}
               {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</>}
               {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
-            </div>
+              <Pencil className="h-3 w-3" />
+            </button>
+            {tripTypePopupOpen && (
+              <div className="mb-3 rounded-2xl border border-border bg-card p-2 shadow-lg">
+                {([
+                  { id: "local", label: "Local", I: Car },
+                  { id: "rental", label: "Rental", I: Clock },
+                  { id: "outstation", label: "Outstation", I: MapIcon },
+                ] as const).map(({ id, label, I }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => { setTripTypePopupOpen(false); setSummaryOpen(false); switchTab(id); }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                      tab === id ? "bg-primary-soft text-primary" : "text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <I className="h-4 w-4" /> {label}
+                    {tab === id && <span className="ml-auto text-[10px] uppercase tracking-wide">Current</span>}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Route card */}
             <div className="rounded-2xl border border-border bg-card p-4">
