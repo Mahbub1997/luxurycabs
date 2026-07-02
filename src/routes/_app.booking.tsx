@@ -689,14 +689,9 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                     Change
                   </button>
                 </div>
-                {(() => {
-                  const p = RENTAL_PACKAGES.find(x => x.id === pkgId)!;
-                  return (
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      Above {p.hours}h: ₹{p.extraPerHour}/hr · Above {p.km}km: ₹{p.extraPerKm}/km
-                    </div>
-                  );
-                })()}
+                <div className="mt-2 text-[11px] text-muted-foreground">
+                  Additional hours and additional km will be charged.
+                </div>
               </div>
             )}
 
