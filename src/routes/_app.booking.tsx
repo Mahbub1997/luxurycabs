@@ -702,7 +702,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">Selected Vehicle</div>
                   <div className="text-base font-bold">{tariffLabel}</div>
-                  <button type="button" onClick={() => { setSummaryOpen(false); setVehicleSheetOpen(true); }}
+                  <button type="button" onClick={() => { setShowAllVehicles(false); setSummaryOpen(false); setVehicleSheetOpen(true); }}
                     className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline">
                     <Pencil className="h-3 w-3" /> Change vehicle
                   </button>
@@ -712,20 +712,6 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 </div>
               </div>
 
-              {/* Fare breakdown */}
-              {tab === "outstation" && outBreakdown ? (
-                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-                  <FareRow k={`Distance (${outBreakdown.chargedKm} km × ₹${outBreakdown.perKm})`} v={formatINR(outBreakdown.distance)} />
-                  <FareRow k={`Driver bata (${outBreakdown.days} day${outBreakdown.days > 1 ? "s" : ""})`} v={formatINR(outBreakdown.driverBata)} />
-                  {outBreakdown.nightHalt > 0 && <FareRow k={`Night halt (${outBreakdown.nightHalts})`} v={formatINR(outBreakdown.nightHalt)} />}
-                  {outBreakdown.tolls > 0 && <FareRow k="Tolls (est.)" v={formatINR(outBreakdown.tolls)} />}
-                  <FareRow k="Taxes & fees" v={formatINR(outBreakdown.taxes)} />
-                </div>
-              ) : tab === "local" && routeInfo && (routeInfo.tollInr ?? 0) > 0 ? (
-                <div className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-                  <FareRow k="Tolls (est.)" v={formatINR(routeInfo.tollInr)} />
-                </div>
-              ) : null}
 
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                 <div>
