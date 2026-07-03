@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS tolls numeric NOT NULL DEFAULT 0;
