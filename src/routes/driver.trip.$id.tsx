@@ -403,33 +403,42 @@ function DriverTrip() {
                 </>
               )}
 
-              {isUpi && (
-                <>
-                  <div className="text-base font-bold">Show this QR to the customer</div>
-                  <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
-                  <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl border border-border bg-white p-3">
-                    <img
-                      alt="UPI QR"
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`}
-                      width={220}
-                      height={220}
-                    />
-                  </div>
-                  <div className="mt-2 text-[11px] text-muted-foreground">
-                    UPI ID: <span className="font-semibold text-foreground">mabubbasha9791-1@oksbi</span>
-                  </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">
-                    After the customer pays and you see the credit notification, tap below to complete the trip.
-                  </div>
-                  <button
-                    disabled={busy}
-                    onClick={() => collectAndComplete("upi")}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
-                  >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Confirm Payment Received</>}
-                  </button>
-                </>
-              )}
+              {isUpi && (() => {
+                // Fare may change (extra hours/km) before driver confirms.
+                // Rebuild the QR whenever `b.fare` changes; the manual
+                // "Refresh QR" button bumps a nonce to force reload.
+                // eslint-disable-next-line react-hooks/rules-of-hooks
+                const [qrNonce, setQrNonce] = useState(0);
+                const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}&_=${qrNonce}`;
+                return (
+                  <>
+                    <div className="text-base font-bold">Show this QR to the customer</div>
+                    <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
+                    <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl border border-border bg-white p-3">
+                      <img alt="UPI QR" src={qrSrc} width={220} height={220} />
+                    </div>
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      UPI ID: <span className="font-semibold text-foreground">mabubbasha9791-1@oksbi</span>
+                    </div>
+                    <button
+                      onClick={() => setQrNonce((n) => n + 1)}
+                      className="mt-2 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-primary"
+                    >
+                      ↻ Refresh QR (₹{Number(b.fare).toFixed(2)})
+                    </button>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      After the customer pays and you see the credit notification, tap below to complete the trip.
+                    </div>
+                    <button
+                      disabled={busy}
+                      onClick={() => collectAndComplete("upi")}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+                    >
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Confirm Payment Received</>}
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         );
