@@ -150,11 +150,11 @@ export const completeRide = createServerFn({ method: "POST" })
 
     const fare = Number(booking.fare);
     const commission = Math.round(fare * 0.10 * 100) / 100;
-    const credit = Math.round((fare - commission) * 100) / 100;
-    const newBal = Math.round((Number(drv.wallet_balance) + credit - commission) * 100) / 100;
-    // Note: drivers keep cash physically — wallet tracks platform owe.
-    // To match user spec (1000 → wallet 900): we record net credit = fare - commission.
-    const netBal = Math.round((Number(drv.wallet_balance) + (fare - commission)) * 100) / 100;
+    const isCash = data.payment_method === "cash";
+    // Cash: driver already collected money in hand → deduct 10% commission from wallet.
+    // UPI / Card: money went to platform → credit 90% (fare - commission) to wallet.
+    const delta = isCash ? -commission : (fare - commission);
+    const netBal = Math.round((Number(drv.wallet_balance) + delta) * 100) / 100;
 
     const { error: uErr } = await supabaseAdmin
       .from("bookings")
@@ -172,12 +172,14 @@ export const completeRide = createServerFn({ method: "POST" })
       total_trips: (drv.total_trips ?? 0) + 1,
     }).eq("id", drv.id);
 
-    await supabaseAdmin.from("wallet_transactions").insert([
-      { driver_id: drv.id, type: "credit", amount: fare, balance_after: Number(drv.wallet_balance) + fare, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
-      { driver_id: drv.id, type: "commission", amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: "Platform commission 10%" },
-    ]);
-    void newBal;
-    return { ok: true, balance: netBal, credit, commission };
+    const txns = isCash
+      ? [{ driver_id: drv.id, type: "commission", amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: `Cash trip — 10% commission deducted` }]
+      : [
+          { driver_id: drv.id, type: "credit", amount: fare, balance_after: Number(drv.wallet_balance) + fare, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
+          { driver_id: drv.id, type: "commission", amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: "Platform commission 10%" },
+        ];
+    await supabaseAdmin.from("wallet_transactions").insert(txns);
+    return { ok: true, balance: netBal, credit: isCash ? -commission : (fare - commission), commission };
   });
 
 /** Driver requests a withdrawal from wallet. */
