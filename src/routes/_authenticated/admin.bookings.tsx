@@ -28,6 +28,9 @@ function AdminBookings() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [counts, setCounts] = useState<Record<Tab, number>>({
+    offers: 0, pending: 0, ongoing: 0, rejected: 0, completed: 0, all: 0,
+  });
 
   async function load() {
     setLoading(true);
@@ -42,11 +45,28 @@ function AdminBookings() {
     setLoading(false);
   }
 
+  async function loadCounts() {
+    const head = (opts: (q: any) => any) => {
+      const q = supabase.from("bookings").select("id", { count: "exact", head: true });
+      return opts(q).then((r: any) => r.count ?? 0);
+    };
+    const [offers, pending, ongoing, rejected, completed, all] = await Promise.all([
+      head((q) => q.eq("status", "driver_offered")),
+      head((q) => q.in("status", ["pending", "driver_offered"])),
+      head((q) => q.in("status", ["driver_assigned", "driver_arrived", "in_progress"])),
+      head((q) => q.not("rejected_driver_ids" as any, "eq", "{}")),
+      head((q) => q.in("status", ["completed", "cancelled"])),
+      head((q) => q),
+    ]);
+    setCounts({ offers, pending, ongoing, rejected, completed, all });
+  }
+
   useEffect(() => {
     load();
+    loadCounts();
     const ch = supabase
       .channel("admin-bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => { load(); loadCounts(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
