@@ -840,13 +840,13 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="mt-3 text-lg font-extrabold">Pay via UPI</div>
             <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-[12px] text-muted-foreground">
-              Open your UPI app to complete the payment. The driver will confirm receipt.
+              Open your UPI app and scan the driver's QR code to complete the payment. The driver will confirm receipt.
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
-              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
-              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
-            </div>
+            <button
+              onClick={pickUpi}
+              disabled={busy}
+              className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            >Open UPI App</button>
             <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for driver to confirm receipt…
             </div>
