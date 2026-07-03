@@ -857,17 +857,6 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
   );
 }
 
-function UpiAppBtn({ label, color, onClick, disabled }: { label: string; color: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={cn("rounded-xl border-2 py-2.5 text-xs font-bold transition disabled:opacity-50", color)}
-    >
-      {label}
-    </button>
-  );
-}
 
 function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () => void; disabled?: boolean }) {
   return (
