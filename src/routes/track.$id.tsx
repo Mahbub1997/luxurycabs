@@ -451,6 +451,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
     try {
       const newOtp = String(Math.floor(1000 + Math.random() * 9000));
       await updateBooking(b.id, { otp: newOtp } as any);
+      try { localStorage.setItem(`otpStart:${b.id}`, String(Date.now())); } catch {}
       setSecsLeft(300);
       setResendCooldown(30);
       toast.success("New OTP generated");
