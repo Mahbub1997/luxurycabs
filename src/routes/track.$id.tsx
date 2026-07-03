@@ -810,15 +810,10 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <PayBtn I={Banknote} l="Cash" onClick={pickCash} disabled={busy} />
-              <PayBtn I={Wallet} l="UPI" onClick={() => pickUpi("any")} disabled={busy} />
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
-              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
-              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
+              <PayBtn I={Wallet} l="UPI" onClick={pickUpi} disabled={busy} />
             </div>
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              For UPI, your selected app will open with the amount prefilled. The driver confirms once payment is received.
+              For UPI, open your UPI app and scan the driver's QR code to pay.
             </div>
           </>
         )}
