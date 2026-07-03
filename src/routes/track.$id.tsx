@@ -65,9 +65,11 @@ function Track() {
         (p) => {
           const next = p.new as Booking;
           const prev = prevRef.current;
-          // Driver newly assigned
+          // Driver newly assigned — heavy sound + vibration
           if (!prev.driverId && next.assigned_driver_id) {
             notify("Driver assigned 🚗", `${next.driver_name ?? "Your driver"} is on the way.`, next.driver_photo ?? undefined);
+            try { beep(700, 660); setTimeout(() => beep(700, 880), 300); setTimeout(() => beep(700, 990), 600); } catch {}
+            try { if ("vibrate" in navigator) (navigator as any).vibrate([400, 120, 400, 120, 600]); } catch {}
           }
           // Driver arrived
           if (prev.status !== "driver_arrived" && next.status === "driver_arrived") {
