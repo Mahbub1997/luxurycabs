@@ -182,6 +182,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
         duration_min: Math.round(duration),
         fare: estimatedFare,
         route_polyline: tab === "rental" ? null : routeInfo!.polyline,
+        tolls: tab === "rental" ? 0 : Math.round((routeInfo?.tollInr ?? 0) * (tab === "outstation" ? 2 : 1)),
         customer_name: profile?.name ?? authData.user?.user_metadata?.name ?? null,
         customer_phone: profile?.phone ?? authData.user?.phone ?? null,
         user_id: authData.user?.id ?? null,
