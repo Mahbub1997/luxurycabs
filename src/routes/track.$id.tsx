@@ -409,19 +409,25 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [b.assigned_driver_id]);
 
-  // OTP countdown — starts ONCE when driver arrives. Do not reset on phase
-  // changes. After it hits 0 we show "waiting charges started" instead of
-  // restarting another 5 minutes.
+  // OTP countdown — persisted across page refreshes via localStorage.
+  // Starts once the driver arrives; after 5 min elapsed we show waiting-charge
+  // notice instead of resetting a new 5-minute window.
   const otpStartedRef = useRef(false);
   useEffect(() => {
     if (phase !== "arrived" && phase !== "otp") return;
-    if (!otpStartedRef.current) {
-      otpStartedRef.current = true;
-      setSecsLeft(300);
+    const key = `otpStart:${b.id}`;
+    let startMs: number | null = null;
+    try { const v = typeof window !== "undefined" ? localStorage.getItem(key) : null; if (v) startMs = Number(v); } catch {}
+    if (!startMs || Number.isNaN(startMs)) {
+      startMs = Date.now();
+      try { localStorage.setItem(key, String(startMs)); } catch {}
     }
-    const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    otpStartedRef.current = true;
+    const tick = () => setSecsLeft(Math.max(0, 300 - Math.floor((Date.now() - startMs!) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [phase]);
+  }, [phase, b.id]);
   const mmss = `${String(Math.floor(secsLeft / 60)).padStart(2, "0")}:${String(secsLeft % 60).padStart(2, "0")}`;
   const waitingChargesActive = otpStartedRef.current && secsLeft === 0 && (phase === "arrived" || phase === "otp");
 
