@@ -14,11 +14,32 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const mountedRef = useRef(false);
 
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/admin/login", replace: true });
   }
+
+  // Ringtone + notification when a NEW booking is created. Fires anywhere in
+  // the admin panel — plays a ~5s ringtone loop and shows a toast/browser alert.
+  useEffect(() => {
+    // Skip the very first mount tick to avoid firing on initial replay.
+    mountedRef.current = true;
+    const ch = supabase
+      .channel("admin-new-booking-alert")
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "bookings" },
+        (p) => {
+          if (!mountedRef.current) return;
+          const row: any = p.new;
+          void ringFor(5000);
+          notify("New booking 🚕", `${row.customer_name ?? "Customer"} — ${row.pickup_address ?? ""} → ${row.drop_address ?? ""}`);
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
 
   const tabs = [
     { to: "/admin/bookings", label: "Bookings", Icon: ClipboardList },
