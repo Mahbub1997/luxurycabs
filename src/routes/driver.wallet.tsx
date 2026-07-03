@@ -59,7 +59,6 @@ function DriverWallet() {
         <div className="rounded-2xl bg-primary p-5 text-primary-foreground shadow">
           <div className="flex items-center gap-2 text-xs opacity-80"><Wallet className="h-4 w-4" /> Available Balance</div>
           <div className="mt-1 text-3xl font-bold">₹{Number(driver.wallet_balance).toFixed(2)}</div>
-          <div className="mt-1 text-[11px] opacity-80">10% commission auto-deducted on every trip.</div>
         </div>
 
         <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-4">

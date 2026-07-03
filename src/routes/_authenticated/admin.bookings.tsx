@@ -28,6 +28,9 @@ function AdminBookings() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [counts, setCounts] = useState<Record<Tab, number>>({
+    offers: 0, pending: 0, ongoing: 0, rejected: 0, completed: 0, all: 0,
+  });
 
   async function load() {
     setLoading(true);
@@ -42,11 +45,28 @@ function AdminBookings() {
     setLoading(false);
   }
 
+  async function loadCounts() {
+    const head = (opts: (q: any) => any) => {
+      const q = supabase.from("bookings").select("id", { count: "exact", head: true });
+      return opts(q).then((r: any) => r.count ?? 0);
+    };
+    const [offers, pending, ongoing, rejected, completed, all] = await Promise.all([
+      head((q) => q.eq("status", "driver_offered")),
+      head((q) => q.in("status", ["pending", "driver_offered"])),
+      head((q) => q.in("status", ["driver_assigned", "driver_arrived", "in_progress"])),
+      head((q) => q.not("rejected_driver_ids" as any, "eq", "{}")),
+      head((q) => q.in("status", ["completed", "cancelled"])),
+      head((q) => q),
+    ]);
+    setCounts({ offers, pending, ongoing, rejected, completed, all });
+  }
+
   useEffect(() => {
     load();
+    loadCounts();
     const ch = supabase
       .channel("admin-bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => { load(); loadCounts(); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,19 +99,35 @@ function AdminBookings() {
         <button onClick={load} title="Refresh"><RefreshCw className="h-3.5 w-3.5 text-muted-foreground" /></button>
       </div>
 
-      <div className="mb-3 flex gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium capitalize",
-              tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            )}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="mb-3 flex gap-1 overflow-x-auto">
+        {TABS.map((t) => {
+          const c = counts[t];
+          const active = tab === t;
+          const badgeColor =
+            t === "pending" ? "bg-amber-500" :
+            t === "ongoing" ? "bg-emerald-500" :
+            t === "offers" ? "bg-sky-500" :
+            t === "rejected" ? "bg-rose-500" :
+            t === "completed" ? "bg-slate-500" : "bg-primary";
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize whitespace-nowrap",
+                active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}
+            >
+              {t}
+              {c > 0 && (
+                <span className={cn(
+                  "grid min-h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold text-white",
+                  badgeColor
+                )}>{c > 99 ? "99+" : c}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading…</p>}

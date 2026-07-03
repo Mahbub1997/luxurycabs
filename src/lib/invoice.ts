@@ -221,6 +221,7 @@ export function buildInvoiceDoc(b: Booking) {
     items.push(["Base Fare", fb.base]);
     items.push([`Distance Fare (${Number(b.distance_km).toFixed(1)} km)`, fb.distance]);
     items.push([`Time Fare (${durLabel})`, fb.time]);
+    items.push([`Tolls (est.)`, Number((b as any).tolls ?? 0)]);
     items.push(["Taxes & Fees", fb.taxes]);
   }
   items.forEach(([k, v]) => {

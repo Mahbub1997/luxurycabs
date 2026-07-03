@@ -51,6 +51,7 @@ export type Database = {
           route_polyline: string | null
           scheduled_at: string
           status: Database["public"]["Enums"]["booking_status"]
+          tolls: number
           trip_mode: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at: string
@@ -95,6 +96,7 @@ export type Database = {
           route_polyline?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          tolls?: number
           trip_mode?: string | null
           trip_type: Database["public"]["Enums"]["trip_type"]
           updated_at?: string
@@ -139,6 +141,7 @@ export type Database = {
           route_polyline?: string | null
           scheduled_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          tolls?: number
           trip_mode?: string | null
           trip_type?: Database["public"]["Enums"]["trip_type"]
           updated_at?: string

@@ -16,7 +16,7 @@ import { CancelReasonModal } from "@/components/CancelReasonModal";
 import { supabase } from "@/integrations/supabase/client";
 import { tariffFor, formatINR, type VehicleType } from "@/lib/fare";
 import { formatDuration, formatTime12 } from "@/lib/utils";
-import { notify, ensureNotifyPermission } from "@/lib/notify";
+import { notify, ensureNotifyPermission, beep } from "@/lib/notify";
 import sedanImg from "@/assets/sedan.png";
 import suvImg from "@/assets/suv.png";
 import { cn } from "@/lib/utils";
@@ -65,9 +65,11 @@ function Track() {
         (p) => {
           const next = p.new as Booking;
           const prev = prevRef.current;
-          // Driver newly assigned
+          // Driver newly assigned — heavy sound + vibration
           if (!prev.driverId && next.assigned_driver_id) {
             notify("Driver assigned 🚗", `${next.driver_name ?? "Your driver"} is on the way.`, next.driver_photo ?? undefined);
+            try { beep(700, 660); setTimeout(() => beep(700, 880), 300); setTimeout(() => beep(700, 990), 600); } catch {}
+            try { if ("vibrate" in navigator) (navigator as any).vibrate([400, 120, 400, 120, 600]); } catch {}
           }
           // Driver arrived
           if (prev.status !== "driver_arrived" && next.status === "driver_arrived") {
@@ -407,19 +409,25 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [b.assigned_driver_id]);
 
-  // OTP countdown — starts ONCE when driver arrives. Do not reset on phase
-  // changes. After it hits 0 we show "waiting charges started" instead of
-  // restarting another 5 minutes.
+  // OTP countdown — persisted across page refreshes via localStorage.
+  // Starts once the driver arrives; after 5 min elapsed we show waiting-charge
+  // notice instead of resetting a new 5-minute window.
   const otpStartedRef = useRef(false);
   useEffect(() => {
     if (phase !== "arrived" && phase !== "otp") return;
-    if (!otpStartedRef.current) {
-      otpStartedRef.current = true;
-      setSecsLeft(300);
+    const key = `otpStart:${b.id}`;
+    let startMs: number | null = null;
+    try { const v = typeof window !== "undefined" ? localStorage.getItem(key) : null; if (v) startMs = Number(v); } catch {}
+    if (!startMs || Number.isNaN(startMs)) {
+      startMs = Date.now();
+      try { localStorage.setItem(key, String(startMs)); } catch {}
     }
-    const id = setInterval(() => setSecsLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    otpStartedRef.current = true;
+    const tick = () => setSecsLeft(Math.max(0, 300 - Math.floor((Date.now() - startMs!) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [phase]);
+  }, [phase, b.id]);
   const mmss = `${String(Math.floor(secsLeft / 60)).padStart(2, "0")}:${String(secsLeft % 60).padStart(2, "0")}`;
   const waitingChargesActive = otpStartedRef.current && secsLeft === 0 && (phase === "arrived" || phase === "otp");
 
@@ -443,6 +451,7 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
     try {
       const newOtp = String(Math.floor(1000 + Math.random() * 9000));
       await updateBooking(b.id, { otp: newOtp } as any);
+      try { localStorage.setItem(`otpStart:${b.id}`, String(Date.now())); } catch {}
       setSecsLeft(300);
       setResendCooldown(30);
       toast.success("New OTP generated");
@@ -768,7 +777,7 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
     finally { setBusy(false); }
   }
 
-  async function pickUpi(app?: "gpay" | "phonepe" | "paytm" | "any") {
+  async function pickUpi() {
     if (busy) return;
     setBusy(true);
     try {
@@ -776,20 +785,11 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
         payment_method: "upi",
         payment_status: "upi_pending",
       } as any);
-      // Open the chosen UPI app with merchant VPA + amount prefilled.
-      const amount = Number(b.fare).toFixed(2);
-      const pa = "mabubbasha9791-1@oksbi";
-      const pn = encodeURIComponent("Luxury Cabs");
-      const tn = encodeURIComponent(`Cab fare ${b.id.slice(0, 8)}`);
-      const tr = b.id;
-      const qs = `pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tn=${tn}&tr=${tr}`;
-      const scheme =
-        app === "gpay" ? "tez://upi/pay" :
-        app === "phonepe" ? "phonepe://pay" :
-        app === "paytm" ? "paytmmp://pay" :
-        "upi://pay";
+      // Open the customer's UPI app WITHOUT prefilling the amount. The
+      // customer will scan the driver's on-screen QR code (which carries the
+      // live total) and complete payment there.
       if (typeof window !== "undefined") {
-        window.location.href = `${scheme}?${qs}`;
+        window.location.href = "upi://pay";
       }
     } catch (e: any) { toast.error(e.message || "Failed"); }
     finally { setBusy(false); }
@@ -810,15 +810,10 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="text-center text-[12px] text-muted-foreground">Choose your payment method to complete the trip</div>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <PayBtn I={Banknote} l="Cash" onClick={pickCash} disabled={busy} />
-              <PayBtn I={Wallet} l="UPI" onClick={() => pickUpi("any")} disabled={busy} />
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
-              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
-              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
+              <PayBtn I={Wallet} l="UPI" onClick={pickUpi} disabled={busy} />
             </div>
             <div className="mt-3 text-center text-[11px] text-muted-foreground">
-              For UPI, your selected app will open with the amount prefilled. The driver confirms once payment is received.
+              For UPI, open your UPI app and scan the driver's QR code to pay.
             </div>
           </>
         )}
@@ -845,13 +840,13 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
             <div className="mt-3 text-lg font-extrabold">Pay via UPI</div>
             <div className="mt-1 text-3xl font-extrabold text-primary">₹{Number(b.fare).toFixed(2)}</div>
             <div className="text-[12px] text-muted-foreground">
-              Open your UPI app to complete the payment. The driver will confirm receipt.
+              Open your UPI app and scan the driver's QR code to complete the payment. The driver will confirm receipt.
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <UpiAppBtn label="Google Pay" color="bg-blue-50 text-blue-700 border-blue-200" onClick={() => pickUpi("gpay")} disabled={busy} />
-              <UpiAppBtn label="PhonePe" color="bg-violet-50 text-violet-700 border-violet-200" onClick={() => pickUpi("phonepe")} disabled={busy} />
-              <UpiAppBtn label="Paytm" color="bg-sky-50 text-sky-700 border-sky-200" onClick={() => pickUpi("paytm")} disabled={busy} />
-            </div>
+            <button
+              onClick={pickUpi}
+              disabled={busy}
+              className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            >Open UPI App</button>
             <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Waiting for driver to confirm receipt…
             </div>
@@ -862,17 +857,6 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
   );
 }
 
-function UpiAppBtn({ label, color, onClick, disabled }: { label: string; color: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={cn("rounded-xl border-2 py-2.5 text-xs font-bold transition disabled:opacity-50", color)}
-    >
-      {label}
-    </button>
-  );
-}
 
 function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () => void; disabled?: boolean }) {
   return (
@@ -890,17 +874,19 @@ function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () =>
 function DriverPhoto({ src, name }: { src?: string | null; name?: string | null }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  useEffect(() => { setLoaded(false); setErrored(false); }, [src]);
+  const [bust, setBust] = useState(0);
+  useEffect(() => { setLoaded(false); setErrored(false); }, [src, bust]);
   const initial = (name ?? "D").trim().charAt(0).toUpperCase();
   const showImg = !!src && !errored;
+  const finalSrc = src ? (src + (src.includes("?") ? "&" : "?") + "_b=" + bust) : undefined;
   return (
     <div className="relative h-14 w-14 shrink-0">
       {showImg && (
         <img
-          src={src!}
+          src={finalSrc!}
           alt={name ?? "Driver"}
           onLoad={() => setLoaded(true)}
-          onError={() => setErrored(true)}
+          onError={() => { if (bust < 2) setBust((v) => v + 1); else setErrored(true); }}
           className={cn(
             "h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 transition-opacity duration-300",
             loaded ? "opacity-100" : "opacity-0"
@@ -909,14 +895,19 @@ function DriverPhoto({ src, name }: { src?: string | null; name?: string | null 
       )}
       {(!showImg || !loaded) && (
         <div className={cn(
-          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30 font-bold text-lg",
-          showImg ? "animate-pulse bg-muted text-transparent" : "bg-primary-soft text-primary"
+          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30",
+          showImg ? "bg-muted" : "bg-primary-soft"
         )}>
-          {initial}
+          {showImg ? (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <span className="font-bold text-lg text-primary">{initial}</span>
+          )}
         </div>
       )}
     </div>
   );
 }
+
 
 
