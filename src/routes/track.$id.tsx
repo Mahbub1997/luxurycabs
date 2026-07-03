@@ -777,7 +777,7 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
     finally { setBusy(false); }
   }
 
-  async function pickUpi(app?: "gpay" | "phonepe" | "paytm" | "any") {
+  async function pickUpi() {
     if (busy) return;
     setBusy(true);
     try {
@@ -785,20 +785,11 @@ function UserPaymentOverlay({ b }: { b: Booking }) {
         payment_method: "upi",
         payment_status: "upi_pending",
       } as any);
-      // Open the chosen UPI app with merchant VPA + amount prefilled.
-      const amount = Number(b.fare).toFixed(2);
-      const pa = "mabubbasha9791-1@oksbi";
-      const pn = encodeURIComponent("Luxury Cabs");
-      const tn = encodeURIComponent(`Cab fare ${b.id.slice(0, 8)}`);
-      const tr = b.id;
-      const qs = `pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tn=${tn}&tr=${tr}`;
-      const scheme =
-        app === "gpay" ? "tez://upi/pay" :
-        app === "phonepe" ? "phonepe://pay" :
-        app === "paytm" ? "paytmmp://pay" :
-        "upi://pay";
+      // Open the customer's UPI app WITHOUT prefilling the amount. The
+      // customer will scan the driver's on-screen QR code (which carries the
+      // live total) and complete payment there.
       if (typeof window !== "undefined") {
-        window.location.href = `${scheme}?${qs}`;
+        window.location.href = "upi://pay";
       }
     } catch (e: any) { toast.error(e.message || "Failed"); }
     finally { setBusy(false); }
