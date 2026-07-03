@@ -173,10 +173,10 @@ export const completeRide = createServerFn({ method: "POST" })
     }).eq("id", drv.id);
 
     const txns = isCash
-      ? [{ driver_id: drv.id, type: "commission", amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: `Cash trip — 10% commission deducted` }]
+      ? [{ driver_id: drv.id, type: "commission" as const, amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: `Cash trip — 10% commission deducted` }]
       : [
-          { driver_id: drv.id, type: "credit", amount: fare, balance_after: Number(drv.wallet_balance) + fare, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
-          { driver_id: drv.id, type: "commission", amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: "Platform commission 10%" },
+          { driver_id: drv.id, type: "credit" as const, amount: fare, balance_after: Number(drv.wallet_balance) + fare, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
+          { driver_id: drv.id, type: "commission" as const, amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: "Platform commission 10%" },
         ];
     await supabaseAdmin.from("wallet_transactions").insert(txns);
     return { ok: true, balance: netBal, credit: isCash ? -commission : (fare - commission), commission };
