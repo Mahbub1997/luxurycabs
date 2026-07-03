@@ -419,3 +419,38 @@ function DriverTrip() {
 
   );
 }
+
+function UpiQrPanel({ fare, upiUri, busy, onConfirm }: { fare: number; upiUri: string; busy: boolean; onConfirm: () => void }) {
+  const [nonce, setNonce] = useState(0);
+  // Rebuild the QR whenever the fare or nonce changes so the amount encoded
+  // in the UPI intent always matches the current total (extra hours/km).
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}&_=${nonce}-${Math.round(fare)}`;
+  return (
+    <>
+      <div className="text-base font-bold">Show this QR to the customer</div>
+      <div className="mt-1 text-3xl font-extrabold text-primary">₹{fare.toFixed(2)}</div>
+      <div className="mx-auto mt-3 grid w-fit place-items-center rounded-2xl border border-border bg-white p-3">
+        <img alt="UPI QR" src={qrSrc} width={220} height={220} />
+      </div>
+      <div className="mt-2 text-[11px] text-muted-foreground">
+        UPI ID: <span className="font-semibold text-foreground">mabubbasha9791-1@oksbi</span>
+      </div>
+      <button
+        onClick={() => setNonce((n) => n + 1)}
+        className="mt-2 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-primary"
+      >
+        ↻ Refresh QR (₹{fare.toFixed(2)})
+      </button>
+      <div className="mt-1 text-[11px] text-muted-foreground">
+        After the customer pays and you see the credit notification, tap below to complete the trip.
+      </div>
+      <button
+        disabled={busy}
+        onClick={onConfirm}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Confirm Payment Received</>}
+      </button>
+    </>
+  );
+}
