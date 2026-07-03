@@ -91,3 +91,33 @@ function AdminShell() {
     </div>
   );
 }
+
+/** Play a repeating 2-tone ringtone for `durationMs` (default 5s) + vibrate. */
+async function ringFor(durationMs = 5000) {
+  if (typeof window === "undefined") return;
+  try {
+    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const end = ctx.currentTime + durationMs / 1000;
+    let t = ctx.currentTime;
+    while (t < end) {
+      for (const f of [880, 660]) {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        o.connect(g).connect(ctx.destination);
+        o.start(t);
+        o.stop(t + 0.4);
+        t += 0.45;
+      }
+      t += 0.35;
+    }
+    try { if ("vibrate" in navigator) (navigator as any).vibrate([500, 200, 500, 200, 500]); } catch {}
+    setTimeout(() => { try { ctx.close(); } catch {} }, durationMs + 500);
+  } catch {}
+}
