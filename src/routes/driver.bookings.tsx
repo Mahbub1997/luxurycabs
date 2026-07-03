@@ -16,22 +16,50 @@ function DriverBookings() {
   const [tab, setTab] = useState<Tab>("ongoing");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [counts, setCounts] = useState<Record<Tab, number>>({ ongoing: 0, completed: 0, all: 0 });
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       const { data: d } = await supabase.from("drivers").select("id").eq("user_id", u.user.id).maybeSingle();
-      if (!d) { setRows([]); setLoading(false); return; }
-      let q = supabase.from("bookings").select("*").eq("assigned_driver_id", d.id).order("created_at", { ascending: false }).limit(100);
+      setDriverId(d?.id ?? null);
+    })();
+  }, []);
+
+  async function loadCounts(id: string) {
+    const head = (opts: (q: any) => any) => {
+      const q = supabase.from("bookings").select("id", { count: "exact", head: true }).eq("assigned_driver_id", id);
+      return opts(q).then((r: any) => r.count ?? 0);
+    };
+    const [ongoing, completed, all] = await Promise.all([
+      head((q) => q.in("status", ["driver_assigned", "driver_arrived", "in_progress"])),
+      head((q) => q.in("status", ["completed", "cancelled"])),
+      head((q) => q),
+    ]);
+    setCounts({ ongoing, completed, all });
+  }
+
+  useEffect(() => {
+    if (!driverId) return;
+    (async () => {
+      setLoading(true);
+      let q = supabase.from("bookings").select("*").eq("assigned_driver_id", driverId).order("created_at", { ascending: false }).limit(100);
       if (tab === "ongoing") q = q.in("status", ["driver_assigned", "driver_arrived", "in_progress"]);
       else if (tab === "completed") q = q.in("status", ["completed", "cancelled"]);
       const { data } = await q;
       setRows(data ?? []);
       setLoading(false);
     })();
-  }, [tab]);
+    loadCounts(driverId);
+    const ch = supabase.channel(`driver-bookings:${driverId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "bookings", filter: `assigned_driver_id=eq.${driverId}` },
+        () => { loadCounts(driverId); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [tab, driverId]);
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -41,10 +69,27 @@ function DriverBookings() {
       </header>
       <div className="p-3">
         <div className="mb-3 flex gap-1">
-          {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)} className={cn("rounded-lg px-3 py-1.5 text-xs font-medium capitalize",
-              tab === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{t}</button>
-          ))}
+          {TABS.map((t) => {
+            const c = counts[t];
+            const active = tab === t;
+            const badgeColor =
+              t === "ongoing" ? "bg-emerald-500" :
+              t === "completed" ? "bg-slate-500" : "bg-primary";
+            return (
+              <button key={t} onClick={() => setTab(t)} className={cn(
+                "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize",
+                active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}>
+                {t}
+                {c > 0 && (
+                  <span className={cn(
+                    "grid min-h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold text-white",
+                    badgeColor
+                  )}>{c > 99 ? "99+" : c}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
         {loading && <Loader2 className="h-5 w-5 animate-spin" />}
         {!loading && rows.length === 0 && <p className="text-sm text-muted-foreground">No bookings.</p>}
