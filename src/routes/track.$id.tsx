@@ -874,17 +874,19 @@ function PayBtn({ I, l, onClick, disabled }: { I: any; l: string; onClick: () =>
 function DriverPhoto({ src, name }: { src?: string | null; name?: string | null }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  useEffect(() => { setLoaded(false); setErrored(false); }, [src]);
+  const [bust, setBust] = useState(0);
+  useEffect(() => { setLoaded(false); setErrored(false); }, [src, bust]);
   const initial = (name ?? "D").trim().charAt(0).toUpperCase();
   const showImg = !!src && !errored;
+  const finalSrc = src ? (src + (src.includes("?") ? "&" : "?") + "_b=" + bust) : undefined;
   return (
     <div className="relative h-14 w-14 shrink-0">
       {showImg && (
         <img
-          src={src!}
+          src={finalSrc!}
           alt={name ?? "Driver"}
           onLoad={() => setLoaded(true)}
-          onError={() => setErrored(true)}
+          onError={() => { if (bust < 2) setBust((v) => v + 1); else setErrored(true); }}
           className={cn(
             "h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 transition-opacity duration-300",
             loaded ? "opacity-100" : "opacity-0"
@@ -893,14 +895,19 @@ function DriverPhoto({ src, name }: { src?: string | null; name?: string | null 
       )}
       {(!showImg || !loaded) && (
         <div className={cn(
-          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30 font-bold text-lg",
-          showImg ? "animate-pulse bg-muted text-transparent" : "bg-primary-soft text-primary"
+          "absolute inset-0 grid place-items-center rounded-full ring-2 ring-primary/30",
+          showImg ? "bg-muted" : "bg-primary-soft"
         )}>
-          {initial}
+          {showImg ? (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <span className="font-bold text-lg text-primary">{initial}</span>
+          )}
         </div>
       )}
     </div>
   );
 }
+
 
 
