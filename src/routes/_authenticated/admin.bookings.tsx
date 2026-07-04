@@ -269,7 +269,7 @@ function BookingCard({ b }: { b: any }) {
         <Mini label="Trip" value={`${b.trip_type}${b.trip_mode ? " / " + b.trip_mode : ""}`} />
         <Mini label="Vehicle" value={b.vehicle_type} />
         <Mini label="Distance" value={`${b.distance_km} km`} />
-        <Mini label="Duration" value={`${b.duration_min} min`} />
+        <Mini label="Duration" value={formatDuration(b.duration_min)} />
         <Mini label="Fare" value={`₹${b.fare}`} Icon={IndianRupee} />
         <Mini label="Pay" value={`${b.payment_method} · ${b.payment_status}`} Icon={CreditCard} />
       </div>
