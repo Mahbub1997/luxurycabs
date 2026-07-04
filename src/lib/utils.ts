@@ -10,8 +10,8 @@ export function formatDuration(totalMin: number): string {
   if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   const rem = m % 60;
-  const hLabel = h === 1 ? "hour" : "hours";
-  return rem === 0 ? `${h} ${hLabel}` : `${h} ${hLabel} ${rem} min`;
+  // e.g. 1:30 hr, 2:00 hr
+  return `${h}:${String(rem).padStart(2, "0")} hr`;
 }
 
 export function formatTime12(d: Date): string {
