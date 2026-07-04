@@ -54,10 +54,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
 
   const [pickup, setPickup] = useState<PlacePick | null>(null);
   const [drop, setDrop] = useState<PlacePick | null>(null);
-  const [pkgId, setPkgId] = useState<string>(RENTAL_PACKAGES[0].id);
+  const [pkgId, setPkgId] = useState<string>(RENTAL_PKGS[0].id);
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
   const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta">("sedan");
-  const [outVehicleId, setOutVehicleId] = useState<string>(OUTSTATION_VEHICLES[0].id);
+  const [outVehicleId, setOutVehicleId] = useState<string>(OUT_VEHICLES[0].id);
   const [scheduledAt, setScheduledAt] = useState<string>(() => {
     const d = new Date(Date.now() + 15 * 60_000);
     d.setSeconds(0, 0);
@@ -97,7 +97,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   }, [pickup, drop, tab]);
 
   const outVehicle = useMemo<OutstationVehicle>(
-    () => OUTSTATION_VEHICLES.find((v) => v.id === outVehicleId) ?? OUTSTATION_VEHICLES[0],
+    () => OUT_VEHICLES.find((v) => v.id === outVehicleId) ?? OUT_VEHICLES[0],
     [outVehicleId]
   );
   const outDays = useMemo(() => (returnAt ? diffDays(scheduledAt, returnAt) : 1), [scheduledAt, returnAt]);
@@ -116,7 +116,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   }, [tab, routeInfo, rates]);
   const rentalFares = useMemo(() => {
     if (tab !== "rental") return { sedan: 0, suv: 0 };
-    const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId)!;
+    const pkg = RENTAL_PKGS.find((p) => p.id === pkgId)!;
     return { sedan: pkg.sedan, suv: pkg.suv };
   }, [tab, pkgId]);
   const estimatedFare = useMemo(() => {
@@ -150,7 +150,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
     if (tab === "rental" && !pickup) return;
     setSubmitting(true);
     try {
-      const pkg = RENTAL_PACKAGES.find((p) => p.id === pkgId);
+      const pkg = RENTAL_PKGS.find((p) => p.id === pkgId);
       let distance: number, duration: number;
       let vehicleType: VehicleType = vehicle;
       const LOCAL_LABELS: Record<string, string> = {
@@ -305,7 +305,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           </div>
           <div className="mt-2 space-y-2">
             {tab === "outstation" ? (
-              OUTSTATION_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
+              OUT_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
                 const km = (routeInfo?.distanceKm ?? 0) * 2;
                 const bd = routeInfo && canPickVehicle
                   ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
@@ -422,7 +422,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
           <div className="mx-4">
             <div className="text-sm font-semibold">Choose a Package</div>
             <div className="mt-2 space-y-2">
-              {RENTAL_PACKAGES.map((p) => (
+              {RENTAL_PKGS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setPkgId(p.id)}
@@ -509,7 +509,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
             <h2 className="text-center text-lg font-bold">Select Vehicle</h2>
             <div className="mt-4 space-y-2">
               {tab === "outstation" ? (
-                OUTSTATION_VEHICLES.map((v) => {
+                OUT_VEHICLES.map((v) => {
                   const km = (routeInfo?.distanceKm ?? 0) * 2;
                   const bd = routeInfo
                     ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
@@ -616,7 +616,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
               className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/15"
             >
               {tab === "local" && <><Car className="h-3.5 w-3.5" /> Local Trip</>}
-              {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</>}
+              {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PKGS.find(p => p.id === pkgId)?.label}</>}
               {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
               <Pencil className="h-3 w-3" />
             </button>
@@ -689,7 +689,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs text-muted-foreground">Rental Package</div>
-                    <div className="text-sm font-bold">{RENTAL_PACKAGES.find(p => p.id === pkgId)?.label}</div>
+                    <div className="text-sm font-bold">{RENTAL_PKGS.find(p => p.id === pkgId)?.label}</div>
                   </div>
                   <button type="button" onClick={() => setSummaryOpen(false)}
                     className="rounded-lg border border-primary/40 px-3 py-1 text-xs font-semibold text-primary">
