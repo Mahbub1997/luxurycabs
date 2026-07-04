@@ -44,6 +44,11 @@ interface BookingPageProps {
 export function BookingPage({ forcedTab }: BookingPageProps) {
   const navigate = useNavigate();
   const { rates } = useFareRates();
+  const { packages: dbPackages } = useRentalPackages();
+  const { vehicles: dbOutVehicles } = useOutstationVehicles();
+  // Use DB-loaded lists everywhere so admin edits apply live.
+  const RENTAL_PKGS = dbPackages.length ? dbPackages : RENTAL_PACKAGES;
+  const OUT_VEHICLES = dbOutVehicles.length ? dbOutVehicles : OUTSTATION_VEHICLES;
   const [tab, setTab] = useState<TripType>(forcedTab ?? "local");
   useEffect(() => { if (forcedTab) setTab(forcedTab); }, [forcedTab]);
 
