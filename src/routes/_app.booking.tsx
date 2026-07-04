@@ -16,6 +16,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   RENTAL_PACKAGES, calcLocalFare, formatINR, useFareRates,
   OUTSTATION_VEHICLES, calcOutstationBreakdown, diffDays,
+  useRentalPackages, useOutstationVehicles,
   type OutstationVehicle,
   type TripType, type VehicleType,
 } from "@/lib/fare";
