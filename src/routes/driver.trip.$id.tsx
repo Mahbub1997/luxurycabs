@@ -422,8 +422,9 @@ function DriverTrip() {
 
 function UpiQrPanel({ fare, upiUri, busy, onConfirm }: { fare: number; upiUri: string; busy: boolean; onConfirm: () => void }) {
   const [nonce, setNonce] = useState(0);
-  // Rebuild the QR whenever the fare or nonce changes so the amount encoded
-  // in the UPI intent always matches the current total (extra hours/km).
+  // Auto-bump the nonce whenever the fare changes so the QR image
+  // is force-refreshed with the correct total encoded.
+  useEffect(() => { setNonce((n) => n + 1); }, [fare, upiUri]);
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}&_=${nonce}-${Math.round(fare)}`;
   return (
     <>
