@@ -5,7 +5,7 @@ import {
   MapPin, User, Car, IndianRupee, CreditCard, Clock, UserPlus, X, Loader2,
   Search, Phone, XCircle, ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import { listApprovedDrivers } from "@/lib/admin.functions";
 import { assignBookingToDriver, cancelBookingServer, adminSetBookingStatus } from "@/lib/driver.functions";
 import { CancelReasonModal } from "@/components/CancelReasonModal";
