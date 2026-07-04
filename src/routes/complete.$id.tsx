@@ -37,7 +37,7 @@ function Complete() {
   }
 
   const isOutstation = b.trip_type === "outstation";
-  const fb = fareBreakdown(b.vehicle_type as "sedan" | "suv", Number(b.distance_km), b.duration_min);
+  const fb = fareBreakdown(b.vehicle_type as "sedan" | "suv", Number(b.distance_km), b.duration_min, undefined, Number((b as any).tolls ?? 0));
   const outV = OUTSTATION_VEHICLES.find(v => v.tier === (b.vehicle_type as "sedan" | "suv")) ?? OUTSTATION_VEHICLES[0];
   const outBd = isOutstation ? calcOutstationBreakdown(outV, { distanceKm: Number(b.distance_km), days: 1 }) : null;
 
