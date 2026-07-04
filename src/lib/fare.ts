@@ -218,12 +218,69 @@ export function useFareRates(): { rates: RatesMap | undefined; loading: boolean;
   return { rates, loading, reload: () => setN((x) => x + 1) };
 }
 
-export function fareBreakdown(v: VehicleType, distanceKm: number, durationMin: number, rates?: RatesMap) {
+export function fareBreakdown(v: VehicleType, distanceKm: number, durationMin: number, rates?: RatesMap, tollInr?: number) {
   const r = rateFor(v, "local", rates);
   const base = r.base;
   const distance = Math.round(r.perKm * distanceKm);
   const time = Math.round(r.perMin * durationMin);
-  const taxes = Math.round((base + distance + time) * 0.05);
-  const total = base + distance + time + taxes;
-  return { base, distance, time, taxes, total };
+  const tolls = Math.round(tollInr ?? 0);
+  const taxes = Math.round((base + distance + time + tolls) * 0.05);
+  const total = base + distance + time + tolls + taxes;
+  return { base, distance, time, tolls, taxes, total };
+}
+
+// ---------- Admin-editable rental packages ----------
+export function useRentalPackages(): { packages: RentalPackage[]; loading: boolean; reload: () => void } {
+  const [packages, setPackages] = useState<RentalPackage[]>(RENTAL_PACKAGES);
+  const [loading, setLoading] = useState(true);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (supabase as any)
+      .from("rental_packages")
+      .select("code,label,hours,km,sedan_price,suv_price,sub,extra_per_hour,extra_per_km,active,sort_order")
+      .eq("active", true)
+      .order("sort_order")
+      .then(({ data }: any) => {
+        if (cancelled) return;
+        if (data?.length) {
+          setPackages(data.map((r: any) => ({
+            id: r.code, label: r.label, hours: r.hours, km: r.km,
+            sedan: Number(r.sedan_price), suv: Number(r.suv_price),
+            sub: r.sub ?? "", extraPerHour: Number(r.extra_per_hour), extraPerKm: Number(r.extra_per_km),
+          })));
+        }
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [n]);
+  return { packages, loading, reload: () => setN((x) => x + 1) };
+}
+
+// ---------- Admin-editable outstation vehicles ----------
+export function useOutstationVehicles(): { vehicles: OutstationVehicle[]; loading: boolean; reload: () => void } {
+  const [vehicles, setVehicles] = useState<OutstationVehicle[]>(OUTSTATION_VEHICLES);
+  const [loading, setLoading] = useState(true);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (supabase as any)
+      .from("outstation_vehicles")
+      .select("code,label,tier,per_km,bata,seats,bags,active,sort_order")
+      .eq("active", true)
+      .order("sort_order")
+      .then(({ data }: any) => {
+        if (cancelled) return;
+        if (data?.length) {
+          setVehicles(data.map((r: any) => ({
+            id: r.code, label: r.label, tier: r.tier as VehicleType,
+            perKm: Number(r.per_km), bata: Number(r.bata),
+            seats: r.seats, bags: r.bags,
+          })));
+        }
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [n]);
+  return { vehicles, loading, reload: () => setN((x) => x + 1) };
 }
