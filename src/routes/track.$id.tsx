@@ -875,7 +875,13 @@ function DriverPhoto({ src, name }: { src?: string | null; name?: string | null 
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [bust, setBust] = useState(0);
-  useEffect(() => { setLoaded(false); setErrored(false); }, [src, bust]);
+  useEffect(() => { setLoaded(false); setErrored(false); setBust(0); }, [src]);
+  // Auto-retry every 3s (up to 5 attempts) if the photo hasn't loaded yet.
+  useEffect(() => {
+    if (!src || loaded || errored) return;
+    const id = setTimeout(() => setBust((v) => (v < 5 ? v + 1 : v)), 3000);
+    return () => clearTimeout(id);
+  }, [src, loaded, errored, bust]);
   const initial = (name ?? "D").trim().charAt(0).toUpperCase();
   const showImg = !!src && !errored;
   const finalSrc = src ? (src + (src.includes("?") ? "&" : "?") + "_b=" + bust) : undefined;
@@ -886,7 +892,7 @@ function DriverPhoto({ src, name }: { src?: string | null; name?: string | null 
           src={finalSrc!}
           alt={name ?? "Driver"}
           onLoad={() => setLoaded(true)}
-          onError={() => { if (bust < 2) setBust((v) => v + 1); else setErrored(true); }}
+          onError={() => { if (bust < 5) setBust((v) => v + 1); else setErrored(true); }}
           className={cn(
             "h-14 w-14 rounded-full object-cover ring-2 ring-primary/30 transition-opacity duration-300",
             loaded ? "opacity-100" : "opacity-0"
