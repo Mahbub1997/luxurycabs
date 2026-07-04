@@ -325,6 +325,75 @@ export type Database = {
         }
         Relationships: []
       }
+      outstation_config: {
+        Row: {
+          id: number
+          min_km_per_day: number
+          night_halt: number
+          tax_percent: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          min_km_per_day?: number
+          night_halt?: number
+          tax_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          min_km_per_day?: number
+          night_halt?: number
+          tax_percent?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outstation_vehicles: {
+        Row: {
+          active: boolean
+          bags: number
+          bata: number
+          code: string
+          created_at: string
+          id: string
+          label: string
+          per_km: number
+          seats: number
+          sort_order: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          bags?: number
+          bata?: number
+          code: string
+          created_at?: string
+          id?: string
+          label: string
+          per_km: number
+          seats?: number
+          sort_order?: number
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          bags?: number
+          bata?: number
+          code?: string
+          created_at?: string
+          id?: string
+          label?: string
+          per_km?: number
+          seats?: number
+          sort_order?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_session_id: string | null
@@ -358,6 +427,57 @@ export type Database = {
           session_updated_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      rental_packages: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          extra_per_hour: number
+          extra_per_km: number
+          hours: number
+          id: string
+          km: number
+          label: string
+          sedan_price: number
+          sort_order: number
+          sub: string | null
+          suv_price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          extra_per_hour?: number
+          extra_per_km?: number
+          hours: number
+          id?: string
+          km: number
+          label: string
+          sedan_price: number
+          sort_order?: number
+          sub?: string | null
+          suv_price: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          extra_per_hour?: number
+          extra_per_km?: number
+          hours?: number
+          id?: string
+          km?: number
+          label?: string
+          sedan_price?: number
+          sort_order?: number
+          sub?: string | null
+          suv_price?: number
+          updated_at?: string
         }
         Relationships: []
       }
