@@ -109,7 +109,7 @@ function Complete() {
               <Row k="Base fare" v={formatINR(fb.base)} />
               <Row k="Distance" v={formatINR(fb.distance)} />
               <Row k="Time" v={formatINR(fb.time)} />
-              <Row k="Tolls (est.)" v={formatINR(Number((b as any).tolls ?? 0))} />
+              <Row k="Tolls (est.)" v={formatINR(fb.tolls)} />
               <Row k="Taxes & fees" v={formatINR(fb.taxes)} />
             </>
           )}
