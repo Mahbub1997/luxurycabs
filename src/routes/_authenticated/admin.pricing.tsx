@@ -269,7 +269,7 @@ function OutstationFares({ filterTier }: { filterTier?: "sedan" | "suv" }) {
     <div className="flex flex-col gap-2">
       <div className="flex justify-end">
         <button
-          onClick={() => setRows([...rows, { code: "", label: "", tier: "sedan", per_km: 12, bata: 400, seats: 4, bags: 2, sort_order: rows.length + 1, active: true }])}
+          onClick={() => setRows([...rows, { code: "", label: "", tier: filterTier ?? "sedan", per_km: 12, bata: 400, seats: 4, bags: 2, sort_order: rows.length + 1, active: true }])}
           className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
         >
           <Plus className="h-3.5 w-3.5" /> New vehicle
