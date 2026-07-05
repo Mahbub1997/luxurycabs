@@ -234,11 +234,13 @@ type OutRow = {
   sort_order: number;
   active: boolean;
 };
-function OutstationFares() {
+function OutstationFares({ filterTier }: { filterTier?: "sedan" | "suv" }) {
   const [rows, setRows] = useState<OutRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
-    const { data } = await (supabase as any).from("outstation_vehicles").select("*").order("sort_order");
+    let q = (supabase as any).from("outstation_vehicles").select("*").order("sort_order");
+    if (filterTier) q = q.eq("tier", filterTier);
+    const { data } = await q;
     setRows((data ?? []) as OutRow[]);
   }
   useEffect(() => { load(); }, []);
