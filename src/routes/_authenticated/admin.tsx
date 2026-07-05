@@ -112,19 +112,24 @@ function AdminShell() {
         </div>
       </header>
       <nav className="sticky top-[49px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-card px-2 py-2">
-        {tabs.map(({ to, label, Icon }) => {
+        {tabs.map(({ to, label, Icon, badge }: any) => {
           const active = path.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
               className={cn(
-                "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
+                "relative flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
                 active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >
               <Icon className="h-4 w-4" />
               {label}
+              {badge > 0 && (
+                <span className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                  {badge}
+                </span>
+              )}
             </Link>
           );
         })}
