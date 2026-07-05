@@ -146,7 +146,8 @@ type RentalRow = {
   sort_order: number;
   active: boolean;
 };
-function RentalFares() {
+function RentalFares({ vehicle }: { vehicle: "sedan" | "suv" }) {
+  const priceKey = vehicle === "sedan" ? "sedan_price" : "suv_price";
   const [rows, setRows] = useState<RentalRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
@@ -177,7 +178,10 @@ function RentalFares() {
   }
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-primary">
+          {vehicle === "sedan" ? "Sedan" : "SUV"} rental packages
+        </div>
         <button
           onClick={() => setRows([...rows, { code: "", label: "", hours: 4, km: 40, sedan_price: 0, suv_price: 0, extra_per_hour: 0, extra_per_km: 0, sub: "", sort_order: rows.length + 1, active: true }])}
           className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
@@ -194,8 +198,11 @@ function RentalFares() {
               <Str label="Label" value={r.label} onChange={(v) => update(i, { label: v })} />
               <Num label="Hours" value={r.hours} onChange={(v) => update(i, { hours: v })} />
               <Num label="KM included" value={r.km} onChange={(v) => update(i, { km: v })} />
-              <Num label="Sedan ₹" value={r.sedan_price} onChange={(v) => update(i, { sedan_price: v })} />
-              <Num label="SUV ₹" value={r.suv_price} onChange={(v) => update(i, { suv_price: v })} />
+              <Num
+                label={`${vehicle === "sedan" ? "Sedan" : "SUV"} price ₹`}
+                value={r[priceKey] as number}
+                onChange={(v) => update(i, { [priceKey]: v } as any)}
+              />
               <Num label="Extra ₹/hour" value={r.extra_per_hour} onChange={(v) => update(i, { extra_per_hour: v })} />
               <Num label="Extra ₹/km" value={r.extra_per_km} onChange={(v) => update(i, { extra_per_km: v })} />
               <Num label="Sort order" value={r.sort_order} onChange={(v) => update(i, { sort_order: v })} />
