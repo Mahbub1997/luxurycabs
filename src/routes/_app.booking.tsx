@@ -613,12 +613,12 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
             <button
               type="button"
               onClick={() => setTripTypePopupOpen((v) => !v)}
-              className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/15"
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/15"
             >
-              {tab === "local" && <><Car className="h-3.5 w-3.5" /> Local Trip</>}
-              {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Rental · {RENTAL_PKGS.find(p => p.id === pkgId)?.label}</>}
-              {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
-              <Pencil className="h-3 w-3" />
+              {tab === "local" && <><Car className="h-3.5 w-3.5" /> Change Trip · Local</>}
+              {tab === "rental" && <><Clock className="h-3.5 w-3.5" /> Change Trip · Rental · {RENTAL_PKGS.find(p => p.id === pkgId)?.label}</>}
+              {tab === "outstation" && <><MapIcon className="h-3.5 w-3.5" /> Change Trip · Outstation · {outDays} day{outDays > 1 ? "s" : ""}</>}
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
             {tripTypePopupOpen && (
               <div className="mb-3 rounded-2xl border border-border bg-card p-2 shadow-lg">
