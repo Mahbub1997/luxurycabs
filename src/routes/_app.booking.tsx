@@ -439,8 +439,13 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                     <div className="text-sm font-semibold">{p.label}</div>
                     <div className="text-xs text-muted-foreground">{p.sub}</div>
                   </div>
-                  <div className="font-bold text-foreground">
-                    {formatINR(vehicle === "sedan" ? p.sedan : p.suv)}
+                  <div className="text-right">
+                    <div className="font-bold text-foreground">
+                      {formatINR(vehicle === "sedan" ? p.sedan : p.suv)}
+                    </div>
+                    <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {vehicle === "suv" ? "SUV" : "Sedan"}
+                    </div>
                   </div>
                 </button>
               ))}
