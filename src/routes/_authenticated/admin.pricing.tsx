@@ -81,11 +81,13 @@ type LocalRow = {
   minimum_fare: number;
   outstation_per_km: number;
 };
-function LocalFares() {
+function LocalFares({ filterVehicle }: { filterVehicle?: "sedan" | "suv" }) {
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
-    const { data } = await supabase.from("fare_config").select("*").order("trip_type").order("vehicle_type");
+    let q = supabase.from("fare_config").select("*").order("trip_type").order("vehicle_type");
+    if (filterVehicle) q = q.eq("vehicle_type", filterVehicle);
+    const { data } = await q;
     setRows((data ?? []) as LocalRow[]);
   }
   useEffect(() => { load(); }, []);
