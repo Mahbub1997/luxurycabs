@@ -504,7 +504,9 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
       } catch { /* ignore */ }
     };
     refresh();
-    const id = setInterval(refresh, 60_000);
+    // Refresh ETA every 15s so the "away" time visibly counts down as the
+    // driver's GPS moves closer, mirroring the driver-side experience.
+    const id = setInterval(refresh, 15_000);
     return () => { cancelled = true; clearInterval(id); };
   }, [phase, driver?.lat, driver?.lng, mapPickup, mapDrop]);
 
