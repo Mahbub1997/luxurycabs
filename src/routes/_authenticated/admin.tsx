@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipboardList, Users, LogOut, UserCheck, Activity, Map as MapIcon, UserCircle2, ShieldPlus, FileText, IndianRupee } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
