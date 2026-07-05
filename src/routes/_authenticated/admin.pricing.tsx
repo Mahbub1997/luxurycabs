@@ -10,41 +10,61 @@ export const Route = createFileRoute("/_authenticated/admin/pricing")({
   component: AdminPricing,
 });
 
-type Tab = "local" | "rental" | "outstation" | "outstation-cfg";
+type Tab = "local-sedan" | "local-suv" | "rental-sedan" | "rental-suv" | "outstation-sedan" | "outstation-suv" | "outstation-cfg";
 
 function AdminPricing() {
-  const [tab, setTab] = useState<Tab>("local");
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "local", label: "Local" },
-    { id: "rental", label: "Rental" },
-    { id: "outstation", label: "Outstation" },
-    { id: "outstation-cfg", label: "Outstation Config" },
+  const [tab, setTab] = useState<Tab>("local-sedan");
+  const groups: { title: string; tabs: { id: Tab; label: string }[] }[] = [
+    { title: "Local", tabs: [
+      { id: "local-sedan", label: "Sedan" },
+      { id: "local-suv", label: "SUV" },
+    ]},
+    { title: "Rental", tabs: [
+      { id: "rental-sedan", label: "Sedan" },
+      { id: "rental-suv", label: "SUV" },
+    ]},
+    { title: "Outstation", tabs: [
+      { id: "outstation-sedan", label: "Sedan" },
+      { id: "outstation-suv", label: "SUV" },
+      { id: "outstation-cfg", label: "Config" },
+    ]},
   ];
   return (
     <div>
       <h2 className="mb-2 text-base font-bold">Pricing</h2>
       <p className="mb-3 text-[11px] text-muted-foreground">
-        Edit every price for Local, Rental and Outstation. Changes save to the database and apply to new bookings immediately.
+        Sedan and SUV pricing is kept in separate tabs so nothing gets mixed up.
+        Changes save immediately and apply to new bookings.
       </p>
-      <div className="mb-4 flex gap-2 overflow-x-auto">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold",
-              tab === t.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground"
-            )}
-          >
-            {t.label}
-          </button>
+      <div className="mb-4 space-y-2">
+        {groups.map((g) => (
+          <div key={g.title}>
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{g.title}</div>
+            <div className="flex gap-2 overflow-x-auto">
+              {g.tabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold",
+                    tab === t.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
-      {tab === "local" && <LocalFares />}
-      {tab === "rental" && <RentalFares />}
-      {tab === "outstation" && <OutstationFares />}
+      {tab === "local-sedan" && <LocalFares filterVehicle="sedan" />}
+      {tab === "local-suv" && <LocalFares filterVehicle="suv" />}
+      {tab === "rental-sedan" && <RentalFares vehicle="sedan" />}
+      {tab === "rental-suv" && <RentalFares vehicle="suv" />}
+      {tab === "outstation-sedan" && <OutstationFares filterTier="sedan" />}
+      {tab === "outstation-suv" && <OutstationFares filterTier="suv" />}
       {tab === "outstation-cfg" && <OutstationConfig />}
     </div>
   );
