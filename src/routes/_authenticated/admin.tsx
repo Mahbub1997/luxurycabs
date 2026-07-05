@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipboardList, Users, LogOut, UserCheck, Activity, Map as MapIcon, UserCircle2, ShieldPlus, FileText, IndianRupee } from "lucide-react";
 import { CredoomWordmark } from "@/components/Brand";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,16 +15,40 @@ function AdminShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const mountedRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
+  const pendingRingRef = useRef(false);
+  const [approvalsCount, setApprovalsCount] = useState(0);
 
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/admin/login", replace: true });
   }
 
-  // Ringtone + notification when a NEW booking is created. Fires anywhere in
-  // the admin panel — plays a ~5s ringtone loop and shows a toast/browser alert.
+  // Browsers block AudioContext until a user gesture. Unlock on ANY click/tap
+  // anywhere in the admin panel so subsequent booking alerts actually ring.
   useEffect(() => {
-    // Skip the very first mount tick to avoid firing on initial replay.
+    const unlock = () => {
+      if (audioUnlockedRef.current) return;
+      audioUnlockedRef.current = true;
+      try {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) { const c = new Ctx(); c.resume?.().catch(() => {}); setTimeout(() => c.close?.().catch(() => {}), 200); }
+      } catch {}
+      // If an alert tried to ring before unlock, replay it now.
+      if (pendingRingRef.current) { pendingRingRef.current = false; void ringFor(5000); }
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  // Ringtone + notification when a NEW booking is created.
+  useEffect(() => {
     mountedRef.current = true;
     const ch = supabase
       .channel("admin-new-booking-alert")
@@ -33,9 +57,28 @@ function AdminShell() {
         (p) => {
           if (!mountedRef.current) return;
           const row: any = p.new;
-          void ringFor(5000);
+          if (audioUnlockedRef.current) void ringFor(5000);
+          else pendingRingRef.current = true;
           notify("New booking 🚕", `${row.customer_name ?? "Customer"} — ${row.pickup_address ?? ""} → ${row.drop_address ?? ""}`);
         })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  // Pending-approvals badge (drivers + withdrawals) with live updates.
+  useEffect(() => {
+    async function refresh() {
+      const [d, w] = await Promise.all([
+        supabase.from("drivers").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("withdrawal_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      setApprovalsCount((d.count ?? 0) + (w.count ?? 0));
+    }
+    refresh();
+    const ch = supabase
+      .channel("admin-approvals-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, refresh)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -47,7 +90,7 @@ function AdminShell() {
     { to: "/admin/drivers-map", label: "Live Map", Icon: MapIcon },
     { to: "/admin/pricing", label: "Pricing", Icon: IndianRupee },
     { to: "/admin/invoices", label: "Invoices", Icon: FileText },
-    { to: "/admin/approvals", label: "Approvals", Icon: UserCheck },
+    { to: "/admin/approvals", label: "Approvals", Icon: UserCheck, badge: approvalsCount },
     { to: "/admin/drivers", label: "Drivers", Icon: Users },
     { to: "/admin/customers", label: "Customers", Icon: UserCircle2 },
     { to: "/admin/add-admin", label: "Add Admin", Icon: ShieldPlus },
@@ -69,19 +112,24 @@ function AdminShell() {
         </div>
       </header>
       <nav className="sticky top-[49px] z-10 flex gap-1 overflow-x-auto border-b border-border bg-card px-2 py-2">
-        {tabs.map(({ to, label, Icon }) => {
+        {tabs.map(({ to, label, Icon, badge }: any) => {
           const active = path.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
               className={cn(
-                "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
+                "relative flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium",
                 active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               )}
             >
               <Icon className="h-4 w-4" />
               {label}
+              {badge > 0 && (
+                <span className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                  {badge}
+                </span>
+              )}
             </Link>
           );
         })}

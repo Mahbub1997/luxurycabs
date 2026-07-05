@@ -10,41 +10,61 @@ export const Route = createFileRoute("/_authenticated/admin/pricing")({
   component: AdminPricing,
 });
 
-type Tab = "local" | "rental" | "outstation" | "outstation-cfg";
+type Tab = "local-sedan" | "local-suv" | "rental-sedan" | "rental-suv" | "outstation-sedan" | "outstation-suv" | "outstation-cfg";
 
 function AdminPricing() {
-  const [tab, setTab] = useState<Tab>("local");
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "local", label: "Local" },
-    { id: "rental", label: "Rental" },
-    { id: "outstation", label: "Outstation" },
-    { id: "outstation-cfg", label: "Outstation Config" },
+  const [tab, setTab] = useState<Tab>("local-sedan");
+  const groups: { title: string; tabs: { id: Tab; label: string }[] }[] = [
+    { title: "Local", tabs: [
+      { id: "local-sedan", label: "Sedan" },
+      { id: "local-suv", label: "SUV" },
+    ]},
+    { title: "Rental", tabs: [
+      { id: "rental-sedan", label: "Sedan" },
+      { id: "rental-suv", label: "SUV" },
+    ]},
+    { title: "Outstation", tabs: [
+      { id: "outstation-sedan", label: "Sedan" },
+      { id: "outstation-suv", label: "SUV" },
+      { id: "outstation-cfg", label: "Config" },
+    ]},
   ];
   return (
     <div>
       <h2 className="mb-2 text-base font-bold">Pricing</h2>
       <p className="mb-3 text-[11px] text-muted-foreground">
-        Edit every price for Local, Rental and Outstation. Changes save to the database and apply to new bookings immediately.
+        Sedan and SUV pricing is kept in separate tabs so nothing gets mixed up.
+        Changes save immediately and apply to new bookings.
       </p>
-      <div className="mb-4 flex gap-2 overflow-x-auto">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold",
-              tab === t.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground"
-            )}
-          >
-            {t.label}
-          </button>
+      <div className="mb-4 space-y-2">
+        {groups.map((g) => (
+          <div key={g.title}>
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{g.title}</div>
+            <div className="flex gap-2 overflow-x-auto">
+              {g.tabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold",
+                    tab === t.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
-      {tab === "local" && <LocalFares />}
-      {tab === "rental" && <RentalFares />}
-      {tab === "outstation" && <OutstationFares />}
+      {tab === "local-sedan" && <LocalFares filterVehicle="sedan" />}
+      {tab === "local-suv" && <LocalFares filterVehicle="suv" />}
+      {tab === "rental-sedan" && <RentalFares vehicle="sedan" />}
+      {tab === "rental-suv" && <RentalFares vehicle="suv" />}
+      {tab === "outstation-sedan" && <OutstationFares filterTier="sedan" />}
+      {tab === "outstation-suv" && <OutstationFares filterTier="suv" />}
       {tab === "outstation-cfg" && <OutstationConfig />}
     </div>
   );
@@ -61,11 +81,13 @@ type LocalRow = {
   minimum_fare: number;
   outstation_per_km: number;
 };
-function LocalFares() {
+function LocalFares({ filterVehicle }: { filterVehicle?: "sedan" | "suv" }) {
   const [rows, setRows] = useState<LocalRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
-    const { data } = await supabase.from("fare_config").select("*").order("trip_type").order("vehicle_type");
+    let q = supabase.from("fare_config").select("*").order("trip_type").order("vehicle_type");
+    if (filterVehicle) q = q.eq("vehicle_type", filterVehicle);
+    const { data } = await q;
     setRows((data ?? []) as LocalRow[]);
   }
   useEffect(() => { load(); }, []);
@@ -124,7 +146,8 @@ type RentalRow = {
   sort_order: number;
   active: boolean;
 };
-function RentalFares() {
+function RentalFares({ vehicle }: { vehicle: "sedan" | "suv" }) {
+  const priceKey = vehicle === "sedan" ? "sedan_price" : "suv_price";
   const [rows, setRows] = useState<RentalRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
@@ -155,7 +178,10 @@ function RentalFares() {
   }
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-primary">
+          {vehicle === "sedan" ? "Sedan" : "SUV"} rental packages
+        </div>
         <button
           onClick={() => setRows([...rows, { code: "", label: "", hours: 4, km: 40, sedan_price: 0, suv_price: 0, extra_per_hour: 0, extra_per_km: 0, sub: "", sort_order: rows.length + 1, active: true }])}
           className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
@@ -172,8 +198,11 @@ function RentalFares() {
               <Str label="Label" value={r.label} onChange={(v) => update(i, { label: v })} />
               <Num label="Hours" value={r.hours} onChange={(v) => update(i, { hours: v })} />
               <Num label="KM included" value={r.km} onChange={(v) => update(i, { km: v })} />
-              <Num label="Sedan ₹" value={r.sedan_price} onChange={(v) => update(i, { sedan_price: v })} />
-              <Num label="SUV ₹" value={r.suv_price} onChange={(v) => update(i, { suv_price: v })} />
+              <Num
+                label={`${vehicle === "sedan" ? "Sedan" : "SUV"} price ₹`}
+                value={r[priceKey] as number}
+                onChange={(v) => update(i, { [priceKey]: v } as any)}
+              />
               <Num label="Extra ₹/hour" value={r.extra_per_hour} onChange={(v) => update(i, { extra_per_hour: v })} />
               <Num label="Extra ₹/km" value={r.extra_per_km} onChange={(v) => update(i, { extra_per_km: v })} />
               <Num label="Sort order" value={r.sort_order} onChange={(v) => update(i, { sort_order: v })} />
@@ -205,11 +234,13 @@ type OutRow = {
   sort_order: number;
   active: boolean;
 };
-function OutstationFares() {
+function OutstationFares({ filterTier }: { filterTier?: "sedan" | "suv" }) {
   const [rows, setRows] = useState<OutRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   async function load() {
-    const { data } = await (supabase as any).from("outstation_vehicles").select("*").order("sort_order");
+    let q = (supabase as any).from("outstation_vehicles").select("*").order("sort_order");
+    if (filterTier) q = q.eq("tier", filterTier);
+    const { data } = await q;
     setRows((data ?? []) as OutRow[]);
   }
   useEffect(() => { load(); }, []);
@@ -238,7 +269,7 @@ function OutstationFares() {
     <div className="flex flex-col gap-2">
       <div className="flex justify-end">
         <button
-          onClick={() => setRows([...rows, { code: "", label: "", tier: "sedan", per_km: 12, bata: 400, seats: 4, bags: 2, sort_order: rows.length + 1, active: true }])}
+          onClick={() => setRows([...rows, { code: "", label: "", tier: filterTier ?? "sedan", per_km: 12, bata: 400, seats: 4, bags: 2, sort_order: rows.length + 1, active: true }])}
           className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
         >
           <Plus className="h-3.5 w-3.5" /> New vehicle
