@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Crosshair } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import { decode } from "@googlemaps/polyline-codec";
+import pkg from "@googlemaps/polyline-codec";
+const { decode } = pkg;
 import { realisticCarTop } from "@/components/VehicleIcon";
 
 
