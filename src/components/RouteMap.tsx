@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Crosshair } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
-import pkg from "@googlemaps/polyline-codec";
-const { decode } = pkg;
+import * as polylineCodec from "@googlemaps/polyline-codec";
+const decode = (polylineCodec as any).decode ?? (polylineCodec as any).default?.decode;
 import { realisticCarTop } from "@/components/VehicleIcon";
 
 
@@ -297,7 +297,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       const g = await loadGoogleMaps().catch(() => null);
       if (!g || !mapRef.current) return;
       polylineRef.current?.setMap(null);
-      const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
+      const path = polyline ? (decode(polyline) as [number, number][]).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
       polyPathRef.current = path;
       driverRouteDistanceRef.current = null;
       polylineRef.current = new g.maps.Polyline({
