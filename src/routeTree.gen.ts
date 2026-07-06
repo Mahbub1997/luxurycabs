@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -27,6 +28,8 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppNotificationsRouteImport } from './routes/_app.notifications'
 import { Route as AppBookingsRouteImport } from './routes/_app.bookings'
 import { Route as AppBookingRouteImport } from './routes/_app.booking'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as DriverTripIdRouteImport } from './routes/driver.trip.$id'
 import { Route as AuthenticatedAdminPricingRouteImport } from './routes/_authenticated/admin.pricing'
 import { Route as AuthenticatedAdminLocalFaresRouteImport } from './routes/_authenticated/admin.local-fares'
@@ -39,7 +42,13 @@ import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminBookingsRouteImport } from './routes/_authenticated/admin.bookings'
 import { Route as AuthenticatedAdminApprovalsRouteImport } from './routes/_authenticated/admin.approvals'
 import { Route as AuthenticatedAdminAddAdminRouteImport } from './routes/_authenticated/admin.add-admin'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -128,6 +137,18 @@ const AppBookingRoute = AppBookingRouteImport.update({
   path: '/booking',
   getParentRoute: () => AppRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DriverTripIdRoute = DriverTripIdRouteImport.update({
   id: '/driver/trip/$id',
   path: '/driver/trip/$id',
@@ -197,10 +218,19 @@ const AuthenticatedAdminAddAdminRoute =
     path: '/add-admin',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/booking': typeof AppBookingRoute
   '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
@@ -215,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
@@ -231,6 +262,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/booking': typeof AppBookingRoute
   '/bookings': typeof AppBookingsRoute
   '/notifications': typeof AppNotificationsRoute
@@ -245,6 +279,7 @@ export interface FileRoutesByTo {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver': typeof DriverIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/admin/bookings': typeof AuthenticatedAdminBookingsRoute
@@ -264,6 +299,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_app/booking': typeof AppBookingRoute
   '/_app/bookings': typeof AppBookingsRoute
   '/_app/notifications': typeof AppNotificationsRoute
@@ -278,6 +316,7 @@ export interface FileRoutesById {
   '/driver/wallet': typeof DriverWalletRoute
   '/track/$id': typeof TrackIdRoute
   '/driver/': typeof DriverIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/add-admin': typeof AuthenticatedAdminAddAdminRoute
   '/_authenticated/admin/approvals': typeof AuthenticatedAdminApprovalsRoute
   '/_authenticated/admin/bookings': typeof AuthenticatedAdminBookingsRoute
@@ -296,6 +335,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/mcp'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/booking'
     | '/bookings'
     | '/notifications'
@@ -310,6 +352,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/add-admin'
     | '/admin/approvals'
     | '/admin/bookings'
@@ -326,6 +369,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/mcp'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/booking'
     | '/bookings'
     | '/notifications'
@@ -340,6 +386,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/add-admin'
     | '/admin/approvals'
     | '/admin/bookings'
@@ -358,6 +405,9 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_app'
     | '/auth'
+    | '/mcp'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_app/booking'
     | '/_app/bookings'
     | '/_app/notifications'
@@ -372,6 +422,7 @@ export interface FileRouteTypes {
     | '/driver/wallet'
     | '/track/$id'
     | '/driver/'
+    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/add-admin'
     | '/_authenticated/admin/approvals'
     | '/_authenticated/admin/bookings'
@@ -391,6 +442,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  McpRoute: typeof McpRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   AdminLoginRoute: typeof AdminLoginRoute
   CompleteIdRoute: typeof CompleteIdRoute
   DriverBookingsRoute: typeof DriverBookingsRoute
@@ -400,11 +454,19 @@ export interface RootRouteChildren {
   DriverWalletRoute: typeof DriverWalletRoute
   TrackIdRoute: typeof TrackIdRoute
   DriverIndexRoute: typeof DriverIndexRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   DriverTripIdRoute: typeof DriverTripIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -531,6 +593,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBookingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/driver/trip/$id': {
       id: '/driver/trip/$id'
       path: '/driver/trip/$id'
@@ -615,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAddAdminRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -681,6 +764,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  McpRoute: McpRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   AdminLoginRoute: AdminLoginRoute,
   CompleteIdRoute: CompleteIdRoute,
   DriverBookingsRoute: DriverBookingsRoute,
@@ -690,6 +777,7 @@ const rootRouteChildren: RootRouteChildren = {
   DriverWalletRoute: DriverWalletRoute,
   TrackIdRoute: TrackIdRoute,
   DriverIndexRoute: DriverIndexRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   DriverTripIdRoute: DriverTripIdRoute,
 }
 export const routeTree = rootRouteImport
