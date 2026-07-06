@@ -297,7 +297,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       const g = await loadGoogleMaps().catch(() => null);
       if (!g || !mapRef.current) return;
       polylineRef.current?.setMap(null);
-      const path = polyline ? decode(polyline).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
+      const path = polyline ? (decode(polyline) as [number, number][]).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
       polyPathRef.current = path;
       driverRouteDistanceRef.current = null;
       polylineRef.current = new g.maps.Polyline({
