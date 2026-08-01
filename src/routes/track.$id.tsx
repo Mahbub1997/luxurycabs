@@ -391,23 +391,21 @@ function LiveTracking({ b, onBack, onCancelled }: { b: Booking; onBack: () => vo
   const mapPickup = useMemo(() => ({ lat: b.pickup_lat, lng: b.pickup_lng }), [b.pickup_lat, b.pickup_lng]);
   const mapDrop = useMemo(() => ({ lat: b.drop_lat, lng: b.drop_lng }), [b.drop_lat, b.drop_lng]);
 
-  // Follow assigned driver's real GPS
+  // Driver position comes from ONE source: the booking row, which the driver
+  // app writes continuously during the trip. The drivers table is only an
+  // online-heartbeat and would make the marker jump between two GPS samples,
+  // so we read it once as a seed and never subscribe to it.
   useEffect(() => {
     if (!b.assigned_driver_id) return;
+    if (b.driver_lat && b.driver_lng) return;
     let mounted = true;
-    const apply = (row: any) => {
-      if (!mounted || !row?.current_lat || !row?.current_lng) return;
-      setDriver({ lat: Number(row.current_lat), lng: Number(row.current_lng) });
-    };
     supabase.from("drivers").select("current_lat, current_lng")
-      .eq("id", b.assigned_driver_id).maybeSingle().then(({ data }) => apply(data));
-    const ch = supabase.channel(`driver-loc:${b.assigned_driver_id}`)
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "drivers", filter: `id=eq.${b.assigned_driver_id}` },
-        (p) => apply(p.new))
-      .subscribe();
-    return () => { mounted = false; supabase.removeChannel(ch); };
-  }, [b.assigned_driver_id]);
+      .eq("id", b.assigned_driver_id).maybeSingle().then(({ data }) => {
+        if (!mounted || !data?.current_lat || !data?.current_lng) return;
+        setDriver({ lat: Number(data.current_lat), lng: Number(data.current_lng) });
+      });
+    return () => { mounted = false; };
+  }, [b.assigned_driver_id, b.driver_lat, b.driver_lng]);
 
   // OTP countdown — persisted across page refreshes via localStorage.
   // Starts once the driver arrives; after 5 min elapsed we show waiting-charge
