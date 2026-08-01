@@ -218,7 +218,7 @@ export function buildInvoiceDoc(b: Booking) {
     items.push([`Taxes & Fees`, bd.taxes]);
   } else {
     const tollAmt = Number((b as any).tolls ?? 0);
-    const fb = fareBreakdown((b.vehicle_type as VehicleType) ?? "sedan", Number(b.distance_km), b.duration_min, undefined, tollAmt);
+    const fb = fareBreakdown((b.vehicle_type as VehicleType) ?? "sedan", Number(b.distance_km), b.duration_min, { tollInr: tollAmt });
     items.push(["Base Fare", fb.base]);
     items.push([`Distance Fare (${Number(b.distance_km).toFixed(1)} km)`, fb.distance]);
     items.push([`Time Fare (${durLabel})`, fb.time]);

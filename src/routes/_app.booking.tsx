@@ -16,13 +16,14 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   RENTAL_PACKAGES, calcLocalFare, formatINR, useFareRates,
   OUTSTATION_VEHICLES, calcOutstationBreakdown, diffDays,
-  useRentalPackages, useOutstationVehicles,
+  useRentalPackages, useOutstationVehicles, useLocalSlabs, useOutstationConfig,
   type OutstationVehicle,
   type TripType, type VehicleType,
 } from "@/lib/fare";
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { createBooking, pushRecentBooking, findActiveBookingId, isActiveBookingMinimized, clearMinimizedActiveBooking } from "@/lib/booking-store";
+import { pushRecentBooking, findActiveBookingId, isActiveBookingMinimized, clearMinimizedActiveBooking } from "@/lib/booking-store";
+import { createBookingSecure } from "@/lib/booking.functions";
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,8 @@ interface BookingPageProps {
 export function BookingPage({ forcedTab }: BookingPageProps) {
   const navigate = useNavigate();
   const { rates } = useFareRates();
+  const { slabs } = useLocalSlabs();
+  const { config: outConfig } = useOutstationConfig();
   const { packages: dbPackages } = useRentalPackages();
   const { vehicles: dbOutVehicles } = useOutstationVehicles();
   // Use DB-loaded lists everywhere so admin edits apply live.
@@ -58,12 +61,15 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   const [vehicle, setVehicle] = useState<VehicleType>("sedan");
   const [localModel, setLocalModel] = useState<"sedan" | "ciaz" | "suv" | "ertiga" | "innova" | "crysta">("sedan");
   const [outVehicleId, setOutVehicleId] = useState<string>(OUT_VEHICLES[0].id);
-  const [scheduledAt, setScheduledAt] = useState<string>(() => {
+  // Empty on first render (server + client match); filled after hydration.
+  const [scheduledAt, setScheduledAt] = useState<string>("");
+  useEffect(() => {
+    if (scheduledAt) return;
     const d = new Date(Date.now() + 15 * 60_000);
     d.setSeconds(0, 0);
     const off = d.getTimezoneOffset();
-    return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16);
-  });
+    setScheduledAt(new Date(d.getTime() - off * 60_000).toISOString().slice(0, 16));
+  }, [scheduledAt]);
   const [returnAt, setReturnAt] = useState<string>("");
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: number; durationMin: number; polyline: string; tollInr: number } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
@@ -104,16 +110,17 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   const outBreakdown = useMemo(() => {
     if (tab !== "outstation" || !routeInfo) return null;
     const km = routeInfo.distanceKm * 2;
-    return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2 });
-  }, [tab, routeInfo, outVehicle, outDays]);
+    return calcOutstationBreakdown(outVehicle, { distanceKm: km, days: outDays, tollFare: routeInfo.tollInr * 2, config: outConfig });
+  }, [tab, routeInfo, outVehicle, outDays, outConfig]);
 
   const localFares = useMemo(() => {
     if (tab !== "local" || !routeInfo) return { sedan: 0, suv: 0 };
+    const opts = { rates, slabs, tollInr: routeInfo.tollInr };
     return {
-      sedan: calcLocalFare("sedan", routeInfo.distanceKm, routeInfo.durationMin, rates),
-      suv: calcLocalFare("suv", routeInfo.distanceKm, routeInfo.durationMin, rates),
+      sedan: calcLocalFare("sedan", routeInfo.distanceKm, routeInfo.durationMin, opts),
+      suv: calcLocalFare("suv", routeInfo.distanceKm, routeInfo.durationMin, opts),
     };
-  }, [tab, routeInfo, rates]);
+  }, [tab, routeInfo, rates, slabs]);
   const rentalFares = useMemo(() => {
     if (tab !== "rental") return { sedan: 0, suv: 0 };
     const pkg = RENTAL_PKGS.find((p) => p.id === pkgId)!;
@@ -150,51 +157,29 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
     if (tab === "rental" && !pickup) return;
     setSubmitting(true);
     try {
-      const pkg = RENTAL_PKGS.find((p) => p.id === pkgId);
-      let distance: number, duration: number;
-      let vehicleType: VehicleType = vehicle;
       const LOCAL_LABELS: Record<string, string> = {
         sedan: "Sedan", ciaz: "Ciaz", suv: "SUV", ertiga: "Ertiga", innova: "Innova", crysta: "Innova Crysta",
       };
-      let vehicleModel: string = LOCAL_LABELS[localModel] ?? (vehicle === "sedan" ? "Sedan" : "SUV");
-
-      if (tab === "rental") {
-        distance = pkg!.km; duration = pkg!.hours * 60;
-      } else if (tab === "outstation") {
-        distance = routeInfo!.distanceKm * 2;
-        duration = routeInfo!.durationMin * 2;
-        vehicleType = outVehicle.tier;
-        vehicleModel = outVehicle.label;
-      } else {
-        distance = routeInfo!.distanceKm; duration = routeInfo!.durationMin;
-      }
-
       const profile = getProfile();
       const { data: authData } = await supabase.auth.getUser();
-      const booking = await createBooking({
-        trip_type: tab,
-        trip_mode: tab === "outstation" ? "round" : null,
-        package_label: tab === "rental" ? pkg!.label : null,
-        pickup_address: pickup!.address,
-        pickup_lat: pickup!.lat,
-        pickup_lng: pickup!.lng,
-        drop_address: drop?.address ?? pickup!.address,
-        drop_lat: drop?.lat ?? pickup!.lat,
-        drop_lng: drop?.lng ?? pickup!.lng,
-        scheduled_at: new Date(scheduledAt).toISOString(),
-        vehicle_type: vehicleType,
-        vehicle_model: vehicleModel,
-        distance_km: Number(distance.toFixed(2)),
-        duration_min: Math.round(duration),
-        fare: estimatedFare,
-        route_polyline: tab === "rental" ? null : routeInfo!.polyline,
-        tolls: tab === "rental" ? 0 : Math.round((routeInfo?.tollInr ?? 0) * (tab === "outstation" ? 2 : 1)),
-        customer_name: profile?.name ?? authData.user?.user_metadata?.name ?? null,
-        customer_phone: profile?.phone ?? authData.user?.phone ?? null,
-        user_id: authData.user?.id ?? null,
-        payment_method: "",
-        payment_status: "pending",
-      } as any);
+
+      // Fare, distance, duration and tolls are computed on the server from the
+      // admin pricing tables — the browser only sends the trip choices.
+      const booking = await createBookingSecure({
+        data: {
+          tripType: tab,
+          vehicleType: tab === "outstation" ? outVehicle.tier : vehicle,
+          vehicleModel: tab === "outstation" ? outVehicle.label : (LOCAL_LABELS[localModel] ?? (vehicle === "sedan" ? "Sedan" : "SUV")),
+          packageCode: tab === "rental" ? pkgId : null,
+          outstationVehicleCode: tab === "outstation" ? outVehicle.id : null,
+          days: tab === "outstation" ? outDays : 1,
+          pickup: { address: pickup!.address, lat: pickup!.lat, lng: pickup!.lng },
+          drop: tab === "rental" || !drop ? null : { address: drop.address, lat: drop.lat, lng: drop.lng },
+          scheduledAt: new Date(scheduledAt).toISOString(),
+          customerName: profile?.name ?? authData.user?.user_metadata?.name ?? null,
+          customerPhone: profile?.phone ?? authData.user?.phone ?? null,
+        },
+      });
       pushRecentBooking(booking.id);
       clearMinimizedActiveBooking();
       navigate({ to: "/track/$id", params: { id: booking.id } });
@@ -203,6 +188,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
       alert("Could not create booking. Please try again.");
     } finally { setSubmitting(false); }
   }
+
 
   const tariffLabel =
     tab === "outstation" ? outVehicle.label
@@ -308,7 +294,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
               OUT_VEHICLES.filter((v) => v.id === "sedan" || v.id === "ertiga").map((v) => {
                 const km = (routeInfo?.distanceKm ?? 0) * 2;
                 const bd = routeInfo && canPickVehicle
-                  ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
+                  ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2, config: outConfig })
                   : null;
                 return (
                   <InlineVehicleRow
@@ -517,7 +503,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
                 OUT_VEHICLES.map((v) => {
                   const km = (routeInfo?.distanceKm ?? 0) * 2;
                   const bd = routeInfo
-                    ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2 })
+                    ? calcOutstationBreakdown(v, { distanceKm: km, days: outDays, tollFare: (routeInfo.tollInr ?? 0) * 2, config: outConfig })
                     : null;
                   return (
                     <button key={v.id} onClick={() => chooseOutstation(v.id)}
