@@ -611,6 +611,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_driver_wallet: {
+        Args: { _delta: number; _driver_id: string }
+        Returns: number
+      }
       claim_super_admin: { Args: never; Returns: boolean }
       get_track_info: {
         Args: { _booking_id: string }
