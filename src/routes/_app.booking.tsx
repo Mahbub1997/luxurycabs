@@ -22,7 +22,8 @@ import {
 } from "@/lib/fare";
 import { formatDuration } from "@/lib/utils";
 import { computeRoute } from "@/lib/maps/routes.functions";
-import { createBooking, pushRecentBooking, findActiveBookingId, isActiveBookingMinimized, clearMinimizedActiveBooking } from "@/lib/booking-store";
+import { pushRecentBooking, findActiveBookingId, isActiveBookingMinimized, clearMinimizedActiveBooking } from "@/lib/booking-store";
+import { createBookingSecure } from "@/lib/booking.functions";
 import { getProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
