@@ -327,16 +327,10 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
-    const { data: driver } = await supabaseAdmin
-      .from("drivers")
-      .select("wallet_balance")
-      .eq("id", req.driver_id)
-      .single();
-    const newBal = Number(driver?.wallet_balance ?? 0) - Number(req.amount);
-    const { error: wErr } = await supabaseAdmin
-      .from("drivers")
-      .update({ wallet_balance: newBal })
-      .eq("id", req.driver_id);
+    const { data: newBal, error: wErr } = await supabaseAdmin.rpc("adjust_driver_wallet", {
+      _driver_id: req.driver_id,
+      _delta: -Number(req.amount),
+    });
     if (wErr) throw new Error(wErr.message);
 
     await supabaseAdmin.from("wallet_transactions").insert({
