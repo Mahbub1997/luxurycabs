@@ -271,11 +271,25 @@ export const updateDriverStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const { data: drvRow, error } = await supabaseAdmin
       .from("drivers")
       .update({ status: data.status })
-      .eq("id", data.driver_id);
+      .eq("id", data.driver_id)
+      .select("user_id")
+      .single();
     if (error) throw new Error(error.message);
+
+    // The `driver` role is granted only on approval, and revoked otherwise.
+    if (data.status === "approved") {
+      const { data: existing } = await supabaseAdmin
+        .from("user_roles").select("id").eq("user_id", drvRow.user_id).eq("role", "driver").maybeSingle();
+      if (!existing) {
+        await supabaseAdmin.from("user_roles").insert({ user_id: drvRow.user_id, role: "driver" });
+      }
+    } else {
+      await supabaseAdmin.from("user_roles")
+        .delete().eq("user_id", drvRow.user_id).eq("role", "driver");
+    }
     return { ok: true };
   });
 
@@ -313,23 +327,17 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
-    const { data: driver } = await supabaseAdmin
-      .from("drivers")
-      .select("wallet_balance")
-      .eq("id", req.driver_id)
-      .single();
-    const newBal = Number(driver?.wallet_balance ?? 0) - Number(req.amount);
-    const { error: wErr } = await supabaseAdmin
-      .from("drivers")
-      .update({ wallet_balance: newBal })
-      .eq("id", req.driver_id);
+    const { data: newBal, error: wErr } = await supabaseAdmin.rpc("adjust_driver_wallet", {
+      _driver_id: req.driver_id,
+      _delta: -Number(req.amount),
+    });
     if (wErr) throw new Error(wErr.message);
 
     await supabaseAdmin.from("wallet_transactions").insert({
       driver_id: req.driver_id,
       type: "withdrawal",
       amount: -Number(req.amount),
-      balance_after: newBal,
+      balance_after: Number(newBal ?? 0),
       note: data.note ?? "Withdrawal approved",
     });
     const { error: uErr } = await supabaseAdmin

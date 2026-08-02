@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const reverseGeocode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ lat: z.number(), lng: z.number() }))
   .handler(async ({ data }) => {
     const lovableKey = process.env.LOVABLE_API_KEY;

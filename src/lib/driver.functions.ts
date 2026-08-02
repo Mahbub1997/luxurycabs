@@ -23,14 +23,9 @@ export const signupDriver = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const uid = context.userId;
 
-    // Idempotent role insert.
-    const { data: existingRole } = await supabaseAdmin
-      .from("user_roles").select("id").eq("user_id", uid).eq("role", "driver").maybeSingle();
-    if (!existingRole) {
-      const { error: rErr } = await supabaseAdmin
-        .from("user_roles").insert({ user_id: uid, role: "driver" });
-      if (rErr) throw new Error(rErr.message);
-    }
+    // NOTE: the `driver` role is granted only when an admin approves the
+    // account (see updateDriverStatus) — never at signup time.
+
 
     // Idempotent drivers row.
     const { data: existingDrv } = await supabaseAdmin
@@ -154,7 +149,6 @@ export const completeRide = createServerFn({ method: "POST" })
     // Cash: driver already collected money in hand → deduct 10% commission from wallet.
     // UPI / Card: money went to platform → credit 90% (fare - commission) to wallet.
     const delta = isCash ? -commission : (fare - commission);
-    const netBal = Math.round((Number(drv.wallet_balance) + delta) * 100) / 100;
 
     const { error: uErr } = await supabaseAdmin
       .from("bookings")
@@ -167,15 +161,22 @@ export const completeRide = createServerFn({ method: "POST" })
       .eq("id", data.booking_id);
     if (uErr) throw new Error(uErr.message);
 
+    // Atomic wallet increment — safe against concurrent completions.
+    const { data: rpcBal, error: wErr } = await supabaseAdmin.rpc("adjust_driver_wallet", {
+      _driver_id: drv.id,
+      _delta: delta,
+    });
+    if (wErr) throw new Error(wErr.message);
+    const netBal = Math.round(Number(rpcBal ?? 0) * 100) / 100;
+
     await supabaseAdmin.from("drivers").update({
-      wallet_balance: netBal,
       total_trips: (drv.total_trips ?? 0) + 1,
     }).eq("id", drv.id);
 
     const txns = isCash
       ? [{ driver_id: drv.id, type: "commission" as const, amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: `Cash trip — 10% commission deducted` }]
       : [
-          { driver_id: drv.id, type: "credit" as const, amount: fare, balance_after: Number(drv.wallet_balance) + fare, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
+          { driver_id: drv.id, type: "credit" as const, amount: fare, balance_after: Math.round((netBal + commission) * 100) / 100, booking_id: data.booking_id, note: `Trip earnings ${data.payment_method}` },
           { driver_id: drv.id, type: "commission" as const, amount: -commission, balance_after: netBal, booking_id: data.booking_id, note: "Platform commission 10%" },
         ];
     await supabaseAdmin.from("wallet_transactions").insert(txns);
