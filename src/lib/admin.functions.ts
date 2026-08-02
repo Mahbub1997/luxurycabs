@@ -274,8 +274,22 @@ export const updateDriverStatus = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("drivers")
       .update({ status: data.status })
-      .eq("id", data.driver_id);
+      .eq("id", data.driver_id)
+      .select("user_id")
+      .single();
     if (error) throw new Error(error.message);
+
+    // The `driver` role is granted only on approval, and revoked otherwise.
+    if (data.status === "approved") {
+      const { data: existing } = await supabaseAdmin
+        .from("user_roles").select("id").eq("user_id", drvRow.user_id).eq("role", "driver").maybeSingle();
+      if (!existing) {
+        await supabaseAdmin.from("user_roles").insert({ user_id: drvRow.user_id, role: "driver" });
+      }
+    } else {
+      await supabaseAdmin.from("user_roles")
+        .delete().eq("user_id", drvRow.user_id).eq("role", "driver");
+    }
     return { ok: true };
   });
 
