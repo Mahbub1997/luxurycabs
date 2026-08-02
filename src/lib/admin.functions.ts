@@ -337,7 +337,7 @@ export const decideWithdrawal = createServerFn({ method: "POST" })
       driver_id: req.driver_id,
       type: "withdrawal",
       amount: -Number(req.amount),
-      balance_after: newBal,
+      balance_after: Number(newBal ?? 0),
       note: data.note ?? "Withdrawal approved",
     });
     const { error: uErr } = await supabaseAdmin

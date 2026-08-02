@@ -23,14 +23,9 @@ export const signupDriver = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const uid = context.userId;
 
-    // Idempotent role insert.
-    const { data: existingRole } = await supabaseAdmin
-      .from("user_roles").select("id").eq("user_id", uid).eq("role", "driver").maybeSingle();
-    if (!existingRole) {
-      const { error: rErr } = await supabaseAdmin
-        .from("user_roles").insert({ user_id: uid, role: "driver" });
-      if (rErr) throw new Error(rErr.message);
-    }
+    // NOTE: the `driver` role is granted only when an admin approves the
+    // account (see updateDriverStatus) — never at signup time.
+
 
     // Idempotent drivers row.
     const { data: existingDrv } = await supabaseAdmin

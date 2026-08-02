@@ -49,7 +49,7 @@ function DriverRequests() {
     load(driverId);
     const ch = supabase.channel(`driver-req-${driverId}`)
       .on("postgres_changes",
-        { event: "*", schema: "public", table: "bookings" },
+        { event: "*", schema: "public", table: "bookings", filter: `assigned_driver_id=eq.${driverId}` },
         () => load(driverId))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
