@@ -271,7 +271,7 @@ export const updateDriverStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const { data: drvRow, error } = await supabaseAdmin
       .from("drivers")
       .update({ status: data.status })
       .eq("id", data.driver_id)
