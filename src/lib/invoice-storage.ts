@@ -13,6 +13,12 @@ export async function uploadInvoiceFor(b: Booking): Promise<{ path: string; sign
     .upload(path, blob, { upsert: true, contentType: "application/pdf" });
   if (upErr) throw upErr;
 
+  // Remove any file stored under an older folder scheme.
+  const oldPath = (b as any).invoice_path as string | null;
+  if (oldPath && oldPath !== path) {
+    await supabase.storage.from(BUCKET).remove([oldPath]);
+  }
+
   const { data: signed, error: sErr } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
@@ -30,10 +36,11 @@ export async function uploadInvoiceFor(b: Booking): Promise<{ path: string; sign
   return { path, signedUrl: signed.signedUrl };
 }
 
-/** Ensure an invoice exists for a completed booking; create if missing. */
+/** Ensure an invoice exists (in the current folder format) for a completed booking. */
 export async function ensureInvoiceFor(b: Booking): Promise<string> {
   const anyB = b as any;
-  if (anyB.invoice_path) {
+  const wanted = invoiceStoragePath(b);
+  if (anyB.invoice_path === wanted) {
     const { data, error } = await supabase.storage
       .from(BUCKET)
       .createSignedUrl(anyB.invoice_path, 60 * 60 * 24 * 7);
@@ -41,6 +48,11 @@ export async function ensureInvoiceFor(b: Booking): Promise<string> {
   }
   const { signedUrl } = await uploadInvoiceFor(b);
   return signedUrl;
+}
+
+/** Does this booking already have an invoice saved in the current folder format? */
+export function invoiceIsCurrent(b: Booking): boolean {
+  return (b as any).invoice_path === invoiceStoragePath(b);
 }
 
 /** Download as user file via fetch + save. */

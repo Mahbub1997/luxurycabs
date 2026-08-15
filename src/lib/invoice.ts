@@ -325,12 +325,22 @@ export function buildInvoiceBlob(b: Booking): Blob {
   return doc.output("blob");
 }
 
-/** Storage path: YYYY-MM/YYYY-MM-DD_tripId.pdf */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Folder label for a booking: e.g. "2026 / Jan" */
+export function invoiceFolder(b: Booking): { year: string; month: string; label: string } {
+  const d = new Date(b.completed_at ?? b.scheduled_at ?? Date.now());
+  const year = String(d.getFullYear());
+  const month = MONTHS[d.getMonth()];
+  return { year, month, label: `${year} / ${month}` };
+}
+
+/** Storage path: YYYY/Mon/invoice/YYYY-MM-DD_tripId.pdf  (e.g. 2026/Jan/invoice/…) */
 export function invoiceStoragePath(b: Booking): string {
   const d = new Date(b.completed_at ?? b.scheduled_at ?? Date.now());
-  const yyyy = d.getFullYear();
+  const { year, month } = invoiceFolder(b);
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}/${yyyy}-${mm}-${dd}_${b.id}.pdf`;
+  return `${year}/${month}/invoice/${year}-${mm}-${dd}_${b.id}.pdf`;
 }
 
