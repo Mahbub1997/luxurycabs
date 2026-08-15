@@ -18,18 +18,39 @@ export const Route = createFileRoute("/")({
 
 const BRAND = "LUXURY CABS";
 
+/** Never let a slow/offline backend keep the splash on screen. */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    p.catch(() => fallback),
+    new Promise<T>((res) => setTimeout(() => res(fallback), ms)),
+  ]);
+}
+
 function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
     let cancelled = false;
     const t = setTimeout(async () => {
-      const p = getProfile();
-      if (!p) { if (!cancelled) navigate({ to: "/auth", replace: true }); return; }
-      const activeId = await findActiveBookingId();
-      if (cancelled) return;
-      if (activeId) navigate({ to: "/track/$id", params: { id: activeId }, replace: true });
-      else navigate({ to: "/booking", replace: true });
-    }, 5000);
+      const go = (to: any, params?: any) => {
+        if (!cancelled) navigate(params ? { to, params, replace: true } : { to, replace: true });
+      };
+      try {
+        const p = getProfile();
+        const session = await withTimeout(
+          supabase.auth.getSession().then(({ data }) => data.session),
+          3000,
+          null,
+        );
+        if (cancelled) return;
+        if (!p || !session) { go("/auth"); return; }
+        const activeId = await withTimeout(findActiveBookingId(), 4000, null);
+        if (cancelled) return;
+        if (activeId) go("/track/$id", { id: activeId });
+        else go("/booking");
+      } catch {
+        go("/auth");
+      }
+    }, 2500);
     return () => { cancelled = true; clearTimeout(t); };
   }, [navigate]);
 
