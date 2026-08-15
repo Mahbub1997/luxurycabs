@@ -5,6 +5,7 @@ import splashAsset from "@/assets/luxury-cabs-splash.png.asset.json";
 import { getProfile } from "@/lib/profile";
 import { findActiveBookingId } from "@/lib/booking-store";
 import { AppDrawer } from "@/components/AppDrawer";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
