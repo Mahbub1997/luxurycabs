@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Booking } from "@/lib/booking-store";
 import {
@@ -7,9 +7,11 @@ import {
   downloadInvoice,
   deleteInvoiceFor,
   uploadInvoiceFor,
+  invoiceIsCurrent,
   shareInvoiceWhatsApp,
   shareInvoiceEmail,
 } from "@/lib/invoice-storage";
+import { invoiceFolder } from "@/lib/invoice";
 import {
   Search,
   FileText,
@@ -21,6 +23,7 @@ import {
   Eye,
   MessageCircle,
   Mail,
+  FolderOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +41,8 @@ function AdminInvoices() {
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [shareFor, setShareFor] = useState<Row | null>(null);
+  const [autoSaving, setAutoSaving] = useState<{ done: number; total: number } | null>(null);
+  const autoRan = useRef(false);
 
   async function load() {
     setLoading(true);
@@ -50,8 +55,39 @@ function AdminInvoices() {
     if (error) toast.error(error.message);
     setRows((data ?? []) as Row[]);
     setLoading(false);
+    return (data ?? []) as Row[];
   }
-  useEffect(() => { load(); }, []);
+
+  /** Generate/migrate every completed trip's invoice into YYYY/Mon/invoice/ and drop old files. */
+  async function autoSaveAll(list: Row[], silent = false) {
+    const pending = list.filter((r) => !invoiceIsCurrent(r));
+    if (pending.length === 0) {
+      if (!silent) toast.success("All invoices are already saved");
+      return;
+    }
+    setAutoSaving({ done: 0, total: pending.length });
+    let done = 0;
+    for (const r of pending) {
+      try {
+        await uploadInvoiceFor(r);
+      } catch { /* keep going */ }
+      done += 1;
+      setAutoSaving({ done, total: pending.length });
+    }
+    setAutoSaving(null);
+    toast.success(`Saved ${done} invoice${done === 1 ? "" : "s"}`);
+    await load();
+  }
+
+  useEffect(() => {
+    (async () => {
+      const list = await load();
+      if (autoRan.current) return;
+      autoRan.current = true;
+      await autoSaveAll(list, true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -90,9 +126,21 @@ function AdminInvoices() {
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-base font-bold">Invoices</h2>
-        <p className="text-xs text-muted-foreground">Auto-generated PDFs for every completed trip.</p>
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-base font-bold">Invoices</h2>
+          <p className="text-xs text-muted-foreground">
+            Auto-saved to <span className="font-medium">Year / Month / invoice</span> (e.g. 2026 / Jan / invoice) for every completed trip.
+          </p>
+        </div>
+        <button
+          onClick={() => autoSaveAll(rows)}
+          disabled={!!autoSaving}
+          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[11px] font-semibold disabled:opacity-60"
+        >
+          {autoSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {autoSaving ? `Saving ${autoSaving.done}/${autoSaving.total}` : "Auto-save all"}
+        </button>
       </div>
 
       <div className="mb-3 flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm sm:flex-row">
@@ -115,12 +163,22 @@ function AdminInvoices() {
         <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No invoices match.</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((r) => {
+          {filtered.map((r, i) => {
             const date = new Date(r.completed_at ?? r.scheduled_at);
             const tripCode = r.id.slice(0, 8).toUpperCase();
             const k = (s: string) => busy === r.id + s;
+            const folder = invoiceFolder(r);
+            const prev = i > 0 ? invoiceFolder(filtered[i - 1]!).label : null;
             return (
-              <div key={r.id} className="rounded-2xl border border-border bg-card p-3 text-xs shadow-sm">
+              <div key={r.id}>
+              {folder.label !== prev && (
+                <div className="mb-1 mt-3 flex items-center gap-2 text-xs font-bold text-primary first:mt-0">
+                  <FolderOpen className="h-4 w-4" />
+                  {folder.year} <span className="text-muted-foreground">/</span> {folder.month}
+                  <span className="text-muted-foreground">/ invoice</span>
+                </div>
+              )}
+              <div className="rounded-2xl border border-border bg-card p-3 text-xs shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -191,6 +249,7 @@ function AdminInvoices() {
                     }}
                   />
                 </div>
+              </div>
               </div>
             );
           })}
