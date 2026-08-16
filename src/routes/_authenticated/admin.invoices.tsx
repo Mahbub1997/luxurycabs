@@ -24,10 +24,23 @@ import {
   MessageCircle,
   Mail,
   FolderOpen,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatDuration } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/invoices")({
+  head: () => ({
+    meta: [
+      { title: "Monthly Invoices — Luxury Cabs Admin" },
+      { name: "description", content: "Manage completed-trip invoices organized in monthly folders." },
+      { property: "og:title", content: "Monthly Invoices — Luxury Cabs Admin" },
+      { property: "og:description", content: "Manage completed-trip invoices organized in monthly folders." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AdminInvoices,
 });
 
@@ -42,6 +55,7 @@ function AdminInvoices() {
   const [busy, setBusy] = useState<string | null>(null);
   const [shareFor, setShareFor] = useState<Row | null>(null);
   const [autoSaving, setAutoSaving] = useState<{ done: number; total: number } | null>(null);
+  const [openFolder, setOpenFolder] = useState<string | null>(null);
   const autoRan = useRef(false);
 
   async function load() {
@@ -112,6 +126,17 @@ function AdminInvoices() {
     });
   }, [rows, q, from, to]);
 
+  const folders = useMemo(() => {
+    const grouped = new Map<string, { folder: ReturnType<typeof invoiceFolder>; rows: Row[] }>();
+    for (const row of filtered) {
+      const folder = invoiceFolder(row);
+      const existing = grouped.get(folder.label);
+      if (existing) existing.rows.push(row);
+      else grouped.set(folder.label, { folder, rows: [row] });
+    }
+    return Array.from(grouped.values());
+  }, [filtered]);
+
   async function act(row: Row, key: string, fn: () => Promise<any>) {
     setBusy(row.id + key);
     try {
@@ -163,21 +188,29 @@ function AdminInvoices() {
         <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No invoices match.</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtered.map((r, i) => {
-            const date = new Date(r.completed_at ?? r.scheduled_at);
-            const tripCode = r.id.slice(0, 8).toUpperCase();
-            const k = (s: string) => busy === r.id + s;
-            const folder = invoiceFolder(r);
-            const prev = i > 0 ? invoiceFolder(filtered[i - 1]!).label : null;
+          {folders.map(({ folder, rows: monthRows }) => {
+            const isOpen = openFolder === folder.label;
             return (
-              <div key={r.id}>
-              {folder.label !== prev && (
-                <div className="mb-1 mt-3 flex items-center gap-2 text-xs font-bold text-primary first:mt-0">
-                  <FolderOpen className="h-4 w-4" />
-                  {folder.year} <span className="text-muted-foreground">/</span> {folder.month}
-                  <span className="text-muted-foreground">/ invoice</span>
-                </div>
-              )}
+              <section key={folder.label} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setOpenFolder(isOpen ? null : folder.label)}
+                  className="h-auto w-full justify-start rounded-none px-4 py-4 text-left hover:bg-muted"
+                >
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{folder.month} {folder.year}</span>
+                    <span className="block text-[11px] font-normal text-muted-foreground">{monthRows.length} invoice{monthRows.length === 1 ? "" : "s"}</span>
+                  </span>
+                  <ChevronRight className={isOpen ? "h-4 w-4 rotate-90 transition-transform" : "h-4 w-4 transition-transform"} />
+                </Button>
+                {isOpen && <div className="space-y-2 border-t border-border bg-muted/30 p-2 animate-fade-in">
+                {monthRows.map((r) => {
+                  const date = new Date(r.completed_at ?? r.scheduled_at);
+                  const tripCode = r.id.slice(0, 8).toUpperCase();
+                  const k = (s: string) => busy === r.id + s;
+                  return (
               <div className="rounded-2xl border border-border bg-card p-3 text-xs shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -198,7 +231,7 @@ function AdminInvoices() {
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
                       <span>{date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span>
                       <span>{Number(r.distance_km).toFixed(1)} km</span>
-                      <span>{r.duration_min} min</span>
+                      <span>{formatDuration(r.duration_min)}</span>
                       <span className="font-semibold text-foreground">₹{Number(r.fare).toLocaleString("en-IN")}</span>
                     </div>
                   </div>
@@ -250,7 +283,10 @@ function AdminInvoices() {
                   />
                 </div>
               </div>
-              </div>
+                  );
+                })}
+                </div>}
+              </section>
             );
           })}
         </div>

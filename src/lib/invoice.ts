@@ -159,7 +159,7 @@ export function buildInvoiceDoc(b: Booking) {
   doc.setTextColor(20);
   doc.setFontSize(11);
   const dMin = b.duration_min;
-  const durLabel = dMin >= 60 ? `${Math.floor(dMin / 60)}h ${dMin % 60}m` : `${dMin} min`;
+  const durLabel = `${Math.floor(dMin / 60)}h: ${String(dMin % 60).padStart(2, "0")} min`;
   doc.text(durLabel, mx, yy + 43);
   doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
   doc.setFontSize(8.5);
