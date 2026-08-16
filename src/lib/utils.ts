@@ -7,11 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDuration(totalMin: number): string {
   const m = Math.max(0, Math.round(totalMin));
-  if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   const rem = m % 60;
-  // e.g. 1:30 hr, 2:00 hr
-  return `${h}:${String(rem).padStart(2, "0")} hr`;
+  return `${h}h: ${String(rem).padStart(2, "0")} min`;
 }
 
 export function formatTime12(d: Date): string {

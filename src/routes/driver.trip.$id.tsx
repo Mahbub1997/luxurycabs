@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Phone, KeyRound, CheckCircle2, Loader2, Navigation, Clock as ClockIcon, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { completeRide } from "@/lib/driver.functions";
@@ -11,7 +12,7 @@ import { cancelBookingServer } from "@/lib/driver.functions";
 type LatLng = { lat: number; lng: number };
 import { beep, ensureNotifyPermission, notify } from "@/lib/notify";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 
 export const Route = createFileRoute("/driver/trip/$id")({
   head: () => ({ meta: [{ title: "Trip — Luxury Cabs Driver" }] }),
@@ -33,6 +34,7 @@ function DriverTrip() {
   const [pos, setPos] = useState<LatLng | null>(null);
   const [poly, setPoly] = useState<string | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const dbTickRef = useRef<number>(0);
   const arrivedRef = useRef(false);
 
@@ -105,6 +107,25 @@ function DriverTrip() {
     return () => navigator.geolocation.clearWatch(watchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, b?.id]);
+
+  // Recompute from the same live driver position and destination used by the
+  // customer screen so both apps show the same route ETA as the vehicle moves.
+  useEffect(() => {
+    if (!b || !pos || (phase !== "to_pickup" && phase !== "in_trip")) return;
+    let cancelled = false;
+    const destination = phase === "in_trip"
+      ? { lat: b.drop_lat, lng: b.drop_lng }
+      : { lat: b.pickup_lat, lng: b.pickup_lng };
+    const refresh = async () => {
+      try {
+        const r = await computeRoute({ data: { origin: pos, destination } });
+        if (!cancelled && r?.durationMin) setEtaMin(Math.max(1, Math.round(r.durationMin)));
+      } catch { /* keep the last valid ETA */ }
+    };
+    void refresh();
+    const timer = window.setInterval(refresh, 15_000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [b?.id, phase, pos?.lat, pos?.lng]);
 
   // IN TRIP — REAL device GPS, no fake animation. Live-pushes to customer + admin.
   useEffect(() => {
@@ -266,7 +287,7 @@ function DriverTrip() {
           </div>
           {etaMin !== null && (
             <div className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
-              <ClockIcon className="h-3 w-3" /> {etaMin} min
+              <ClockIcon className="h-3 w-3" /> {formatDuration(etaMin)}
             </div>
           )}
           <button
@@ -277,8 +298,27 @@ function DriverTrip() {
         </header>
 
         {/* Bottom sheet */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl bg-card shadow-2xl border-t border-border p-4 space-y-3 max-h-[55%] overflow-auto">
-          <div className="mx-auto h-1 w-12 rounded-full bg-muted-foreground/30" />
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 z-20 rounded-t-3xl border-t border-border bg-card p-4 shadow-2xl"
+          animate={{ height: sheetExpanded ? "70vh" : "34vh" }}
+          transition={{ type: "spring", stiffness: 300, damping: 32 }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.18}
+          onDragEnd={(_, info) => {
+            if (info.offset.y < -35 || info.velocity.y < -250) setSheetExpanded(true);
+            if (info.offset.y > 35 || info.velocity.y > 250) setSheetExpanded(false);
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setSheetExpanded((value) => !value)}
+            className="mb-3 block w-full touch-none py-1"
+            aria-label={sheetExpanded ? "Collapse trip details" : "Expand trip details"}
+          >
+            <span className="mx-auto block h-1 w-12 rounded-full bg-muted-foreground/30" />
+          </button>
+          <div className="h-[calc(100%-28px)] space-y-3 overflow-y-auto overscroll-contain">
           <div className="flex items-start gap-2 text-sm">
             <MapPin className="mt-0.5 h-4 w-4 text-emerald-600 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -310,7 +350,8 @@ function DriverTrip() {
               className="rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
             >Reached {destLabel}</button>
           </div>
-        </div>
+          </div>
+        </motion.div>
 
         {showCancel && (
           <CancelReasonModal
