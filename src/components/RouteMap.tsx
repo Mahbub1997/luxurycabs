@@ -303,25 +303,38 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
   // Only fit-to-bounds the FIRST time a polyline arrives — subsequent updates
   // (e.g. recomputed during the trip) must not jerk the camera (flicker fix).
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const g = await loadGoogleMaps().catch(() => null);
-      if (!g || !mapRef.current) return;
+      if (cancelled || !g || !mapRef.current) return;
+      let path: PathPoint[] = [pickup, drop];
+      if (polyline) {
+        try {
+          const pts = decode(polyline) as [number, number][];
+          if (Array.isArray(pts) && pts.length > 1) path = pts.map(([lat, lng]) => ({ lat, lng }));
+        } catch {
+          /* fall back to straight line */
+        }
+      }
       polylineRef.current?.setMap(null);
-      const path = polyline ? (decode(polyline) as [number, number][]).map(([lat, lng]) => ({ lat, lng })) : [pickup, drop];
       polyPathRef.current = path;
       driverRouteDistanceRef.current = null;
       polylineRef.current = new g.maps.Polyline({
         path, map: mapRef.current,
         strokeColor: "#1f6f3f", strokeOpacity: 0.9, strokeWeight: 5,
       });
-      if (polyline && !polyFittedRef.current) {
+      if (path.length > 1 && !polyFittedRef.current) {
         const bounds = new g.maps.LatLngBounds();
         path.forEach((p) => bounds.extend(p));
         mapRef.current.fitBounds(bounds, pad(24));
         polyFittedRef.current = true;
       }
     })();
-  }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng]);
+    return () => { cancelled = true; };
+    // `status` is included so the polyline is (re)drawn once the map instance exists.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng, status, fitKey]);
+
 
   // Driver car — real PNG overlay, center anchored, route-distance interpolation.
   useEffect(() => {
