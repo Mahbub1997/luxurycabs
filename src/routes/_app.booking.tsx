@@ -623,7 +623,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
             </button>
           </div>
 
-          <div className="px-4 pb-8 pt-4">
+          <div className="px-4 pt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}>
             {/* Trip type — click to change */}
             <button
               type="button"
