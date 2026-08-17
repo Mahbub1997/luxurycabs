@@ -18,6 +18,8 @@ interface Props {
   fitKey?: number | string;
   showMyLocation?: boolean;
   followDriver?: boolean;
+  /** Extra inset (px) so pins are not hidden behind overlay cards/sheets. */
+  fitPadding?: { top?: number; right?: number; bottom?: number; left?: number };
 }
 
 type Status = "loading" | "ready" | "error";
@@ -201,7 +203,7 @@ function createCarOverlay(g: typeof google, map: google.maps.Map, initialPositio
   return overlay;
 }
 
-export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true }: Props) {
+export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVehicleKind = "sedan", height = 260, fitKey = 0, showMyLocation = false, followDriver = true, fitPadding }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<google.maps.Polyline | null>(null);
@@ -214,6 +216,14 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
   const driverHeadingRef = useRef(0);
   const meMarkerRef = useRef<google.maps.Marker | null>(null);
   const [status, setStatus] = useState<Status>("loading");
+  const padRef = useRef(fitPadding);
+  padRef.current = fitPadding;
+  const pad = (extra = 24) => ({
+    top: (padRef.current?.top ?? 0) + extra,
+    right: (padRef.current?.right ?? 0) + extra,
+    bottom: (padRef.current?.bottom ?? 0) + extra,
+    left: (padRef.current?.left ?? 0) + extra,
+  });
 
   const [errorMsg, setErrorMsg] = useState<string>("");
 
@@ -258,7 +268,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
         bounds.extend(pickup);
         bounds.extend(drop);
         if (driver) bounds.extend(driver);
-        map.fitBounds(bounds, 48);
+        map.fitBounds(bounds, pad(24));
 
         g.maps.event.addListenerOnce(map, "idle", () => {
           if (!cancelled) setStatus("ready");
@@ -307,7 +317,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       if (polyline && !polyFittedRef.current) {
         const bounds = new g.maps.LatLngBounds();
         path.forEach((p) => bounds.extend(p));
-        mapRef.current.fitBounds(bounds, 48);
+        mapRef.current.fitBounds(bounds, pad(24));
         polyFittedRef.current = true;
       }
     })();
@@ -393,7 +403,7 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
             bounds.extend(pickup);
             bounds.extend(drop);
             bounds.extend(target);
-            mapRef.current.fitBounds(bounds, 64);
+            mapRef.current.fitBounds(bounds, pad(40));
           } else {
             mapRef.current.panTo(target);
           }
