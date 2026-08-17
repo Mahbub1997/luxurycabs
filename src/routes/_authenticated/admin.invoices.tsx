@@ -299,6 +299,21 @@ function AdminInvoices() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={async () => {
+                  try {
+                    const res = await shareInvoice(shareFor);
+                    if (res === "copied") toast.success("Link copied — sharing files isn't supported here");
+                    else if (res === "file") toast.success("Invoice PDF shared");
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Share failed");
+                  }
+                  setShareFor(null);
+                }}
+                className="flex items-center gap-2 rounded-xl border border-primary bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+              >
+                <FileText className="h-4 w-4" /> Share PDF file
+              </button>
+              <button
+                onClick={async () => {
                   const url = await ensureInvoiceFor(shareFor);
                   shareInvoiceWhatsApp(url, shareFor);
                   setShareFor(null);
@@ -307,6 +322,7 @@ function AdminInvoices() {
               >
                 <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
               </button>
+
               <button
                 onClick={async () => {
                   const url = await ensureInvoiceFor(shareFor);
