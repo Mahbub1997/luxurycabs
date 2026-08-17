@@ -80,17 +80,40 @@ export async function deleteInvoiceFor(b: Booking) {
     .eq("id", b.id);
 }
 
+/** Share the actual PDF file when the device supports it, else share/copy the link. */
 export async function shareInvoice(b: Booking) {
   const url = await ensureInvoiceFor(b);
-  const text = `Luxury Cabs invoice for trip on ${new Date(b.completed_at ?? b.scheduled_at).toLocaleDateString()} — Total ₹${Number(b.fare).toLocaleString("en-IN")}\n${url}`;
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: "Luxury Cabs Invoice", text, url });
-      return;
-    } catch {}
+  const dateStr = new Date(b.completed_at ?? b.scheduled_at).toLocaleDateString();
+  const text = `Luxury Cabs invoice for trip on ${dateStr} — Total ₹${Number(b.fare).toLocaleString("en-IN")}`;
+  const title = `Luxury Cabs Invoice — ${b.id.slice(0, 8).toUpperCase()}`;
+
+  // 1) Try sharing the PDF itself (Web Share Level 2).
+  try {
+    const blob = buildInvoiceBlob(b);
+    const file = new File([blob], invoiceFileName(b), { type: "application/pdf" });
+    const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      await nav.share({ files: [file], title, text });
+      return "file" as const;
+    }
+  } catch (e: any) {
+    if (e?.name === "AbortError") return "cancelled" as const;
   }
-  await navigator.clipboard.writeText(text);
+
+  // 2) Fall back to sharing the link.
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text: `${text}\n${url}`, url });
+      return "link" as const;
+    }
+  } catch (e: any) {
+    if (e?.name === "AbortError") return "cancelled" as const;
+  }
+
+  await navigator.clipboard.writeText(`${text}\n${url}`);
+  return "copied" as const;
 }
+
 
 export function shareInvoiceWhatsApp(url: string, b: Booking) {
   const msg = encodeURIComponent(
