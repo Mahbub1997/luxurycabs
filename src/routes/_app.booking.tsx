@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar, Map as MapIcon, Clock, ArrowRight, ArrowLeft, ChevronRight,
   Loader2, X, Pencil, ShieldCheck, ShieldAlert, UserCheck, Headphones, IndianRupee,
@@ -78,6 +78,10 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [tripTypePopupOpen, setTripTypePopupOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Measure the floating map overlays so the route always fits between them.
+  const topCardRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [mapInsets, setMapInsets] = useState({ top: 120, bottom: 300 });
 
   // Bounce to active trip
   useEffect(() => {
@@ -198,6 +202,24 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
   // FULL-SCREEN MAP STAGE: when local/outstation have both endpoints set.
   const mapStage = tab !== "rental" && !!pickup && !!drop;
 
+  // Keep map fit padding in sync with the overlay card + bottom sheet heights.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const measure = () => {
+      const top = topCardRef.current?.offsetHeight ?? 0;
+      const bottom = sheetRef.current?.offsetHeight ?? 0;
+      setMapInsets((prev) =>
+        prev.top === top + 16 && prev.bottom === bottom + 16 ? prev : { top: top + 16, bottom: bottom + 16 }
+      );
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (topCardRef.current) ro.observe(topCardRef.current);
+    if (sheetRef.current) ro.observe(sheetRef.current);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  });
+
   // Hide app chrome on the map stage
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -212,7 +234,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
     return (
       <div className="fixed inset-0 z-30 flex flex-col bg-background">
         {/* Top address card */}
-        <div className="absolute left-3 right-3 top-3 z-20 rounded-2xl border border-border bg-card p-3 shadow-lg"
+        <div ref={topCardRef} className="absolute left-3 right-3 top-3 z-20 rounded-2xl border border-border bg-card p-3 shadow-lg"
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
           <div className="flex items-start gap-2">
             <button
@@ -257,12 +279,14 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
             polyline={routeInfo?.polyline ?? null}
             height="100%"
             showMyLocation
-            fitKey={`${pickup!.lat},${pickup!.lng}-${drop!.lat},${drop!.lng}`}
+            fitPadding={{ top: mapInsets.top, bottom: mapInsets.bottom }}
+            fitKey={`${pickup!.lat},${pickup!.lng}-${drop!.lat},${drop!.lng}-${mapInsets.top}-${mapInsets.bottom}`}
           />
         </div>
 
         {/* Bottom sheet — vehicles + CTA */}
         <div
+          ref={sheetRef}
           className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-border bg-card p-4 shadow-2xl"
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
