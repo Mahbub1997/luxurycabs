@@ -218,7 +218,7 @@ export function BookingPage({ forcedTab }: BookingPageProps) {
     if (sheetRef.current) ro.observe(sheetRef.current);
     window.addEventListener("resize", measure);
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
-  });
+  }, [mapStage, routeInfo, tab, vehicleSheetOpen, summaryOpen]);
 
   // Hide app chrome on the map stage
   useEffect(() => {
