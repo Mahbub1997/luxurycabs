@@ -31,6 +31,11 @@ function Splash() {
   const navigate = useNavigate();
   useEffect(() => {
     let cancelled = false;
+    const escapeSplash = window.setTimeout(() => {
+      if (!cancelled && window.location.pathname === "/") {
+        window.location.replace("/auth");
+      }
+    }, 7000);
     const t = setTimeout(async () => {
       const go = (to: any, params?: any) => {
         if (!cancelled) navigate(params ? { to, params, replace: true } : { to, replace: true });
@@ -52,7 +57,11 @@ function Splash() {
         go("/auth");
       }
     }, 2500);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      clearTimeout(escapeSplash);
+    };
   }, [navigate]);
 
   return (
