@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Crosshair } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/maps/load-maps";
 import * as polylineCodec from "@googlemaps/polyline-codec";
-const decode = (polylineCodec as any).decode ?? (polylineCodec as any).default?.decode;
 import { realisticCarTop } from "@/components/VehicleIcon";
 
 
@@ -307,15 +306,9 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
     (async () => {
       const g = await loadGoogleMaps().catch(() => null);
       if (cancelled || !g || !mapRef.current) return;
-      let path: PathPoint[] = [pickup, drop];
-      if (polyline) {
-        try {
-          const pts = decode(polyline) as [number, number][];
-          if (Array.isArray(pts) && pts.length > 1) path = pts.map(([lat, lng]) => ({ lat, lng }));
-        } catch {
-          /* fall back to straight line */
-        }
-      }
+      const path = polyline
+        ? polylineCodec.decode(polyline).map(([lat, lng]) => ({ lat, lng }))
+        : [pickup, drop];
       polylineRef.current?.setMap(null);
       polyPathRef.current = path;
       driverRouteDistanceRef.current = null;
@@ -331,9 +324,8 @@ export function RouteMap({ pickup, drop, polyline, driver, driverPlate, driverVe
       }
     })();
     return () => { cancelled = true; };
-    // `status` is included so the polyline is (re)drawn once the map instance exists.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng, status, fitKey]);
+  }, [polyline, pickup.lat, pickup.lng, drop.lat, drop.lng, status]);
 
 
   // Driver car — real PNG overlay, center anchored, route-distance interpolation.
